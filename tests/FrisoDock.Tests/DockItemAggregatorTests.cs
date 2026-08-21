@@ -191,6 +191,82 @@ public sealed class DockItemAggregatorTests
         Assert.True(Assert.Single(items).IsRunning);
     }
 
+    [Fact]
+    public void Build_SwitchingApp_DoesNotChangeTheOrderOfTheUnpinned()
+    {
+        // Regression: EnumWindows returns the windows in Z order. Switching app reorders that
+        // list, and the dock swapped the icons around on every Alt+Tab.
+        WindowInfo chrome = CreateWindow(1, ChromePath);
+        WindowInfo notepad = CreateWindow(2, NotepadPath);
+        WindowInfo terminal = CreateWindow(3, TerminalPath);
+
+        IReadOnlyList<DockItem> before = _aggregator.Build([], [chrome, notepad, terminal]);
+
+        // The user brings the terminal forward: it becomes the first window enumerated.
+        IReadOnlyList<DockItem> after = _aggregator.Build([], [terminal, chrome, notepad], KeysOf(before));
+
+        Assert.Equal(KeysOf(before), KeysOf(after));
+    }
+
+    [Fact]
+    public void Build_NewApp_JoinsTheEnd()
+    {
+        WindowInfo chrome = CreateWindow(1, ChromePath);
+        WindowInfo notepad = CreateWindow(2, NotepadPath);
+        WindowInfo terminal = CreateWindow(3, TerminalPath);
+
+        IReadOnlyList<DockItem> before = _aggregator.Build([], [chrome, notepad]);
+
+        // The new app appears first in Z order, but its place in the dock is the end of the queue.
+        IReadOnlyList<DockItem> after = _aggregator.Build([], [terminal, chrome, notepad], KeysOf(before));
+
+        Assert.Equal([chrome.Key, notepad.Key, terminal.Key], KeysOf(after));
+    }
+
+    [Fact]
+    public void Build_ClosedApp_DoesNotHoldItsPlace()
+    {
+        WindowInfo chrome = CreateWindow(1, ChromePath);
+        WindowInfo notepad = CreateWindow(2, NotepadPath);
+        WindowInfo terminal = CreateWindow(3, TerminalPath);
+
+        IReadOnlyList<DockItem> before = _aggregator.Build([], [chrome, notepad, terminal]);
+        IReadOnlyList<DockItem> after = _aggregator.Build([], [terminal, chrome], KeysOf(before));
+
+        Assert.Equal([chrome.Key, terminal.Key], KeysOf(after));
+    }
+
+    [Fact]
+    public void Build_ThePinnedDoNotMove()
+    {
+        PinnedApp pinned = CreatePinned(ChromePath);
+        WindowInfo chrome = CreateWindow(1, ChromePath);
+        WindowInfo notepad = CreateWindow(2, NotepadPath);
+
+        IReadOnlyList<DockItem> before = _aggregator.Build([pinned], [chrome, notepad]);
+        IReadOnlyList<DockItem> after = _aggregator.Build([pinned], [notepad, chrome], KeysOf(before));
+
+        Assert.Equal([chrome.Key, notepad.Key], KeysOf(after));
+        Assert.True(after[0].IsPinned);
+    }
+
+    [Fact]
+    public void Build_WithNoPreviousOrder_FollowsTheWindowOrder()
+    {
+        // It is the case of the first build, when the dock has no list to preserve yet.
+        WindowInfo chrome = CreateWindow(1, ChromePath);
+        WindowInfo notepad = CreateWindow(2, NotepadPath);
+
+        IReadOnlyList<DockItem> items = _aggregator.Build([], [notepad, chrome]);
+
+        Assert.Equal([notepad.Key, chrome.Key], KeysOf(items));
+    }
+
+    private static AppKey[] KeysOf(IReadOnlyList<DockItem> items)
+    {
+        return items.Select(item => item.Key).ToArray();
+    }
+
     private static PinnedApp CreatePinned(string executablePath)
     {
         return new PinnedApp(Path.GetFileNameWithoutExtension(executablePath), executablePath);

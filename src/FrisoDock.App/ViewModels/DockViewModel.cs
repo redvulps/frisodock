@@ -180,7 +180,11 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
     private void Refresh()
     {
         IReadOnlyList<WindowInfo> windows = _windowEnumerator.GetWindows();
-        IReadOnlyList<DockItem> items = _aggregator.Build(_pinnedApps, windows);
+
+        // The current order enters the calculation: without it, unpinned apps would follow the windows'
+        // Z order and swap places on every app switch.
+        AppKey[] currentOrder = Items.Select(item => item.Key).ToArray();
+        IReadOnlyList<DockItem> items = _aggregator.Build(_pinnedApps, windows, currentOrder);
 
         bool countChanged = Reconcile(items);
 
