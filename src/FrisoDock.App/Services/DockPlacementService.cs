@@ -17,16 +17,18 @@ public sealed class DockPlacementService
     private readonly IWindowPositioner _positioner;
     private readonly IAppBarService _appBar;
     private readonly DockLayoutCalculator _layout;
-    private readonly DockSettings _settings;
+    private readonly DockSettingsService _settings;
 
     private nint _windowHandle;
+
+    private DockSettings Settings => _settings.Current;
 
     public DockPlacementService(
         IScreenProvider screenProvider,
         IWindowPositioner positioner,
         IAppBarService appBar,
         DockLayoutCalculator layout,
-        DockSettings settings)
+        DockSettingsService settings)
     {
         _screenProvider = screenProvider;
         _positioner = positioner;
@@ -40,7 +42,7 @@ public sealed class DockPlacementService
     {
         _windowHandle = windowHandle;
 
-        if (_settings.ReserveScreenSpace)
+        if (Settings.ReserveScreenSpace)
         {
             _appBar.Register(windowHandle, appBarCallbackMessage);
         }
@@ -59,14 +61,41 @@ public sealed class DockPlacementService
 
         MonitorInfo monitor = _screenProvider.GetPrimaryMonitor();
 
-        if (_settings.ReserveScreenSpace)
+        if (Settings.ReserveScreenSpace)
         {
-            PixelRect reservation = _layout.CalculateReservationRect(monitor, _settings.Edge, _settings.Metrics);
-            _appBar.SetPosition(_settings.Edge, reservation);
+            PixelRect reservation = _layout.CalculateReservationRect(monitor, Settings.Edge, Settings.Metrics);
+            _appBar.SetPosition(Settings.Edge, reservation);
         }
 
-        PixelRect panel = _layout.CalculatePanelRect(monitor, _settings.Edge, itemCount, _settings.Metrics);
-        _positioner.SetBounds(_windowHandle, panel, topMost: true);
+        // The window is larger than the panel: the headroom takes the magnified icon, which overflows
+        // out of the bar instead of pushing the neighbours.
+        PixelRect window = _layout.CalculateWindowRect(
+            monitor,
+            Settings.Edge,
+            itemCount,
+            Settings.Metrics,
+            Settings.EffectiveMagnification);
+
+        _positioner.SetBounds(_windowHandle, window, topMost: true);
+    }
+
+    /// <summary>
+    /// Turns the space reservation on or off with the dock running, as currently configured.
+    /// </summary>
+    public void ApplyScreenReservation(uint appBarCallbackMessage)
+    {
+        if (_windowHandle == 0)
+        {
+            return;
+        }
+
+        if (Settings.ReserveScreenSpace)
+        {
+            _appBar.Register(_windowHandle, appBarCallbackMessage);
+            return;
+        }
+
+        _appBar.Unregister();
     }
 
     /// <summary>Reasserts the dock at the top of the Z order.</summary>

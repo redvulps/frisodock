@@ -1,3 +1,5 @@
+using FrisoDock.Core.Models;
+
 namespace FrisoDock.App.Services;
 
 /// <summary>
@@ -46,12 +48,10 @@ public sealed class CommandLineOptions
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        return new DockSettings
+        // `with` instead of building from scratch: new fields are preserved on their own,
+        // instead of silently falling back to the default with every option added.
+        return settings with
         {
-            Edge = settings.Edge,
-            Metrics = settings.Metrics,
-            RefreshDebounceMilliseconds = settings.RefreshDebounceMilliseconds,
-            IconExtractionSize = settings.IconExtractionSize,
             HideNativeTaskbar = settings.HideNativeTaskbar && !KeepTaskbar,
             ReserveScreenSpace = settings.ReserveScreenSpace && ReserveScreenSpace,
         };

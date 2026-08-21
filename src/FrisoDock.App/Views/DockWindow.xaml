@@ -119,11 +119,17 @@
 
     </Window.Resources>
 
-    <Border Background="{StaticResource PanelBrush}"
-            BorderBrush="{StaticResource PanelBorderBrush}"
-            BorderThickness="{Binding Appearance.PanelBorderThickness}"
-            CornerRadius="{Binding Appearance.PanelCornerRadius}"
-            Padding="{Binding Appearance.PanelPadding}">
+    <!--
+        A janela é mais alta que o painel: a faixa transparente de cima recebe o ícone ampliado,
+        que transborda para fora da barra como no dock do macOS. O painel fica ancorado embaixo.
+    -->
+    <Grid>
+        <Border VerticalAlignment="Bottom"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource PanelBorderBrush}"
+                BorderThickness="{Binding Appearance.PanelBorderThickness}"
+                CornerRadius="{Binding Appearance.PanelCornerRadius}"
+                Padding="{Binding Appearance.PanelPadding}">
 
         <!--
             Menu do dock. Vale para o fundo do painel, os vãos entre ícones, o separador e o
@@ -131,6 +137,9 @@
         -->
         <Border.ContextMenu>
             <ContextMenu Style="{StaticResource DockContextMenuStyle}">
+                <MenuItem Header="Configurações…"
+                          Style="{StaticResource DockMenuItemStyle}"
+                          Click="OnSettingsMenuClick" />
                 <MenuItem Header="Sair do FrisoDock"
                           Style="{StaticResource DockMenuItemStyle}"
                           Command="{Binding ExitCommand}" />
@@ -157,7 +166,10 @@
                        Margin="{Binding Appearance.SeparatorMargin}"
                        Fill="{StaticResource PanelBorderBrush}" />
 
-            <ItemsControl ItemsSource="{Binding Items}">
+            <ItemsControl x:Name="AppItems"
+                          ItemsSource="{Binding Items}"
+                          MouseMove="OnAppItemsMouseMove"
+                          MouseLeave="OnAppItemsMouseLeave">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="Horizontal" />
@@ -170,6 +182,8 @@
                                 Command="{Binding ActivateCommand}"
                                 ToolTip="{Binding DisplayName}"
                                 ContextMenuOpening="OnAppIconContextMenuOpening"
+                                MouseEnter="OnAppIconMouseEnter"
+                                MouseLeave="OnAppIconMouseLeave"
                                 Margin="{Binding DataContext.Appearance.ItemMargin, RelativeSource={RelativeSource AncestorType=Window}}">
                             <Grid>
                                 <Image Source="{Binding Icon}"
@@ -250,5 +264,6 @@
             </Border>
 
         </StackPanel>
-    </Border>
+        </Border>
+    </Grid>
 </Window>

@@ -26,6 +26,36 @@ public readonly record struct PixelRect(int Left, int Top, int Right, int Bottom
     }
 }
 
+/// <summary>Dimensions in physical pixels.</summary>
+/// <param name="Width">Width.</param>
+/// <param name="Height">Height.</param>
+public readonly record struct PixelSize(int Width, int Height)
+{
+    public bool IsEmpty => Width <= 0 || Height <= 0;
+
+    /// <summary>
+    /// The largest rectangle with this aspect ratio that fits the given bound, centred in it.
+    /// It keeps the thumbnail from distorting the window it mirrors.
+    /// </summary>
+    public PixelRect FitCentered(PixelRect bounds)
+    {
+        if (IsEmpty || bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return bounds;
+        }
+
+        double scale = Math.Min(bounds.Width / (double)Width, bounds.Height / (double)Height);
+        int width = Math.Max(1, (int)Math.Round(Width * scale));
+        int height = Math.Max(1, (int)Math.Round(Height * scale));
+
+        return PixelRect.FromSize(
+            bounds.Left + ((bounds.Width - width) / 2),
+            bounds.Top + ((bounds.Height - height) / 2),
+            width,
+            height);
+    }
+}
+
 /// <summary>A monitor's area: full bounds and work area (appbars discounted).</summary>
 /// <param name="Bounds">The monitor's full rectangle.</param>
 /// <param name="WorkArea">The monitor's work area.</param>

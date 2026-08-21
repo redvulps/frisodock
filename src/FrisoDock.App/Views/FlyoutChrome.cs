@@ -55,11 +55,20 @@ public sealed class FlyoutChrome
     /// <summary>Asks the DWM for the flyout finish and clears the background so the material shows.</summary>
     public void ApplyAppearance()
     {
-        nint handle = new WindowInteropHelper(_window).Handle;
-        _backdrop.ApplyFlyoutAppearance(handle, darkMode: true);
+        ApplyAppearance(_window, _backdrop);
+    }
+
+    /// <summary>
+    /// The same finish, for windows that are not anchored flyouts — the settings screen,
+    /// for instance, which appears centred but uses the same system material.
+    /// </summary>
+    public static void ApplyAppearance(Window window, IWindowBackdrop backdrop)
+    {
+        nint handle = new WindowInteropHelper(window).Handle;
+        backdrop.ApplyFlyoutAppearance(handle, darkMode: true);
 
         // Without this WPF paints an opaque background over the DWM material.
-        if (PresentationSource.FromVisual(_window) is HwndSource source && source.CompositionTarget is not null)
+        if (PresentationSource.FromVisual(window) is HwndSource source && source.CompositionTarget is not null)
         {
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
         }

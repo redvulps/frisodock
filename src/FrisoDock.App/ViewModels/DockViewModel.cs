@@ -41,7 +41,7 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         IconImageProvider iconProvider,
         IApplicationLifetime lifetime,
         ClockViewModel clock,
-        DockSettings settings)
+        DockSettingsService settings)
     {
         _windowEnumerator = windowEnumerator;
         _pinnedAppStore = pinnedAppStore;
@@ -53,14 +53,14 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         _lifetime = lifetime;
 
         _pinnedApps = _pinnedAppStore.Load();
-        Appearance = new DockAppearance(settings.Metrics);
+        Appearance = new DockAppearance(settings.Current.Metrics);
         Clock = clock;
 
         // The WinEvents arrive in bursts: opening a window fires several events in a row.
         // The timer coalesces the burst into a single recomputation.
         _refreshTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
-            Interval = TimeSpan.FromMilliseconds(settings.RefreshDebounceMilliseconds),
+            Interval = TimeSpan.FromMilliseconds(settings.Current.RefreshDebounceMilliseconds),
         };
         _refreshTimer.Tick += OnRefreshTick;
 

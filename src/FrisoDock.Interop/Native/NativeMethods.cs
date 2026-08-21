@@ -137,6 +137,18 @@ internal static class NativeMethods
     [DllImport(Dwmapi)]
     internal static extern int DwmSetWindowAttribute(nint windowHandle, int attribute, ref int value, int size);
 
+    [DllImport(Dwmapi)]
+    internal static extern int DwmRegisterThumbnail(nint destination, nint source, out nint thumbnail);
+
+    [DllImport(Dwmapi)]
+    internal static extern int DwmUnregisterThumbnail(nint thumbnail);
+
+    [DllImport(Dwmapi)]
+    internal static extern int DwmUpdateThumbnailProperties(nint thumbnail, ref DWM_THUMBNAIL_PROPERTIES properties);
+
+    [DllImport(Dwmapi)]
+    internal static extern int DwmQueryThumbnailSourceSize(nint thumbnail, out SIZE size);
+
     // ------------------------------------------------------------------ icons
 
     [DllImport(User32, SetLastError = true)]

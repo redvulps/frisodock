@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using FrisoDock.App.Services;
@@ -32,13 +33,23 @@ public partial class DockWindow : Window
     private readonly JumpListFlyoutFactory _flyoutFactory;
     private readonly TrayFlyoutFactory _trayFlyoutFactory;
     private readonly ITrayHost _trayHost;
+    private readonly DockSettingsService _settings;
+    private readonly SettingsWindowFactory _settingsWindows;
+    private readonly IWindowThumbnailService _thumbnails;
+    private readonly IWindowActivator _activator;
+    private readonly DockMagnifier _magnifier = new();
     private readonly IWindowBackdrop _backdrop;
     private readonly IWindowPositioner _positioner;
     private readonly IScreenProvider _screens;
 
     private JumpListWindow? _jumpList;
     private TrayFlyoutWindow? _trayFlyout;
+    private SettingsWindow? _settingsWindow;
+    private WindowPreviewWindow? _preview;
+    private DockItemViewModel? _previewCandidate;
+    private FrameworkElement? _previewAnchor;
     private DispatcherTimer? _trayMaintenanceTimer;
+    private DispatcherTimer? _previewTimer;
 
     public DockWindow(
         DockViewModel viewModel,
@@ -49,6 +60,10 @@ public partial class DockWindow : Window
         JumpListFlyoutFactory flyoutFactory,
         TrayFlyoutFactory trayFlyoutFactory,
         ITrayHost trayHost,
+        DockSettingsService settings,
+        SettingsWindowFactory settingsWindows,
+        IWindowThumbnailService thumbnails,
+        IWindowActivator activator,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
         IScreenProvider screens)
@@ -61,6 +76,10 @@ public partial class DockWindow : Window
         _flyoutFactory = flyoutFactory;
         _trayFlyoutFactory = trayFlyoutFactory;
         _trayHost = trayHost;
+        _settings = settings;
+        _settingsWindows = settingsWindows;
+        _thumbnails = thumbnails;
+        _activator = activator;
         _backdrop = backdrop;
         _positioner = positioner;
         _screens = screens;
@@ -70,6 +89,7 @@ public partial class DockWindow : Window
         DataContext = _viewModel;
         _viewModel.LayoutChanged += OnLayoutChanged;
         _shellRestartWatcher.ShellRestarted += OnShellRestarted;
+        _settings.Changed += OnSettingsChanged;
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -96,8 +116,11 @@ public partial class DockWindow : Window
         CloseTrayFlyout();
         StopTrayHost();
 
+        ClosePreview();
+
         _viewModel.LayoutChanged -= OnLayoutChanged;
         _shellRestartWatcher.ShellRestarted -= OnShellRestarted;
+        _settings.Changed -= OnSettingsChanged;
 
         _placement.Detach();
         _viewModel.Dispose();
@@ -143,6 +166,210 @@ public partial class DockWindow : Window
     private void OnTrayMaintenanceTick(object? sender, EventArgs e)
     {
         _trayHost.Maintain();
+    }
+
+    // ------------------------------------------------------------------ settings
+
+    private void OnSettingsMenuClick(object sender, RoutedEventArgs e)
+    {
+        // A single window: clicking again with the screen open brings the existing one forward, instead
+        // of stacking copies that edit the same settings.
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+
+        _settingsWindow = _settingsWindows.Create();
+        _settingsWindow.Closed += OnSettingsWindowClosed;
+        _settingsWindow.Show();
+    }
+
+    private void OnSettingsWindowClosed(object? sender, EventArgs e)
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Closed -= OnSettingsWindowClosed;
+            _settingsWindow = null;
+        }
+    }
+
+    /// <summary>Applies live whatever the settings screen changed.</summary>
+    private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
+    {
+        if (e.TaskbarVisibilityChanged)
+        {
+            if (e.Current.HideNativeTaskbar)
+            {
+                _taskbarController.Hide();
+            }
+            else
+            {
+                _taskbarController.Restore();
+            }
+        }
+
+        if (e.ScreenReservationChanged)
+        {
+            _placement.ApplyScreenReservation(AppBarCallbackMessage);
+        }
+
+        if (e.LayoutChanged)
+        {
+            // The window headroom depends on magnification: changing the strength changes the geometry.
+            ResetMagnification();
+            _placement.Update(_viewModel.Items.Count);
+        }
+
+        if (!e.Current.EnableWindowPreviews)
+        {
+            ClosePreview();
+        }
+    }
+
+    // ------------------------------------------------------------------ magnification
+
+    private void OnAppItemsMouseMove(object sender, MouseEventArgs e)
+    {
+        double magnification = _settings.Current.EffectiveMagnification;
+        if (magnification <= 1.0)
+        {
+            return;
+        }
+
+        _magnifier.Apply(AppItems, e.GetPosition(AppItems), _viewModel.Appearance.IconSize, magnification);
+    }
+
+    private void OnAppItemsMouseLeave(object sender, MouseEventArgs e)
+    {
+        ResetMagnification();
+    }
+
+    private void ResetMagnification()
+    {
+        _magnifier.Apply(AppItems, cursor: null, _viewModel.Appearance.IconSize, magnification: 1.0);
+    }
+
+    // ------------------------------------------------------------------ window thumbnails
+
+    /// <summary>
+    /// The thumbnail panel waits for the cursor to settle on the icon. Opening at once would fill the
+    /// screen with panels just from crossing the dock with the mouse.
+    /// </summary>
+    private void OnAppIconMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: DockItemViewModel item } element)
+        {
+            return;
+        }
+
+        if (!_settings.Current.EnableWindowPreviews || !item.Model.IsRunning)
+        {
+            return;
+        }
+
+        _previewCandidate = item;
+        _previewAnchor = element;
+
+        StartPreviewTimer();
+    }
+
+    private void OnAppIconMouseLeave(object sender, MouseEventArgs e)
+    {
+        _previewCandidate = null;
+        _previewAnchor = null;
+
+        StopPreviewTimer();
+        ClosePreview();
+    }
+
+    private void StartPreviewTimer()
+    {
+        StopPreviewTimer();
+
+        _previewTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(500),
+        };
+
+        _previewTimer.Tick += OnPreviewTimerTick;
+        _previewTimer.Start();
+    }
+
+    private void StopPreviewTimer()
+    {
+        if (_previewTimer is null)
+        {
+            return;
+        }
+
+        _previewTimer.Stop();
+        _previewTimer.Tick -= OnPreviewTimerTick;
+        _previewTimer = null;
+    }
+
+    private void OnPreviewTimerTick(object? sender, EventArgs e)
+    {
+        StopPreviewTimer();
+
+        if (_previewCandidate is not DockItemViewModel item || _previewAnchor is not FrameworkElement anchor)
+        {
+            return;
+        }
+
+        ShowPreview(item, anchor);
+    }
+
+    private void ShowPreview(DockItemViewModel item, FrameworkElement anchor)
+    {
+        ClosePreview();
+
+        // Thumbnails are an accessory: a window that cannot be mirrored does not kill the dock.
+        try
+        {
+            WindowPreviewViewModel viewModel = WindowPreviewViewModel.FromItem(item.Model);
+            if (viewModel.IsEmpty)
+            {
+                return;
+            }
+
+            _preview = new WindowPreviewWindow(
+                viewModel,
+                FlyoutChrome.GetScreenRect(anchor),
+                _thumbnails,
+                _activator,
+                _backdrop,
+                _positioner,
+                _screens);
+
+            _preview.Closed += OnPreviewClosed;
+
+            // Without activating: stealing the focus just to show a thumbnail would take the text caret
+            // away from where the user was typing.
+            _preview.ShowActivated = false;
+            _preview.Show();
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            ClosePreview();
+        }
+    }
+
+    private void ClosePreview()
+    {
+        if (_preview is null)
+        {
+            return;
+        }
+
+        _preview.Closed -= OnPreviewClosed;
+        _preview.Dismiss();
+        _preview = null;
+    }
+
+    private void OnPreviewClosed(object? sender, EventArgs e)
+    {
+        _preview = null;
     }
 
     /// <summary>

@@ -46,6 +46,28 @@ internal struct RECT
 }
 
 [StructLayout(LayoutKind.Sequential)]
+internal struct SIZE
+{
+    public int cx;
+    public int cy;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct DWM_THUMBNAIL_PROPERTIES
+{
+    public int dwFlags;
+    public RECT rcDestination;
+    public RECT rcSource;
+    public byte opacity;
+
+    [MarshalAs(UnmanagedType.Bool)]
+    public bool fVisible;
+
+    [MarshalAs(UnmanagedType.Bool)]
+    public bool fSourceClientAreaOnly;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 internal struct POINT
 {
     public int X;

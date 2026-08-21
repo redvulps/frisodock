@@ -17,10 +17,10 @@ namespace FrisoDock.App.Services;
 public sealed class IconImageProvider
 {
     private readonly IIconExtractor _extractor;
-    private readonly DockSettings _settings;
+    private readonly DockSettingsService _settings;
     private readonly Dictionary<string, ImageSource?> _cache = [];
 
-    public IconImageProvider(IIconExtractor extractor, DockSettings settings)
+    public IconImageProvider(IIconExtractor extractor, DockSettingsService settings)
     {
         _extractor = extractor;
         _settings = settings;
@@ -57,7 +57,7 @@ public sealed class IconImageProvider
     {
         if (!string.IsNullOrWhiteSpace(item.IconSource))
         {
-            using IconHandle? fromFile = _extractor.FromFile(item.IconSource, _settings.IconExtractionSize);
+            using IconHandle? fromFile = _extractor.FromFile(item.IconSource, _settings.Current.IconExtractionSize);
             ImageSource? image = ToImageSource(fromFile);
 
             if (image is not null)

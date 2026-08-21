@@ -4,6 +4,7 @@ using FrisoDock.App.Services;
 using FrisoDock.App.ViewModels;
 using FrisoDock.App.Views;
 using FrisoDock.Core.Abstractions;
+using FrisoDock.Core.Models;
 using FrisoDock.Core.Services;
 using FrisoDock.Interop.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,9 +56,11 @@ public partial class App : Application
 
         RegisterFailSafeHandlers();
 
-        DockSettings settings = options.ApplyTo(new DockSettings());
+        // Configuration comes from disk; the command line flags are overrides for this session.
+        var settingsStore = new JsonDockSettingsStore();
+        DockSettings settings = options.ApplyTo(settingsStore.Load());
 
-        _services = BuildServiceProvider(settings);
+        _services = BuildServiceProvider(settingsStore, settings);
         _taskbarController = _services.GetRequiredService<ITaskbarController>();
 
         if (settings.HideNativeTaskbar)
@@ -137,16 +140,18 @@ public partial class App : Application
     /// Composition root: the only place in the app that knows the concrete implementations.
     /// Everything else depends only on the Core abstractions.
     /// </summary>
-    private static ServiceProvider BuildServiceProvider(DockSettings settings)
+    private static ServiceProvider BuildServiceProvider(IDockSettingsStore store, DockSettings settings)
     {
         var services = new ServiceCollection();
 
         // Configuration
-        services.AddSingleton(settings);
+        services.AddSingleton(store);
+        services.AddSingleton(new DockSettingsService(store, settings));
 
         // Domain (pure, testable)
         services.AddSingleton<DockItemAggregator>();
         services.AddSingleton<ClockFormatter>();
+        services.AddSingleton<MagnificationCurve>();
         services.AddSingleton<DockLayoutCalculator>();
 
         // Win32 (Interop layer)
@@ -166,6 +171,7 @@ public partial class App : Application
         services.AddSingleton<CustomDestinationsParser>();
         services.AddSingleton<IJumpListProvider, JumpListProvider>();
         services.AddSingleton<ITrayHost, TrayHost>();
+        services.AddSingleton<IWindowThumbnailService, DwmThumbnailService>();
 
         // Host infrastructure
         services.AddSingleton<IApplicationLifetime, WpfApplicationLifetime>();
@@ -174,6 +180,7 @@ public partial class App : Application
         services.AddSingleton<DockPlacementService>();
         services.AddSingleton<JumpListFlyoutFactory>();
         services.AddSingleton<TrayFlyoutFactory>();
+        services.AddSingleton<SettingsWindowFactory>();
 
         // Presentation
         services.AddSingleton<ClockViewModel>();

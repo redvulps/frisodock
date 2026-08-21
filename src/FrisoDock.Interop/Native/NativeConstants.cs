@@ -56,6 +56,11 @@ internal static class NativeConstants
 
     internal const uint WM_CLOSE = 0x0010;
 
+    // --- DWM thumbnails ---
+    internal const int DWM_TNP_RECTDESTINATION = 0x00000001;
+    internal const int DWM_TNP_VISIBLE = 0x00000008;
+    internal const int DWM_TNP_SOURCECLIENTAREAONLY = 0x00000010;
+
     // --- Icons ---
     internal const uint WM_GETICON = 0x007F;
     internal const nint ICON_SMALL = 0;

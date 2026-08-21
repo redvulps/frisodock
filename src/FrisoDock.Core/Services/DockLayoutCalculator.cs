@@ -43,6 +43,22 @@ public sealed record DockMetrics(
     public int ReservedThickness => PanelThickness + EdgeMargin;
 
     /// <summary>
+    /// Headroom the window needs beyond the panel so the magnified icon is not clipped.
+    ///
+    /// The icon grows from its base, so all the headroom sits outside the panel — it is
+    /// transparent window area, which does not count towards the screen space reservation.
+    /// </summary>
+    public int CalculateMagnificationHeadroom(double magnification)
+    {
+        if (magnification <= 1.0)
+        {
+            return 0;
+        }
+
+        return (int)Math.Ceiling(IconSize * (magnification - 1.0));
+    }
+
+    /// <summary>
     /// Panel length for a given number of apps.
     ///
     /// The dock composition is fixed and this calculation is its single source:
@@ -110,6 +126,40 @@ public sealed class DockLayoutCalculator
             : bounds.Left + edgeMargin;
 
         return PixelRect.FromSize(verticalLeft, verticalTop, panelThickness, panelLength);
+    }
+
+    /// <summary>
+    /// Rectangle of the window that hosts the panel.
+    ///
+    /// It is larger than the panel: a transparent band is left outside so the magnified icon
+    /// fits. Without it the icon would be clipped at the window edge, because magnification is a
+    /// rendering effect and does not push the layout.
+    /// </summary>
+    public PixelRect CalculateWindowRect(
+        MonitorInfo monitor,
+        DockEdge edge,
+        int itemCount,
+        DockMetrics metrics,
+        double magnification)
+    {
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        PixelRect panel = CalculatePanelRect(monitor, edge, itemCount, metrics);
+        int headroom = Scale(metrics.CalculateMagnificationHeadroom(magnification), monitor.DpiScale);
+
+        if (headroom == 0)
+        {
+            return panel;
+        }
+
+        return edge switch
+        {
+            DockEdge.Bottom => new PixelRect(panel.Left, panel.Top - headroom, panel.Right, panel.Bottom),
+            DockEdge.Top => new PixelRect(panel.Left, panel.Top, panel.Right, panel.Bottom + headroom),
+            DockEdge.Left => new PixelRect(panel.Left, panel.Top, panel.Right + headroom, panel.Bottom),
+            DockEdge.Right => new PixelRect(panel.Left - headroom, panel.Top, panel.Right, panel.Bottom),
+            _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
+        };
     }
 
     /// <summary>
