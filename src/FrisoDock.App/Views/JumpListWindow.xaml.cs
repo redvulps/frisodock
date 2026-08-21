@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
@@ -72,9 +73,13 @@ public partial class JumpListWindow : Window
         base.OnClosed(e);
     }
 
+    /// <summary>
+    /// Closing deferred until WPF finishes processing the current input: closing in the middle of the
+    /// click would hand the rest of the mouse sequence to the window below.
+    /// </summary>
     private void OnItemInvoked(object? sender, EventArgs e)
     {
-        CloseFlyout();
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, CloseFlyout);
     }
 
     private void CloseFlyout()

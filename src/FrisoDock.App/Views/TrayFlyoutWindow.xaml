@@ -81,18 +81,19 @@
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:TrayIconViewModel}">
+                        <!--
+                            Sem Command nem InputBindings de propósito: os dois disparariam no
+                            pressionar do mouse, e o soltar sobraria para a janela de baixo assim
+                            que este flyout se fechasse. O code-behind trata a sequência inteira.
+                        -->
                         <Button Style="{StaticResource TrayIconButtonStyle}"
-                                Command="{Binding ActivateCommand}"
+                                PreviewMouseDown="OnIconPreviewMouseDown"
+                                PreviewMouseUp="OnIconPreviewMouseUp"
                                 ToolTip="{Binding DisplayName}">
                             <Image Source="{Binding Image}"
                                    Width="20"
                                    Height="20"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
-
-                            <Button.InputBindings>
-                                <MouseBinding MouseAction="RightClick"
-                                              Command="{Binding OpenContextMenuCommand}" />
-                            </Button.InputBindings>
                         </Button>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
