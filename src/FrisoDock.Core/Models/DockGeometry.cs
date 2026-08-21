@@ -20,11 +20,33 @@ public readonly record struct PixelRect(int Left, int Top, int Right, int Bottom
 
     public int Height => Bottom - Top;
 
+    /// <summary>Whether the point falls inside this rectangle.</summary>
+    public bool Contains(PixelPoint point)
+    {
+        return point.X >= Left && point.X < Right && point.Y >= Top && point.Y < Bottom;
+    }
+
+    /// <summary>Whether this rectangle and the other share any area.</summary>
+    public bool IntersectsWith(PixelRect other)
+    {
+        // Exclusive edges: two rectangles that merely touch do not overlap. That is what makes an
+        // empty rectangle — the default for whoever never had its bounds read — never match anything.
+        return Left < other.Right
+            && Right > other.Left
+            && Top < other.Bottom
+            && Bottom > other.Top;
+    }
+
     public static PixelRect FromSize(int left, int top, int width, int height)
     {
         return new PixelRect(left, top, left + width, top + height);
     }
 }
+
+/// <summary>Point in physical pixels.</summary>
+/// <param name="X">Horizontal coordinate.</param>
+/// <param name="Y">Vertical coordinate.</param>
+public readonly record struct PixelPoint(int X, int Y);
 
 /// <summary>Dimensions in physical pixels.</summary>
 /// <param name="Width">Width.</param>

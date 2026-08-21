@@ -18,6 +18,7 @@ namespace FrisoDock.Core.Services;
 /// <param name="SeparatorWidth">Thickness of the line that separates the blocks.</param>
 /// <param name="SeparatorSpacing">Space on each side of the separator.</param>
 /// <param name="ClockWidth">Width reserved for the clock.</param>
+/// <param name="HiddenSliver">Sliver of the panel that stays on screen with the dock hidden.</param>
 public sealed record DockMetrics(
     int IconSize = 44,
     int ItemSpacing = 8,
@@ -26,7 +27,8 @@ public sealed record DockMetrics(
     int BorderThickness = 1,
     int SeparatorWidth = 1,
     int SeparatorSpacing = 6,
-    int ClockWidth = 62)
+    int ClockWidth = 62,
+    int HiddenSliver = 2)
 {
     public static DockMetrics Default { get; } = new();
 
@@ -41,6 +43,14 @@ public sealed record DockMetrics(
 
     /// <summary>Thickness reserved on screen: the panel plus the gap to the edge.</summary>
     public int ReservedThickness => PanelThickness + EdgeMargin;
+
+    /// <summary>
+    /// How far the dock has to move off screen to be hidden.
+    ///
+    /// It does not disappear entirely: the sliver that brings the dock back when the cursor touches the edge remains.
+    /// Without it, a hidden dock could not be called back without a global mouse hook.
+    /// </summary>
+    public int HiddenDistance => Math.Max(PanelThickness + EdgeMargin - HiddenSliver, 0);
 
     /// <summary>
     /// Headroom the window needs beyond the panel so the magnified icon is not clipped.
@@ -189,6 +199,90 @@ public sealed class DockLayoutCalculator
             DockEdge.Right => new PixelRect(panel.Left - headroom, panel.Top - side, panel.Right, panel.Bottom + side),
             _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
         };
+    }
+
+    /// <summary>
+    /// Offsets the window according to whether the dock is in view, hidden, or halfway there.
+    /// </summary>
+    /// <param name="revealProgress">1 is fully in view; 0, hidden at the edge.</param>
+    public PixelRect ApplyReveal(
+        PixelRect window,
+        DockEdge edge,
+        DockMetrics metrics,
+        double revealProgress,
+        double dpiScale)
+    {
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        int distance = Scale(metrics.HiddenDistance, dpiScale);
+        int offset = (int)Math.Round(distance * (1.0 - Math.Clamp(revealProgress, 0.0, 1.0)));
+
+        if (offset == 0)
+        {
+            return window;
+        }
+
+        // The dock leaves through the edge it is anchored to, never sideways.
+        return edge switch
+        {
+            DockEdge.Bottom => Translate(window, 0, offset),
+            DockEdge.Top => Translate(window, 0, -offset),
+            DockEdge.Left => Translate(window, -offset, 0),
+            DockEdge.Right => Translate(window, offset, 0),
+            _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
+        };
+    }
+
+    /// <summary>
+    /// Band that brings the hidden dock back: the sliver left at the screen edge, in the panel's
+    /// width. Narrow on purpose — a tall zone would make the dock jump onto the screen whenever
+    /// the cursor passed near the edge.
+    /// </summary>
+    public PixelRect CalculateRevealZone(PixelRect panel, MonitorInfo monitor, DockEdge edge, DockMetrics metrics)
+    {
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        int sliver = Scale(metrics.HiddenSliver, monitor.DpiScale);
+        PixelRect bounds = monitor.Bounds;
+
+        return edge switch
+        {
+            DockEdge.Bottom => new PixelRect(panel.Left, bounds.Bottom - sliver, panel.Right, bounds.Bottom),
+            DockEdge.Top => new PixelRect(panel.Left, bounds.Top, panel.Right, bounds.Top + sliver),
+            DockEdge.Left => new PixelRect(bounds.Left, panel.Top, bounds.Left + sliver, panel.Bottom),
+            DockEdge.Right => new PixelRect(bounds.Right - sliver, panel.Top, bounds.Right, panel.Bottom),
+            _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
+        };
+    }
+
+    /// <summary>
+    /// Area that keeps the already revealed dock on screen: the whole window, stretched to the edge.
+    ///
+    /// It is larger than the revealing zone, and that is what avoids the oscillation. Were they equal,
+    /// the dock would rise when the edge was touched, slide out from under the cursor — which would sit
+    /// in the gap between panel and edge — and go back down, to be touched again, endlessly.
+    /// </summary>
+    public PixelRect CalculateHoverZone(PixelRect window, MonitorInfo monitor, DockEdge edge)
+    {
+        PixelRect bounds = monitor.Bounds;
+
+        return edge switch
+        {
+            DockEdge.Bottom => new PixelRect(window.Left, window.Top, window.Right, bounds.Bottom),
+            DockEdge.Top => new PixelRect(window.Left, bounds.Top, window.Right, window.Bottom),
+            DockEdge.Left => new PixelRect(bounds.Left, window.Top, window.Right, window.Bottom),
+            DockEdge.Right => new PixelRect(window.Left, window.Top, bounds.Right, window.Bottom),
+            _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
+        };
+    }
+
+    private static PixelRect Translate(PixelRect rect, int deltaX, int deltaY)
+    {
+        return new PixelRect(
+            rect.Left + deltaX,
+            rect.Top + deltaY,
+            rect.Right + deltaX,
+            rect.Bottom + deltaY);
     }
 
     /// <summary>

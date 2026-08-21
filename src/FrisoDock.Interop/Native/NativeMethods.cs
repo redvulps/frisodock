@@ -44,6 +44,14 @@ internal static class NativeMethods
 
     [DllImport(User32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetWindowRect(nint windowHandle, out RECT rect);
+
+    [DllImport(User32, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetCursorPos(out POINT point);
+
+    [DllImport(User32, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool ShowWindow(nint windowHandle, int command);
 
     [DllImport(User32, SetLastError = true)]

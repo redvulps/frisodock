@@ -133,7 +133,8 @@
             cresce para os dois lados quando os ícones ampliados empurram os vizinhos. Esticado,
             ele ocuparia também a folga lateral transparente da janela.
         -->
-        <Border VerticalAlignment="Bottom"
+        <Border x:Name="PanelBorder"
+                VerticalAlignment="Bottom"
                 HorizontalAlignment="Center"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource PanelBorderBrush}"

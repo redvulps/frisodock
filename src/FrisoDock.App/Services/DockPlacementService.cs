@@ -20,8 +20,27 @@ public sealed class DockPlacementService
     private readonly DockSettingsService _settings;
 
     private nint _windowHandle;
+    private int _itemCount;
+    private double _revealProgress = 1.0;
+    private double _dpiScale = 1.0;
+    private PixelRect _windowRect;
 
     private DockSettings Settings => _settings.Current;
+
+    /// <summary>
+    /// Where the panel sits when it is in view, in physical pixels.
+    ///
+    /// It is always the revealed position, even with the dock hidden: intellihide asks whether
+    /// some window occupies the dock's place, and using the hidden position — off screen — would
+    /// always answer "no", revealing the dock only to hide it again on the next frame.
+    /// </summary>
+    public PixelRect PanelRect { get; private set; }
+
+    /// <summary>Band at the screen edge that brings the hidden dock back.</summary>
+    public PixelRect RevealZone { get; private set; }
+
+    /// <summary>Area that keeps the already revealed dock on screen.</summary>
+    public PixelRect HoverZone { get; private set; }
 
     public DockPlacementService(
         IScreenProvider screenProvider,
@@ -42,7 +61,7 @@ public sealed class DockPlacementService
     {
         _windowHandle = windowHandle;
 
-        if (Settings.ReserveScreenSpace)
+        if (Settings.ReservesScreenSpace)
         {
             _appBar.Register(windowHandle, appBarCallbackMessage);
         }
@@ -54,27 +73,71 @@ public sealed class DockPlacementService
     /// </summary>
     public void Update(int itemCount)
     {
+        _itemCount = itemCount;
+
         if (_windowHandle == 0)
         {
             return;
         }
 
         MonitorInfo monitor = _screenProvider.GetPrimaryMonitor();
+        _dpiScale = monitor.DpiScale;
 
-        if (Settings.ReserveScreenSpace)
+        if (Settings.ReservesScreenSpace)
         {
             PixelRect reservation = _layout.CalculateReservationRect(monitor, Settings.Edge, Settings.Metrics);
             _appBar.SetPosition(Settings.Edge, reservation);
         }
 
-        // The window is larger than the panel: the headroom takes the magnified icon, which overflows
-        // out of the bar instead of pushing the neighbours.
-        PixelRect window = _layout.CalculateWindowRect(
+        PanelRect = _layout.CalculatePanelRect(monitor, Settings.Edge, itemCount, Settings.Metrics);
+
+        // The window is larger than the panel on both axes: the margins take the magnified icon and
+        // the widening of the bar. The rectangle is kept because the hide animation only offsets
+        // this value, frame by frame — recomputing everything on every frame would be waste.
+        _windowRect = _layout.CalculateWindowRect(
             monitor,
             Settings.Edge,
             itemCount,
             Settings.Metrics,
             Settings.EffectiveMagnification);
+
+        RevealZone = _layout.CalculateRevealZone(PanelRect, monitor, Settings.Edge, Settings.Metrics);
+        HoverZone = _layout.CalculateHoverZone(_windowRect, monitor, Settings.Edge);
+
+        ApplyBounds();
+    }
+
+    /// <summary>
+    /// Moves the dock between the revealed and the hidden position.
+    /// </summary>
+    /// <param name="revealProgress">1 is fully in view; 0, hidden at the screen edge.</param>
+    public void SetReveal(double revealProgress)
+    {
+        _revealProgress = Math.Clamp(revealProgress, 0.0, 1.0);
+
+        if (_windowHandle == 0)
+        {
+            return;
+        }
+
+        if (_windowRect.Width == 0)
+        {
+            // There has been no Update yet: with no base rectangle there is nothing to offset.
+            Update(_itemCount);
+            return;
+        }
+
+        ApplyBounds();
+    }
+
+    private void ApplyBounds()
+    {
+        PixelRect window = _layout.ApplyReveal(
+            _windowRect,
+            Settings.Edge,
+            Settings.Metrics,
+            _revealProgress,
+            _dpiScale);
 
         _positioner.SetBounds(_windowHandle, window, topMost: true);
     }
@@ -89,7 +152,7 @@ public sealed class DockPlacementService
             return;
         }
 
-        if (Settings.ReserveScreenSpace)
+        if (Settings.ReservesScreenSpace)
         {
             _appBar.Register(_windowHandle, appBarCallbackMessage);
             return;

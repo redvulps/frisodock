@@ -78,6 +78,38 @@
             </Setter>
         </Style>
 
+        <!-- Exclusive choice, in the Windows 11 shape: a ring with the dot at the centre. -->
+        <Style x:Key="RadioStyle" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid Width="20" Height="20">
+                            <Ellipse x:Name="Ring"
+                                     Width="18"
+                                     Height="18"
+                                     Stroke="{StaticResource MutedBrush}"
+                                     StrokeThickness="1" />
+                            <Ellipse x:Name="Dot"
+                                     Width="8"
+                                     Height="8"
+                                     Fill="#000000"
+                                     Visibility="Collapsed" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Ring" Property="Fill" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Settings row: label and explanation on the left, control on the right. -->
         <Style x:Key="SettingRowStyle" TargetType="Border">
             <Setter Property="Padding" Value="14,11" />
@@ -86,6 +118,11 @@
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                </Trigger>
+
+                <!-- An option that does not apply now has to look like it; blocking the click alone says nothing. -->
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.4" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -195,6 +232,75 @@
 
             <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
 
+            <!-- Behaviour -->
+            <TextBlock Text="ESCONDER O DOCK"
+                       Foreground="{StaticResource MutedBrush}"
+                       FontSize="11"
+                       Margin="14,10,14,4" />
+
+            <Border Style="{StaticResource SettingRowStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="O dock fica na borda o tempo todo."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <RadioButton Grid.Column="1"
+                                 GroupName="HideMode"
+                                 Style="{StaticResource RadioStyle}"
+                                 IsChecked="{Binding HideNever}" />
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource SettingRowStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Quando uma janela ocupa o lugar dele"
+                                   Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="Com a área livre o dock continua à vista; some quando alguma janela chega ali."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <RadioButton Grid.Column="1"
+                                 GroupName="HideMode"
+                                 Style="{StaticResource RadioStyle}"
+                                 IsChecked="{Binding HideWhenWindowOverlaps}" />
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource SettingRowStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="O dock só aparece quando o cursor encosta na borda da tela."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <RadioButton Grid.Column="1"
+                                 GroupName="HideMode"
+                                 Style="{StaticResource RadioStyle}"
+                                 IsChecked="{Binding HideAlways}" />
+                </Grid>
+            </Border>
+
+            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
+
             <!-- Desktop -->
             <TextBlock Text="ÁREA DE TRABALHO"
                        Foreground="{StaticResource MutedBrush}"
@@ -221,7 +327,8 @@
                 </Grid>
             </Border>
 
-            <Border Style="{StaticResource SettingRowStyle}">
+            <Border Style="{StaticResource SettingRowStyle}"
+                    IsEnabled="{Binding CanReserveScreenSpace}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -231,7 +338,7 @@
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
                         <TextBlock Text="Reservar espaço na tela"
                                    Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Impede que janelas maximizadas fiquem por baixo do dock."
+                        <TextBlock Text="Impede que janelas maximizadas fiquem por baixo do dock. Só vale com o dock sempre à vista."
                                    Style="{StaticResource SettingHintStyle}" />
                     </StackPanel>
 

@@ -19,6 +19,9 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
     {
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+
+        // Enum by name: the file is hand-editable, and "WhenWindowOverlaps" says what "2" does not.
+        Converters = { new JsonStringEnumConverter() },
     };
 
     private readonly string _filePath;
@@ -98,6 +101,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
 
         public bool ReserveScreenSpace { get; init; } = true;
 
+        public DockHideMode HideMode { get; init; } = DockHideMode.Never;
+
         public bool EnableMagnification { get; init; } = true;
 
         public double MagnificationScale { get; init; } = 1.5;
@@ -110,6 +115,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
             {
                 HideNativeTaskbar = settings.HideNativeTaskbar,
                 ReserveScreenSpace = settings.ReserveScreenSpace,
+                HideMode = settings.HideMode,
                 EnableMagnification = settings.EnableMagnification,
                 MagnificationScale = settings.MagnificationScale,
                 EnableWindowPreviews = settings.EnableWindowPreviews,
@@ -122,6 +128,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
             {
                 HideNativeTaskbar = HideNativeTaskbar,
                 ReserveScreenSpace = ReserveScreenSpace,
+                HideMode = HideMode,
                 EnableMagnification = EnableMagnification,
                 MagnificationScale = MagnificationScale,
                 EnableWindowPreviews = EnableWindowPreviews,

@@ -223,7 +223,22 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
             executablePath,
             NativeMethods.IsIconic(handle),
             handle == foreground,
+            GetBounds(handle),
             GetFriendlyName(executablePath));
+    }
+
+    /// <summary>
+    /// The window's rectangle, which intellihide uses to know whether it occupies the dock's space.
+    /// A window that does not respond returns an empty rectangle, which overlaps nothing.
+    /// </summary>
+    private static PixelRect GetBounds(nint handle)
+    {
+        if (!NativeMethods.GetWindowRect(handle, out RECT rect))
+        {
+            return default;
+        }
+
+        return rect.ToPixelRect();
     }
 
     /// <summary>

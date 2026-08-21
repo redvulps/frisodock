@@ -9,6 +9,10 @@ namespace FrisoDock.Core.Models;
 /// <param name="ExecutablePath">Full path of the executable, when obtained.</param>
 /// <param name="IsMinimized">Whether the window is minimized.</param>
 /// <param name="IsForeground">Whether the window is the foreground window.</param>
+/// <param name="Bounds">
+/// The window's rectangle in physical pixels. Only intellihide reads it; when nobody
+/// filled it in, the empty rectangle overlaps nothing and the dock stays in view.
+/// </param>
 /// <param name="FriendlyName">
 /// Product name declared by the executable ("Brave Browser"). It is what Windows shows;
 /// the file name ("brave") only steps in when the executable declares nothing.
@@ -20,6 +24,7 @@ public sealed record WindowInfo(
     string? ExecutablePath,
     bool IsMinimized,
     bool IsForeground,
+    PixelRect Bounds = default,
     string? FriendlyName = null)
 {
     /// <summary>Key of the app this window belongs to.</summary>

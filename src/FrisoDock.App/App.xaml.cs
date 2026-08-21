@@ -152,6 +152,7 @@ public partial class App : Application
         services.AddSingleton<DockItemAggregator>();
         services.AddSingleton<ClockFormatter>();
         services.AddSingleton<MagnificationCurve>();
+        services.AddSingleton<DockVisibilityPolicy>();
         services.AddSingleton<DockLayoutCalculator>();
 
         // Win32 (Interop layer)
@@ -163,6 +164,7 @@ public partial class App : Application
         services.AddSingleton<IIconExtractor, IconExtractor>();
         services.AddSingleton<IAppLauncher, AppLauncher>();
         services.AddSingleton<IScreenProvider, ScreenProvider>();
+        services.AddSingleton<ICursorProvider, CursorProvider>();
         services.AddSingleton<IWindowPositioner, WindowPositioner>();
         services.AddSingleton<IAppBarService, AppBarService>();
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();

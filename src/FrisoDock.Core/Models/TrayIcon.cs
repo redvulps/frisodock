@@ -53,8 +53,3 @@ public sealed record TrayIcon(
     /// <summary>Label to display: the app's tooltip, or a generic text if it reported none.</summary>
     public string DisplayName => string.IsNullOrWhiteSpace(Tooltip) ? "(sem nome)" : Tooltip.Trim();
 }
-
-/// <summary>Point in physical pixels.</summary>
-/// <param name="X">Horizontal coordinate.</param>
-/// <param name="Y">Vertical coordinate.</param>
-public readonly record struct PixelPoint(int X, int Y);

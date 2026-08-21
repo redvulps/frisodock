@@ -7,6 +7,7 @@ using FrisoDock.App.Services;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Services;
 
 namespace FrisoDock.App.Views;
 
@@ -41,6 +42,7 @@ public partial class DockWindow : Window
     private readonly IWindowBackdrop _backdrop;
     private readonly IWindowPositioner _positioner;
     private readonly IScreenProvider _screens;
+    private readonly DockAutoHide _autoHide;
 
     private JumpListWindow? _jumpList;
     private TrayFlyoutWindow? _trayFlyout;
@@ -66,7 +68,10 @@ public partial class DockWindow : Window
         IWindowActivator activator,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
-        IScreenProvider screens)
+        IScreenProvider screens,
+        IWindowEnumerator windowEnumerator,
+        DockVisibilityPolicy visibilityPolicy,
+        ICursorProvider cursor)
     {
         _viewModel = viewModel;
         _placement = placement;
@@ -83,6 +88,8 @@ public partial class DockWindow : Window
         _backdrop = backdrop;
         _positioner = positioner;
         _screens = screens;
+
+        _autoHide = new DockAutoHide(placement, windowEnumerator, settings, visibilityPolicy, cursor, HasOpenFlyout);
 
         InitializeComponent();
 
@@ -108,6 +115,7 @@ public partial class DockWindow : Window
         _placement.Update(_viewModel.Items.Count);
 
         StartTrayHost();
+        _autoHide.Start();
     }
 
     protected override void OnClosed(EventArgs e)
@@ -122,6 +130,7 @@ public partial class DockWindow : Window
         _shellRestartWatcher.ShellRestarted -= OnShellRestarted;
         _settings.Changed -= OnSettingsChanged;
 
+        _autoHide.Dispose();
         _placement.Detach();
         _viewModel.Dispose();
 
@@ -131,6 +140,39 @@ public partial class DockWindow : Window
     private void OnLayoutChanged(object? sender, EventArgs e)
     {
         _placement.Update(_viewModel.Items.Count);
+    }
+
+    // ------------------------------------------------------------------ hiding the dock
+
+    /// <summary>
+    /// Touching the dock re-evaluates at once, instead of waiting for the next cursor sample: that is
+    /// what makes the sliver respond the moment the mouse reaches the screen edge.
+    /// </summary>
+    protected override void OnMouseEnter(MouseEventArgs e)
+    {
+        base.OnMouseEnter(e);
+        _autoHide.Evaluate();
+    }
+
+    protected override void OnMouseLeave(MouseEventArgs e)
+    {
+        base.OnMouseLeave(e);
+        _autoHide.Evaluate();
+    }
+
+    /// <summary>
+    /// Whether something anchored to the dock is open right now. None of it can stay on screen with
+    /// the dock hidden: the jump list and the thumbnails are positioned relative to the panel, and the
+    /// dock menu even takes the cursor out of the window, which alone would ask for hiding.
+    /// </summary>
+    private bool HasOpenFlyout()
+    {
+        if (_jumpList is not null || _trayFlyout is not null || _preview is not null)
+        {
+            return true;
+        }
+
+        return PanelBorder.ContextMenu is { IsOpen: true };
     }
 
     /// <summary>
@@ -212,6 +254,11 @@ public partial class DockWindow : Window
         if (e.ScreenReservationChanged)
         {
             _placement.ApplyScreenReservation(AppBarCallbackMessage);
+        }
+
+        if (e.HideModeChanged)
+        {
+            _autoHide.Evaluate();
         }
 
         if (e.LayoutChanged)

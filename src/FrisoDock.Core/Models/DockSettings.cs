@@ -20,6 +20,9 @@ public sealed record DockSettings
     /// <summary>Reserve screen space as an appbar, so maximized windows do not cover the dock.</summary>
     public bool ReserveScreenSpace { get; init; } = true;
 
+    /// <summary>When the dock leaves the screen on its own.</summary>
+    public DockHideMode HideMode { get; init; } = DockHideMode.Never;
+
     /// <summary>Hide the native taskbar.</summary>
     public bool HideNativeTaskbar { get; init; } = true;
 
@@ -40,6 +43,16 @@ public sealed record DockSettings
 
     /// <summary>Resolution the icons are extracted at, before scaling in the UI.</summary>
     public int IconExtractionSize { get; init; } = 64;
+
+    /// <summary>
+    /// Whether the appbar really should reserve screen space.
+    ///
+    /// A dock that hides and still keeps the band reserved gives nothing back to the
+    /// user: the area sits empty while the dock is off screen. That is why the reservation only applies
+    /// when the dock is always in view, and the settings screen disables the option in the
+    /// other modes instead of letting it lie.
+    /// </summary>
+    public bool ReservesScreenSpace => ReserveScreenSpace && HideMode == DockHideMode.Never;
 
     /// <summary>
     /// Effective magnification factor, already normalized.

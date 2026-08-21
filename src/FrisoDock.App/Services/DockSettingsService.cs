@@ -64,8 +64,14 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
     /// <summary>True if the native taskbar must be hidden or revealed now.</summary>
     public bool TaskbarVisibilityChanged => Previous.HideNativeTaskbar != Current.HideNativeTaskbar;
 
-    /// <summary>True if the screen space reservation changed.</summary>
-    public bool ScreenReservationChanged => Previous.ReserveScreenSpace != Current.ReserveScreenSpace;
+    /// <summary>
+    /// True if the screen space reservation changed. It compares the effective value, not the
+    /// option: turning autohide on also drops the reservation, without the user touching that switch.
+    /// </summary>
+    public bool ScreenReservationChanged => Previous.ReservesScreenSpace != Current.ReservesScreenSpace;
+
+    /// <summary>True if the dock hide mode changed.</summary>
+    public bool HideModeChanged => Previous.HideMode != Current.HideMode;
 
     /// <summary>True if the panel geometry has to be recomputed.</summary>
     public bool LayoutChanged => Previous.EffectiveMagnification != Current.EffectiveMagnification;
