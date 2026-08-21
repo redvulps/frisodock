@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -274,6 +275,46 @@ public partial class DockWindow : Window
     /// The thumbnail panel waits for the cursor to settle on the icon. Opening at once would fill the
     /// screen with panels just from crossing the dock with the mouse.
     /// </summary>
+    /// <summary>
+    /// Places the app label above the magnified icon, and suppresses it when the thumbnail is going
+    /// to appear in its place.
+    /// </summary>
+    private void OnAppIconToolTipOpening(object sender, ToolTipEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: DockItemViewModel item } element)
+        {
+            return;
+        }
+
+        // The same condition that opens the thumbnail: both show the app name, and together they become
+        // two panels stacked over the same bar.
+        if (_settings.Current.EnableWindowPreviews && item.Model.IsRunning)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (element.ToolTip is ToolTip tooltip)
+        {
+            tooltip.CustomPopupPlacementCallback = PlaceLabelAboveIcon;
+        }
+    }
+
+    /// <summary>
+    /// Centres the label on the icon and lifts it above the headroom magnification reserves — that is
+    /// the height the icon under the cursor takes, since it is always at full factor.
+    /// </summary>
+    private CustomPopupPlacement[] PlaceLabelAboveIcon(Size popupSize, Size targetSize, Point offset)
+    {
+        const double Gap = 8;
+
+        var position = new Point(
+            (targetSize.Width - popupSize.Width) / 2,
+            -(popupSize.Height + Gap + _viewModel.Appearance.IconOverflow));
+
+        return [new CustomPopupPlacement(position, PopupPrimaryAxis.Horizontal)];
+    }
+
     private void OnAppIconMouseEnter(object sender, MouseEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: DockItemViewModel item } element)

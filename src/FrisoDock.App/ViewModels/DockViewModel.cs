@@ -70,7 +70,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         _settings = settings;
         _monitor = monitor.Monitor;
 
-        _appearance = new DockAppearance(settings.Current.EffectiveMetrics);
+        _appearance = new DockAppearance(settings.Current.EffectiveMetrics, settings.Current.EffectiveMagnification);
         Clock = clock;
 
         // The WinEvents arrive in bursts: opening a window fires several events in a row.
@@ -140,9 +140,9 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
 
     private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
     {
-        if (e.MetricsChanged)
+        if (e.LayoutChanged)
         {
-            Appearance = new DockAppearance(e.Current.EffectiveMetrics);
+            Appearance = new DockAppearance(e.Current.EffectiveMetrics, e.Current.EffectiveMagnification);
         }
 
         if (e.MonitorIsolationChanged)

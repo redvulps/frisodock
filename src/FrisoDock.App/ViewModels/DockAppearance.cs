@@ -12,10 +12,11 @@ namespace FrisoDock.App.ViewModels;
 /// </summary>
 public sealed class DockAppearance
 {
-    public DockAppearance(DockMetrics metrics)
+    public DockAppearance(DockMetrics metrics, double magnification)
     {
         ArgumentNullException.ThrowIfNull(metrics);
 
+        IconOverflow = metrics.CalculateMagnificationHeadroom(magnification);
         IconSize = metrics.IconSize;
         IconImageSize = metrics.IconImageSize;
         SeparatorWidth = metrics.SeparatorWidth;
@@ -33,6 +34,12 @@ public sealed class DockAppearance
         PanelCornerRadius = new CornerRadius(metrics.PanelThickness / 4.0);
         ItemCornerRadius = new CornerRadius(metrics.IconSize / 4.0);
     }
+
+    /// <summary>
+    /// How far the magnified icon rises above its own button. It is what the app label uses to
+    /// float above it instead of sitting underneath.
+    /// </summary>
+    public double IconOverflow { get; }
 
     /// <summary>Side of each item's button.</summary>
     public double IconSize { get; }

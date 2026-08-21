@@ -87,6 +87,31 @@
         </Style>
 
         <!--
+            Rótulo do app. Flutua acima do ícone ampliado, e não no cursor: no cursor ele cobre
+            dois ou três ícones vizinhos, que é justamente o que se quer ler.
+        -->
+        <Style x:Key="DockToolTipStyle" TargetType="ToolTip">
+            <Setter Property="Placement" Value="Custom" />
+            <!-- HasDropShadow turns on the popup transparency, without which the rounding does not show. -->
+            <Setter Property="HasDropShadow" Value="True" />
+            <Setter Property="Foreground" Value="{StaticResource MenuTextBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{StaticResource MenuBrush}"
+                                BorderBrush="{StaticResource PanelBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,5">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
             Botão sem cromo: o conteúdo é o ícone, e o realce de hover é um retângulo
             arredondado por trás dele.
         -->
@@ -191,11 +216,16 @@
                     <DataTemplate DataType="{x:Type vm:DockItemViewModel}">
                         <Button Style="{StaticResource DockButtonStyle}"
                                 Command="{Binding ActivateCommand}"
-                                ToolTip="{Binding DisplayName}"
+                                ToolTipOpening="OnAppIconToolTipOpening"
                                 ContextMenuOpening="OnAppIconContextMenuOpening"
                                 MouseEnter="OnAppIconMouseEnter"
                                 MouseLeave="OnAppIconMouseLeave"
                                 Margin="{Binding DataContext.Appearance.ItemMargin, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <Button.ToolTip>
+                                <ToolTip Style="{StaticResource DockToolTipStyle}"
+                                         Content="{Binding DisplayName}" />
+                            </Button.ToolTip>
+
                             <Grid>
                                 <Image Source="{Binding Icon}"
                                        Width="{Binding DataContext.Appearance.IconImageSize, RelativeSource={RelativeSource AncestorType=Window}}"
