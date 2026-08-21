@@ -18,18 +18,25 @@ namespace FrisoDock.Interop.Services;
 public sealed class TaskbarController : ITaskbarController
 {
     private readonly ITaskbarStateStore _stateStore;
+    private readonly IShellTrayPriority _trayPriority;
 
     private int? _originalAppBarState;
 
-    public TaskbarController(ITaskbarStateStore stateStore)
+    public TaskbarController(ITaskbarStateStore stateStore, IShellTrayPriority trayPriority)
     {
         _stateStore = stateStore;
+        _trayPriority = trayPriority;
     }
 
     public bool IsHidden { get; private set; }
 
     public void Hide()
     {
+        // With the turn yielded, Explorer is once again the first Shell_TrayWnd — which is what this
+        // service looks for, both for the window to hide and for the ABM_SETSTATE target.
+        // Without that, with the tray hosted here, it would find the dock's own window.
+        using IDisposable priority = _trayPriority.Yield();
+
         // It stores the original state only the first time, so as not to write "autohide"
         // as if it were the user's preference on a second call.
         _originalAppBarState ??= ReadOriginalState();
@@ -42,6 +49,8 @@ public sealed class TaskbarController : ITaskbarController
 
     public void Restore()
     {
+        using IDisposable priority = _trayPriority.Yield();
+
         ApplyVisibility(NativeConstants.SW_SHOW);
 
         int? state = _originalAppBarState ?? _stateStore.Load();

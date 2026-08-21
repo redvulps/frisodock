@@ -18,10 +18,11 @@ namespace FrisoDock.Interop.Services;
 /// its window back would send new icons to Explorer instead of here.
 ///
 /// Messages that are not about icons (appbar, position queries) are forwarded to Explorer.
-/// Without that, the dock's own space reservation — which goes through <c>SHAppBarMessage</c> and therefore
-/// also looks for the first <c>Shell_TrayWnd</c> — would stop working.
+/// Forwarding serves whoever comes from outside, but not the appbar messages that
+/// carry a rectangle: those come back successful and have no effect at all. That is why the dock yields
+/// the turn before sending its own — see <see cref="IShellTrayPriority"/>.
 /// </summary>
-public sealed class TrayHost : ITrayHost, IDisposable
+public sealed class TrayHost : ITrayHost, IShellTrayPriority, IDisposable
 {
     /// <summary>Height of the host's hidden window. It only has to be plausible; nothing is drawn in it.</summary>
     private const int HostWindowHeight = 24;
@@ -97,6 +98,44 @@ public sealed class TrayHost : ITrayHost, IDisposable
     {
         EnsureTopmost();
         RemoveDeadIcons();
+    }
+
+    /// <inheritdoc />
+    public IDisposable Yield()
+    {
+        if (!IsHosting)
+        {
+            return TrayPriorityLease.None;
+        }
+
+        nint explorer = FindExplorerTray();
+        if (explorer == 0)
+        {
+            return TrayPriorityLease.None;
+        }
+
+        NativeMethods.SetWindowPos(
+            explorer,
+            NativeConstants.HWND_TOPMOST,
+            0,
+            0,
+            0,
+            0,
+            NativeConstants.SWP_NOMOVE | NativeConstants.SWP_NOSIZE | NativeConstants.SWP_NOACTIVATE);
+
+        return new TrayPriorityLease(this);
+    }
+
+    /// <summary>Takes the front back. It is the same pair of steps as the periodic maintenance.</summary>
+    private void ReclaimPriority()
+    {
+        if (!IsHosting)
+        {
+            return;
+        }
+
+        PushExplorerTrayDown();
+        RaiseHostWindow();
     }
 
     /// <summary>
@@ -614,5 +653,26 @@ public sealed class TrayHost : ITrayHost, IDisposable
     private static nint MakeParam(uint low, uint high)
     {
         return (nint)((low & 0xFFFF) | ((high & 0xFFFF) << 16));
+    }
+
+    /// <summary>
+    /// Gives the front back to the host when disposed. <see cref="None"/> is the case where there was
+    /// nothing to yield — no active host, or no Explorer window to put in front.
+    /// </summary>
+    private sealed class TrayPriorityLease : IDisposable
+    {
+        internal static readonly IDisposable None = new TrayPriorityLease(null);
+
+        private readonly TrayHost? _host;
+
+        internal TrayPriorityLease(TrayHost? host)
+        {
+            _host = host;
+        }
+
+        public void Dispose()
+        {
+            _host?.ReclaimPriority();
+        }
     }
 }

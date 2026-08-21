@@ -158,6 +158,10 @@ public sealed class DockPlacementService
         if (Settings.ReservesScreenSpace)
         {
             _appBar.Register(_windowHandle, appBarCallbackMessage);
+
+            // ABM_NEW only creates the appbar; what reserves the band is ABM_SETPOS, inside Update.
+            // Without this call, turning the option on with the dock running takes space from nobody.
+            Update(_itemCount);
             return;
         }
 

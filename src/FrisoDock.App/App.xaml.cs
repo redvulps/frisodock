@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Threading;
 using FrisoDock.App.Services;
 using FrisoDock.App.ViewModels;
@@ -38,7 +38,7 @@ public partial class App : Application
         if (options.RestoreTaskbarAndExit)
         {
             // Rescue mode: there is no dock and no container, just the standalone controller.
-            new TaskbarController(new FileTaskbarStateStore()).Restore();
+            new TaskbarController(new FileTaskbarStateStore(), new NoShellTrayPriority()).Restore();
             Shutdown();
             return;
         }
@@ -188,6 +188,9 @@ public partial class App : Application
         services.AddSingleton<AutomaticDestinationsParser>();
         services.AddSingleton<IJumpListProvider, JumpListProvider>();
         services.AddSingleton<ITrayHost, TrayHost>();
+
+        // Same instance in both roles: the one that yields is the tray host, which is what took it.
+        services.AddSingleton<IShellTrayPriority>(provider => (IShellTrayPriority)provider.GetRequiredService<ITrayHost>());
         services.AddSingleton<IWindowThumbnailService, DwmThumbnailService>();
         services.AddSingleton<IRadioController, RadioController>();
         services.AddSingleton<IBrightnessController, BrightnessController>();

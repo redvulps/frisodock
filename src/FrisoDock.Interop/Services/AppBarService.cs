@@ -11,11 +11,22 @@ namespace FrisoDock.Interop.Services;
 /// Without it, a maximized window would cover the dock. The protocol is: ABM_NEW registers,
 /// ABM_QUERYPOS asks the shell where the band fits (it adjusts so as not to collide with other
 /// appbars), ABM_SETPOS confirms. ABM_REMOVE gives the space back.
+///
+/// Every message goes out with the turn yielded to Explorer (<see cref="IShellTrayPriority"/>): while
+/// the dock hosts the tray, its window is what <c>SHAppBarMessage</c> finds, and the
+/// ABM_SETPOS that lands there reports success without reserving anything.
 /// </summary>
 public sealed class AppBarService : IAppBarService, IDisposable
 {
+    private readonly IShellTrayPriority _trayPriority;
+
     private nint _windowHandle;
     private uint _callbackMessage;
+
+    public AppBarService(IShellTrayPriority trayPriority)
+    {
+        _trayPriority = trayPriority;
+    }
 
     public bool IsRegistered { get; private set; }
 
@@ -35,7 +46,11 @@ public sealed class AppBarService : IAppBarService, IDisposable
         _callbackMessage = callbackMessage;
 
         APPBARDATA data = CreateAppBarData();
-        NativeMethods.SHAppBarMessage(NativeConstants.ABM_NEW, ref data);
+
+        using (_trayPriority.Yield())
+        {
+            NativeMethods.SHAppBarMessage(NativeConstants.ABM_NEW, ref data);
+        }
 
         IsRegistered = true;
     }
@@ -51,11 +66,14 @@ public sealed class AppBarService : IAppBarService, IDisposable
         data.uEdge = ToNativeEdge(edge);
         data.rc = RECT.FromPixelRect(desired);
 
-        // The shell may shrink the band if there is already another appbar on the same edge.
-        NativeMethods.SHAppBarMessage(NativeConstants.ABM_QUERYPOS, ref data);
-        data.rc = ClampToRequestedThickness(edge, data.rc, desired);
+        using (_trayPriority.Yield())
+        {
+            // The shell may shrink the band if there is already another appbar on the same edge.
+            NativeMethods.SHAppBarMessage(NativeConstants.ABM_QUERYPOS, ref data);
+            data.rc = ClampToRequestedThickness(edge, data.rc, desired);
 
-        NativeMethods.SHAppBarMessage(NativeConstants.ABM_SETPOS, ref data);
+            NativeMethods.SHAppBarMessage(NativeConstants.ABM_SETPOS, ref data);
+        }
 
         return data.rc.ToPixelRect();
     }
@@ -68,7 +86,11 @@ public sealed class AppBarService : IAppBarService, IDisposable
         }
 
         APPBARDATA data = CreateAppBarData();
-        NativeMethods.SHAppBarMessage(NativeConstants.ABM_REMOVE, ref data);
+
+        using (_trayPriority.Yield())
+        {
+            NativeMethods.SHAppBarMessage(NativeConstants.ABM_REMOVE, ref data);
+        }
 
         IsRegistered = false;
         _windowHandle = 0;
