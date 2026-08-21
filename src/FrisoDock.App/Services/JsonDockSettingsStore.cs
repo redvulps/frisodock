@@ -109,6 +109,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
 
         public bool EnableWindowPreviews { get; init; } = true;
 
+        public bool ShowClockSeconds { get; init; }
+
         public static PersistedSettings From(DockSettings settings)
         {
             return new PersistedSettings
@@ -119,6 +121,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 EnableMagnification = settings.EnableMagnification,
                 MagnificationScale = settings.MagnificationScale,
                 EnableWindowPreviews = settings.EnableWindowPreviews,
+                ShowClockSeconds = settings.ShowClockSeconds,
             };
         }
 
@@ -132,6 +135,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 EnableMagnification = EnableMagnification,
                 MagnificationScale = MagnificationScale,
                 EnableWindowPreviews = EnableWindowPreviews,
+                ShowClockSeconds = ShowClockSeconds,
             };
         }
     }

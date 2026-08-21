@@ -196,6 +196,67 @@ public sealed class DockSettingsTests : IDisposable
         Assert.Equal(1.9, resultado.MagnificationScale);
     }
 
+    [Fact]
+    public void SecondsInTheClock_WidenTheClockBand()
+    {
+        var settings = new DockSettings();
+
+        Assert.Equal(settings.Metrics.ClockWidth, settings.EffectiveMetrics.ClockWidth);
+
+        DockMetrics comSegundos = (settings with { ShowClockSeconds = true }).EffectiveMetrics;
+
+        Assert.Equal(settings.Metrics.ClockWidthWithSeconds, comSegundos.ClockWidth);
+        Assert.True(comSegundos.ClockWidth > settings.Metrics.ClockWidth);
+    }
+
+    [Fact]
+    public void SecondsInTheClock_WidenThePanel()
+    {
+        // The clock width enters the panel length: if the panel does not grow with it, the
+        // text spills over the tray button.
+        var settings = new DockSettings();
+        var comSegundos = settings with { ShowClockSeconds = true };
+
+        int semSegundos = settings.EffectiveMetrics.CalculatePanelLength(6);
+        int largo = comSegundos.EffectiveMetrics.CalculatePanelLength(6);
+
+        int diferenca = settings.Metrics.ClockWidthWithSeconds - settings.Metrics.ClockWidth;
+
+        Assert.Equal(semSegundos + diferenca, largo);
+    }
+
+    [Fact]
+    public void Service_TurningSecondsOn_AsksForRelayoutAndNotifiesTheClock()
+    {
+        var service = new DockSettingsService(new JsonDockSettingsStore(_filePath), new DockSettings());
+        DockSettingsChangedEventArgs? received = null;
+        service.Changed += (_, args) => received = args;
+
+        service.Update(service.Current with { ShowClockSeconds = true });
+
+        Assert.NotNull(received);
+        Assert.True(received!.ClockChanged);
+        Assert.True(received.MetricsChanged);
+        Assert.True(received.LayoutChanged);
+        Assert.True(new JsonDockSettingsStore(_filePath).Load().ShowClockSeconds);
+    }
+
+    [Fact]
+    public void Service_MagnificationDoesNotChangeTheMetrics()
+    {
+        var service = new DockSettingsService(new JsonDockSettingsStore(_filePath), new DockSettings());
+        DockSettingsChangedEventArgs? received = null;
+        service.Changed += (_, args) => received = args;
+
+        service.Update(service.Current with { MagnificationScale = 1.8 });
+
+        // It asks for a relayout, but does not swap the metrics: the XAML does not need rebuilding.
+        Assert.NotNull(received);
+        Assert.True(received!.LayoutChanged);
+        Assert.False(received.MetricsChanged);
+        Assert.False(received.ClockChanged);
+    }
+
     public void Dispose()
     {
         if (File.Exists(_filePath))

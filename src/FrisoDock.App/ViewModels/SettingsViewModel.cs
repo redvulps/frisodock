@@ -41,6 +41,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _enableWindowPreviews;
 
+    [ObservableProperty]
+    private bool _showClockSeconds;
+
     public SettingsViewModel(DockSettingsService settings)
     {
         _settings = settings;
@@ -94,6 +97,8 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnEnableWindowPreviewsChanged(bool value) => Apply();
 
+    partial void OnShowClockSecondsChanged(bool value) => Apply();
+
     private void SelectMode(DockHideMode mode, bool selected)
     {
         if (selected)
@@ -114,6 +119,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             EnableMagnification = settings.EnableMagnification;
             MagnificationScale = settings.MagnificationScale;
             EnableWindowPreviews = settings.EnableWindowPreviews;
+            ShowClockSeconds = settings.ShowClockSeconds;
         }
         finally
         {
@@ -136,6 +142,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             EnableMagnification = EnableMagnification,
             MagnificationScale = Math.Round(MagnificationScale, 2),
             EnableWindowPreviews = EnableWindowPreviews,
+            ShowClockSeconds = ShowClockSeconds,
         });
     }
 }

@@ -48,27 +48,76 @@ public sealed class ClockFormatterTests
     }
 
     [Fact]
-    public void TimeUntilNextMinute_SubtractsSecondsAndMilliseconds()
+    public void FormatTime_WithSeconds_InATwentyFourHourCulture()
+    {
+        var formatter = new ClockFormatter(new CultureInfo("pt-BR"));
+
+        Assert.Equal("21:05:42", formatter.FormatTime(Instant, includeSeconds: true));
+    }
+
+    [Fact]
+    public void FormatTime_WithSeconds_InATwelveHourCulture()
+    {
+        // The suffix still comes from the culture: whoever shows "PM" keeps showing it with seconds.
+        var formatter = new ClockFormatter(new CultureInfo("en-US"));
+
+        Assert.Equal("9:05:42 PM", formatter.FormatTime(Instant, includeSeconds: true));
+    }
+
+    [Fact]
+    public void TimeUntilNextTick_WithSeconds_WaitsOnlyWhatIsLeftOfTheSecond()
+    {
+        var formatter = new ClockFormatter(new CultureInfo("pt-BR"));
+        var instant = new DateTimeOffset(2026, 8, 21, 21, 5, 33, 400, TimeSpan.Zero);
+
+        Assert.Equal(TimeSpan.FromMilliseconds(600), formatter.TimeUntilNextTick(instant, includeSeconds: true));
+    }
+
+    [Fact]
+    public void TimeUntilNextTick_WithSeconds_OnTheExactSecond_WaitsAWholeSecond()
+    {
+        var formatter = new ClockFormatter(new CultureInfo("pt-BR"));
+        var exact = new DateTimeOffset(2026, 8, 21, 21, 5, 33, 0, TimeSpan.Zero);
+
+        Assert.Equal(TimeSpan.FromSeconds(1), formatter.TimeUntilNextTick(exact, includeSeconds: true));
+    }
+
+    [Fact]
+    public void TimeUntilNextTick_WithSeconds_NeverExceedsOneSecond()
+    {
+        // An interval longer than the period would leave the clock skipping seconds.
+        var formatter = new ClockFormatter(new CultureInfo("pt-BR"));
+
+        for (int millisecond = 0; millisecond < 1000; millisecond += 50)
+        {
+            var instant = new DateTimeOffset(2026, 8, 21, 21, 5, 33, millisecond, TimeSpan.Zero);
+
+            Assert.InRange(formatter.TimeUntilNextTick(instant, includeSeconds: true), TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        }
+    }
+
+    [Fact]
+    public void TimeUntilNextTick_SubtractsSecondsAndMilliseconds()
     {
         var formatter = new ClockFormatter(CultureInfo.InvariantCulture);
 
-        TimeSpan remaining = formatter.TimeUntilNextMinute(Instant);
+        TimeSpan remaining = formatter.TimeUntilNextTick(Instant);
 
         // 42.300s elapsed in the minute -> 17.700s to go.
         Assert.Equal(TimeSpan.FromMilliseconds(17700), remaining);
     }
 
     [Fact]
-    public void TimeUntilNextMinute_OnTheExactMinute_WaitsAWholeMinute()
+    public void TimeUntilNextTick_OnTheExactMinute_WaitsAWholeMinute()
     {
         var formatter = new ClockFormatter(CultureInfo.InvariantCulture);
         var exact = new DateTimeOffset(2026, 8, 21, 21, 5, 0, 0, TimeSpan.FromHours(-3));
 
-        Assert.Equal(TimeSpan.FromMinutes(1), formatter.TimeUntilNextMinute(exact));
+        Assert.Equal(TimeSpan.FromMinutes(1), formatter.TimeUntilNextTick(exact));
     }
 
     [Fact]
-    public void TimeUntilNextMinute_NeverReturnsZeroOrNegative()
+    public void TimeUntilNextTick_NeverReturnsZeroOrNegative()
     {
         var formatter = new ClockFormatter(CultureInfo.InvariantCulture);
 
@@ -76,7 +125,7 @@ public sealed class ClockFormatterTests
         for (int second = 0; second < 60; second++)
         {
             var instant = new DateTimeOffset(2026, 8, 21, 21, 5, second, TimeSpan.FromHours(-3));
-            Assert.True(formatter.TimeUntilNextMinute(instant) > TimeSpan.Zero);
+            Assert.True(formatter.TimeUntilNextTick(instant) > TimeSpan.Zero);
         }
     }
 }

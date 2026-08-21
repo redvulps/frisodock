@@ -23,10 +23,19 @@ public sealed class ClockFormatter
         _culture = culture;
     }
 
-    /// <summary>Time without the seconds, as the taskbar shows it.</summary>
-    public string FormatTime(DateTimeOffset instant)
+    /// <summary>
+    /// Time, with or without the seconds.
+    ///
+    /// Both formats come from the culture, not from a hand-written pattern: it is the culture that
+    /// decides where the seconds go and whether a "PM" is left at the end.
+    /// </summary>
+    public string FormatTime(DateTimeOffset instant, bool includeSeconds = false)
     {
-        return instant.ToString(_culture.DateTimeFormat.ShortTimePattern, _culture);
+        string pattern = includeSeconds
+            ? _culture.DateTimeFormat.LongTimePattern
+            : _culture.DateTimeFormat.ShortTimePattern;
+
+        return instant.ToString(pattern, _culture);
     }
 
     /// <summary>Short date.</summary>
@@ -42,21 +51,27 @@ public sealed class ClockFormatter
     }
 
     /// <summary>
-    /// How long until the minute rolls over.
+    /// How long until the clock text changes.
     ///
-    /// The clock shows no seconds, so waking every second would be waste; waking every
-    /// exact minute would delay the rollover by up to a second. Aligning the next tick to the
-    /// minute rollover hits the time and keeps one tick per minute.
+    /// With no seconds showing, waking up every second would be waste. In either
+    /// case, waking at a fixed interval would delay the rollover by up to a whole period: aligning the
+    /// next tick to the rollover hits the time with no extra ticks.
     /// </summary>
-    public TimeSpan TimeUntilNextMinute(DateTimeOffset instant)
+    public TimeSpan TimeUntilNextTick(DateTimeOffset instant, bool includeSeconds = false)
     {
-        TimeSpan remaining = TimeSpan.FromMinutes(1)
-            - TimeSpan.FromSeconds(instant.Second)
-            - TimeSpan.FromMilliseconds(instant.Millisecond);
+        TimeSpan period = includeSeconds ? TimeSpan.FromSeconds(1) : TimeSpan.FromMinutes(1);
+
+        TimeSpan elapsed = TimeSpan.FromMilliseconds(instant.Millisecond);
+        if (!includeSeconds)
+        {
+            elapsed += TimeSpan.FromSeconds(instant.Second);
+        }
+
+        TimeSpan remaining = period - elapsed;
 
         if (remaining <= TimeSpan.Zero)
         {
-            return TimeSpan.FromMinutes(1);
+            return period;
         }
 
         return remaining;

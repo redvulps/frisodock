@@ -26,10 +26,20 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
     private readonly DockItemAggregator _aggregator;
     private readonly IconImageProvider _iconProvider;
     private readonly IApplicationLifetime _lifetime;
+    private readonly DockSettingsService _settings;
     private readonly DispatcherTimer _refreshTimer;
 
     private IReadOnlyList<PinnedApp> _pinnedApps;
     private bool _disposed;
+
+    /// <summary>
+    /// Layout metrics the XAML consumes, derived from the same metrics as the placement.
+    ///
+    /// It is replaced, not edited, when the settings change the metrics: turning the clock seconds
+    /// on widens its band, and the XAML has to follow or the text spills out.
+    /// </summary>
+    [ObservableProperty]
+    private DockAppearance _appearance;
 
     public DockViewModel(
         IWindowEnumerator windowEnumerator,
@@ -51,9 +61,10 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         _aggregator = aggregator;
         _iconProvider = iconProvider;
         _lifetime = lifetime;
+        _settings = settings;
 
         _pinnedApps = _pinnedAppStore.Load();
-        Appearance = new DockAppearance(settings.Current.Metrics);
+        _appearance = new DockAppearance(settings.Current.EffectiveMetrics);
         Clock = clock;
 
         // The WinEvents arrive in bursts: opening a window fires several events in a row.
@@ -65,15 +76,13 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         _refreshTimer.Tick += OnRefreshTick;
 
         _windowEnumerator.WindowsChanged += OnWindowsChanged;
+        _settings.Changed += OnSettingsChanged;
     }
 
     /// <summary>Raised when the item count changes and the dock has to be repositioned.</summary>
     public event EventHandler? LayoutChanged;
 
     public ObservableCollection<DockItemViewModel> Items { get; } = [];
-
-    /// <summary>Layout metrics the XAML consumes, derived from the same metrics as the placement.</summary>
-    public DockAppearance Appearance { get; }
 
     /// <summary>Clock fixed at the right end of the dock.</summary>
     public ClockViewModel Clock { get; }
@@ -137,6 +146,7 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         _refreshTimer.Stop();
         _refreshTimer.Tick -= OnRefreshTick;
         _windowEnumerator.WindowsChanged -= OnWindowsChanged;
+        _settings.Changed -= OnSettingsChanged;
         _windowEnumerator.Stop();
         Clock.Dispose();
 
@@ -161,6 +171,14 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
     private void Exit()
     {
         _lifetime.Shutdown();
+    }
+
+    private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
+    {
+        if (e.MetricsChanged)
+        {
+            Appearance = new DockAppearance(e.Current.EffectiveMetrics);
+        }
     }
 
     private void OnWindowsChanged(object? sender, EventArgs e)

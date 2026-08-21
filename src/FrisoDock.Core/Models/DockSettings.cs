@@ -35,6 +35,9 @@ public sealed record DockSettings
     /// </summary>
     public double MagnificationScale { get; init; } = 1.5;
 
+    /// <summary>Show the seconds in the dock clock.</summary>
+    public bool ShowClockSeconds { get; init; }
+
     /// <summary>Show window thumbnails when the mouse rests on a running app.</summary>
     public bool EnableWindowPreviews { get; init; } = true;
 
@@ -43,6 +46,17 @@ public sealed record DockSettings
 
     /// <summary>Resolution the icons are extracted at, before scaling in the UI.</summary>
     public int IconExtractionSize { get; init; } = 64;
+
+    /// <summary>
+    /// Metrics already adjusted to what the clock shows.
+    ///
+    /// With seconds showing the text gets wider, and the clock width enters the
+    /// panel length. Adjusting here keeps a single source: the window placement and the
+    /// XAML keep reading the same measure, and neither has to know why it changed.
+    /// </summary>
+    public DockMetrics EffectiveMetrics => ShowClockSeconds
+        ? Metrics with { ClockWidth = Metrics.ClockWidthWithSeconds }
+        : Metrics;
 
     /// <summary>
     /// Whether the appbar really should reserve screen space.

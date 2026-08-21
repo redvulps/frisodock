@@ -85,11 +85,11 @@ public sealed class DockPlacementService
 
         if (Settings.ReservesScreenSpace)
         {
-            PixelRect reservation = _layout.CalculateReservationRect(monitor, Settings.Edge, Settings.Metrics);
+            PixelRect reservation = _layout.CalculateReservationRect(monitor, Settings.Edge, Settings.EffectiveMetrics);
             _appBar.SetPosition(Settings.Edge, reservation);
         }
 
-        PanelRect = _layout.CalculatePanelRect(monitor, Settings.Edge, itemCount, Settings.Metrics);
+        PanelRect = _layout.CalculatePanelRect(monitor, Settings.Edge, itemCount, Settings.EffectiveMetrics);
 
         // The window is larger than the panel on both axes: the margins take the magnified icon and
         // the widening of the bar. The rectangle is kept because the hide animation only offsets
@@ -98,10 +98,10 @@ public sealed class DockPlacementService
             monitor,
             Settings.Edge,
             itemCount,
-            Settings.Metrics,
+            Settings.EffectiveMetrics,
             Settings.EffectiveMagnification);
 
-        RevealZone = _layout.CalculateRevealZone(PanelRect, monitor, Settings.Edge, Settings.Metrics);
+        RevealZone = _layout.CalculateRevealZone(PanelRect, monitor, Settings.Edge, Settings.EffectiveMetrics);
         HoverZone = _layout.CalculateHoverZone(_windowRect, monitor, Settings.Edge);
 
         ApplyBounds();
@@ -135,7 +135,7 @@ public sealed class DockPlacementService
         PixelRect window = _layout.ApplyReveal(
             _windowRect,
             Settings.Edge,
-            Settings.Metrics,
+            Settings.EffectiveMetrics,
             _revealProgress,
             _dpiScale);
 

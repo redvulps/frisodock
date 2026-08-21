@@ -230,6 +230,26 @@
                 </Grid>
             </Border>
 
+            <Border Style="{StaticResource SettingRowStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Exibir os segundos"
+                                   Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="O relógio passa a contar de segundo em segundo, e a barra alarga para caber."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="1"
+                              Style="{StaticResource ToggleSwitchStyle}"
+                              IsChecked="{Binding ShowClockSeconds}" />
+                </Grid>
+            </Border>
+
             <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
 
             <!-- Behaviour -->

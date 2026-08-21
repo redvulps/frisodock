@@ -18,6 +18,7 @@ namespace FrisoDock.Core.Services;
 /// <param name="SeparatorWidth">Thickness of the line that separates the blocks.</param>
 /// <param name="SeparatorSpacing">Space on each side of the separator.</param>
 /// <param name="ClockWidth">Width reserved for the clock.</param>
+/// <param name="ClockWidthWithSeconds">Width reserved when the clock shows the seconds.</param>
 /// <param name="HiddenSliver">Sliver of the panel that stays on screen with the dock hidden.</param>
 public sealed record DockMetrics(
     int IconSize = 44,
@@ -28,6 +29,7 @@ public sealed record DockMetrics(
     int SeparatorWidth = 1,
     int SeparatorSpacing = 6,
     int ClockWidth = 62,
+    int ClockWidthWithSeconds = 82,
     int HiddenSliver = 2)
 {
     public static DockMetrics Default { get; } = new();

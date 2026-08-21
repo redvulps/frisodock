@@ -1,5 +1,6 @@
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using FrisoDock.App.Services;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Services;
 
@@ -13,8 +14,10 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
 {
     private readonly IClock _clock;
     private readonly ClockFormatter _formatter;
+    private readonly DockSettingsService _settings;
     private readonly DispatcherTimer _timer;
 
+    private bool _started;
     private bool _disposed;
 
     [ObservableProperty]
@@ -26,13 +29,16 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _tooltip = string.Empty;
 
-    public ClockViewModel(IClock clock, ClockFormatter formatter)
+    public ClockViewModel(IClock clock, ClockFormatter formatter, DockSettingsService settings)
     {
         _clock = clock;
         _formatter = formatter;
+        _settings = settings;
 
         _timer = new DispatcherTimer(DispatcherPriority.Background);
         _timer.Tick += OnTick;
+
+        _settings.Changed += OnSettingsChanged;
 
         Update();
     }
@@ -41,6 +47,8 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
     public void Start()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _started = true;
         ScheduleNextTick();
     }
 
@@ -53,7 +61,27 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
 
         _timer.Stop();
         _timer.Tick -= OnTick;
+        _settings.Changed -= OnSettingsChanged;
         _disposed = true;
+    }
+
+    /// <summary>
+    /// Turning seconds on changes the text and the cadence: without rescheduling, the clock would spend
+    /// up to a minute with the seconds frozen.
+    /// </summary>
+    private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
+    {
+        if (!e.ClockChanged)
+        {
+            return;
+        }
+
+        Update();
+
+        if (_started)
+        {
+            ScheduleNextTick();
+        }
     }
 
     private void OnTick(object? sender, EventArgs e)
@@ -64,12 +92,12 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// It reschedules on every tick instead of using a fixed interval: this way the update follows the
-    /// minute rollover and does not accumulate drift.
+    /// rollover and does not accumulate drift.
     /// </summary>
     private void ScheduleNextTick()
     {
         _timer.Stop();
-        _timer.Interval = _formatter.TimeUntilNextMinute(_clock.Now);
+        _timer.Interval = _formatter.TimeUntilNextTick(_clock.Now, _settings.Current.ShowClockSeconds);
         _timer.Start();
     }
 
@@ -77,7 +105,7 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
     {
         DateTimeOffset now = _clock.Now;
 
-        Time = _formatter.FormatTime(now);
+        Time = _formatter.FormatTime(now, _settings.Current.ShowClockSeconds);
         Date = _formatter.FormatDate(now);
         Tooltip = _formatter.FormatTooltip(now);
     }

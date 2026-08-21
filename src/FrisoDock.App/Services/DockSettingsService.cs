@@ -73,6 +73,16 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
     /// <summary>True if the dock hide mode changed.</summary>
     public bool HideModeChanged => Previous.HideMode != Current.HideMode;
 
-    /// <summary>True if the panel geometry has to be recomputed.</summary>
-    public bool LayoutChanged => Previous.EffectiveMagnification != Current.EffectiveMagnification;
+    /// <summary>True if the clock changed format.</summary>
+    public bool ClockChanged => Previous.ShowClockSeconds != Current.ShowClockSeconds;
+
+    /// <summary>True if the panel metrics changed — today, the clock width.</summary>
+    public bool MetricsChanged => Previous.EffectiveMetrics != Current.EffectiveMetrics;
+
+    /// <summary>
+    /// True if the panel geometry has to be recomputed. It is not only magnification: seconds
+    /// in the clock also widen the panel.
+    /// </summary>
+    public bool LayoutChanged =>
+        Previous.EffectiveMagnification != Current.EffectiveMagnification || MetricsChanged;
 }
