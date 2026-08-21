@@ -252,6 +252,55 @@
 
             <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
 
+            <!-- Monitors -->
+            <TextBlock Text="MONITORES"
+                       Foreground="{StaticResource MutedBrush}"
+                       FontSize="11"
+                       Margin="14,10,14,4" />
+
+            <Border Style="{StaticResource SettingRowStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Exibir em todos os monitores"
+                                   Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="Um dock em cada tela. Desligado, o dock fica só no monitor principal."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="1"
+                              Style="{StaticResource ToggleSwitchStyle}"
+                              IsChecked="{Binding ShowOnAllMonitors}" />
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource SettingRowStyle}"
+                    IsEnabled="{Binding CanIsolateMonitorApps}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Exibir somente apps presentes no monitor"
+                                   Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="Cada dock mostra só as janelas da sua tela. Os apps fixados continuam em todos."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="1"
+                              Style="{StaticResource ToggleSwitchStyle}"
+                              IsChecked="{Binding IsolateMonitorApps}" />
+                </Grid>
+            </Border>
+
+            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
+
             <!-- Behaviour -->
             <TextBlock Text="ESCONDER O DOCK"
                        Foreground="{StaticResource MutedBrush}"

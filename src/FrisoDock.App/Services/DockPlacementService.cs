@@ -5,19 +5,22 @@ using FrisoDock.Core.Services;
 namespace FrisoDock.App.Services;
 
 /// <summary>
-/// Orchestrates the dock placement: it asks <see cref="IScreenProvider"/> for the geometry,
-/// computes the rectangles with <see cref="DockLayoutCalculator"/>, moves the window through
-/// <see cref="IWindowPositioner"/> and reserves space through <see cref="IAppBarService"/>.
+/// Orchestrates the placement of one dock: computes the rectangles with
+/// <see cref="DockLayoutCalculator"/>, moves the window through <see cref="IWindowPositioner"/> and
+/// reserves space through <see cref="IAppBarService"/>.
+///
+/// There is one per dock, and each knows only its own monitor — with a dock on each screen, two
+/// docks sharing this service would fight over the same handle and the same appbar.
 ///
 /// It computes no geometry and calls no Win32 directly (SRP): it only coordinates the collaborators.
 /// </summary>
 public sealed class DockPlacementService
 {
-    private readonly IScreenProvider _screenProvider;
     private readonly IWindowPositioner _positioner;
     private readonly IAppBarService _appBar;
     private readonly DockLayoutCalculator _layout;
     private readonly DockSettingsService _settings;
+    private readonly DockMonitor _monitor;
 
     private nint _windowHandle;
     private int _itemCount;
@@ -43,17 +46,17 @@ public sealed class DockPlacementService
     public PixelRect HoverZone { get; private set; }
 
     public DockPlacementService(
-        IScreenProvider screenProvider,
         IWindowPositioner positioner,
         IAppBarService appBar,
         DockLayoutCalculator layout,
-        DockSettingsService settings)
+        DockSettingsService settings,
+        DockMonitorHolder monitor)
     {
-        _screenProvider = screenProvider;
         _positioner = positioner;
         _appBar = appBar;
         _layout = layout;
         _settings = settings;
+        _monitor = monitor.Monitor;
     }
 
     /// <summary>Binds the service to the dock window and registers the appbar, if configured.</summary>
@@ -80,7 +83,7 @@ public sealed class DockPlacementService
             return;
         }
 
-        MonitorInfo monitor = _screenProvider.GetPrimaryMonitor();
+        MonitorInfo monitor = _monitor.Info;
         _dpiScale = monitor.DpiScale;
 
         if (Settings.ReservesScreenSpace)

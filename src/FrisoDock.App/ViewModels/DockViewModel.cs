@@ -11,25 +11,28 @@ using FrisoDock.Core.Services;
 namespace FrisoDock.App.ViewModels;
 
 /// <summary>
-/// State of the dock bar: it keeps the item list up to date as the windows change.
+/// State of one dock's bar: keeps the item list up to date as the windows change.
 ///
-/// It does not enumerate windows, group or extract icons (SRP) — that belongs to the collaborators.
-/// What is its own: debouncing the event bursts and reconciling the observable collection.
+/// There is one per monitor with a dock. It does not enumerate windows, group, extract icons or own
+/// the pinned list (SRP) — that belongs to the collaborators. What is its own: debouncing the
+/// event bursts, separating the windows per monitor when configured, and reconciling the
+/// observable collection.
 /// </summary>
-public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor, IDisposable
+public sealed partial class DockViewModel : ObservableObject, IDisposable
 {
     private readonly IWindowEnumerator _windowEnumerator;
-    private readonly IPinnedAppStore _pinnedAppStore;
+    private readonly PinnedAppsService _pinnedApps;
     private readonly IWindowActivator _activator;
     private readonly IAppLauncher _launcher;
     private readonly IStartMenuInvoker _startMenu;
     private readonly DockItemAggregator _aggregator;
+    private readonly WindowMonitorMatcher _monitorMatcher;
     private readonly IconImageProvider _iconProvider;
     private readonly IApplicationLifetime _lifetime;
     private readonly DockSettingsService _settings;
+    private readonly DockMonitor _monitor;
     private readonly DispatcherTimer _refreshTimer;
 
-    private IReadOnlyList<PinnedApp> _pinnedApps;
     private bool _disposed;
 
     /// <summary>
@@ -43,27 +46,30 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
 
     public DockViewModel(
         IWindowEnumerator windowEnumerator,
-        IPinnedAppStore pinnedAppStore,
+        PinnedAppsService pinnedApps,
         IWindowActivator activator,
         IAppLauncher launcher,
         IStartMenuInvoker startMenu,
         DockItemAggregator aggregator,
+        WindowMonitorMatcher monitorMatcher,
         IconImageProvider iconProvider,
         IApplicationLifetime lifetime,
         ClockViewModel clock,
-        DockSettingsService settings)
+        DockSettingsService settings,
+        DockMonitorHolder monitor)
     {
         _windowEnumerator = windowEnumerator;
-        _pinnedAppStore = pinnedAppStore;
+        _pinnedApps = pinnedApps;
         _activator = activator;
         _launcher = launcher;
         _startMenu = startMenu;
         _aggregator = aggregator;
+        _monitorMatcher = monitorMatcher;
         _iconProvider = iconProvider;
         _lifetime = lifetime;
         _settings = settings;
+        _monitor = monitor.Monitor;
 
-        _pinnedApps = _pinnedAppStore.Load();
         _appearance = new DockAppearance(settings.Current.EffectiveMetrics);
         Clock = clock;
 
@@ -77,6 +83,7 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
 
         _windowEnumerator.WindowsChanged += OnWindowsChanged;
         _settings.Changed += OnSettingsChanged;
+        _pinnedApps.Changed += OnPinnedAppsChanged;
     }
 
     /// <summary>Raised when the item count changes and the dock has to be repositioned.</summary>
@@ -95,47 +102,6 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         Clock.Start();
     }
 
-    public bool IsPinned(AppKey key)
-    {
-        return _pinnedApps.Any(app => app.Key == key);
-    }
-
-    /// <summary>
-    /// Pins or unpins the app and writes the list. Unpinning an app that is not running makes the
-    /// item disappear from the dock, the same as the native taskbar does.
-    /// </summary>
-    public void TogglePin(DockItem item)
-    {
-        ArgumentNullException.ThrowIfNull(item);
-
-        var updated = _pinnedApps.ToList();
-        int existingIndex = updated.FindIndex(app => app.Key == item.Key);
-
-        if (existingIndex >= 0)
-        {
-            updated.RemoveAt(existingIndex);
-        }
-        else
-        {
-            updated.Add(CreatePinnedApp(item));
-        }
-
-        _pinnedApps = updated;
-        _pinnedAppStore.Save(updated);
-
-        Refresh();
-    }
-
-    private static PinnedApp CreatePinnedApp(DockItem item)
-    {
-        string? executable = item.Windows.FirstOrDefault()?.ExecutablePath ?? item.IconSource;
-
-        return new PinnedApp(
-            item.DisplayName,
-            executable ?? item.Key.Value,
-            MatchExecutablePath: executable);
-    }
-
     public void Dispose()
     {
         if (_disposed)
@@ -147,8 +113,7 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         _refreshTimer.Tick -= OnRefreshTick;
         _windowEnumerator.WindowsChanged -= OnWindowsChanged;
         _settings.Changed -= OnSettingsChanged;
-        _windowEnumerator.Stop();
-        Clock.Dispose();
+        _pinnedApps.Changed -= OnPinnedAppsChanged;
 
         _disposed = true;
     }
@@ -179,6 +144,16 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         {
             Appearance = new DockAppearance(e.Current.EffectiveMetrics);
         }
+
+        if (e.MonitorIsolationChanged)
+        {
+            Refresh();
+        }
+    }
+
+    private void OnPinnedAppsChanged(object? sender, EventArgs e)
+    {
+        Refresh();
     }
 
     private void OnWindowsChanged(object? sender, EventArgs e)
@@ -197,12 +172,12 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
 
     private void Refresh()
     {
-        IReadOnlyList<WindowInfo> windows = _windowEnumerator.GetWindows();
+        IReadOnlyList<WindowInfo> windows = SelectWindows(_windowEnumerator.GetWindows());
 
         // The current order enters the calculation: without it, unpinned apps would follow the windows'
         // Z order and swap places on every app switch.
         AppKey[] currentOrder = Items.Select(item => item.Key).ToArray();
-        IReadOnlyList<DockItem> items = _aggregator.Build(_pinnedApps, windows, currentOrder);
+        IReadOnlyList<DockItem> items = _aggregator.Build(_pinnedApps.Current, windows, currentOrder);
 
         bool countChanged = Reconcile(items);
 
@@ -210,6 +185,20 @@ public sealed partial class DockViewModel : ObservableObject, IPinnedAppsEditor,
         {
             LayoutChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>
+    /// Windows this dock shows. With the monitors isolated, only this monitor's; pinned apps
+    /// do not go through here and keep showing up in every dock.
+    /// </summary>
+    private IReadOnlyList<WindowInfo> SelectWindows(IReadOnlyList<WindowInfo> windows)
+    {
+        if (!_settings.Current.IsolatesMonitorApps)
+        {
+            return windows;
+        }
+
+        return _monitorMatcher.ForMonitor(windows, _monitor.Index, _monitor.AllBounds);
     }
 
     /// <summary>

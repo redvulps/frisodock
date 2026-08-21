@@ -73,6 +73,12 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
     /// <summary>True if the dock hide mode changed.</summary>
     public bool HideModeChanged => Previous.HideMode != Current.HideMode;
 
+    /// <summary>True if the dock set has to be rebuilt.</summary>
+    public bool MonitorLayoutChanged => Previous.ShowOnAllMonitors != Current.ShowOnAllMonitors;
+
+    /// <summary>True if the per-monitor app separation changed.</summary>
+    public bool MonitorIsolationChanged => Previous.IsolatesMonitorApps != Current.IsolatesMonitorApps;
+
     /// <summary>True if the clock changed format.</summary>
     public bool ClockChanged => Previous.ShowClockSeconds != Current.ShowClockSeconds;
 

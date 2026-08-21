@@ -103,6 +103,10 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
 
         public DockHideMode HideMode { get; init; } = DockHideMode.Never;
 
+        public bool ShowOnAllMonitors { get; init; }
+
+        public bool IsolateMonitorApps { get; init; }
+
         public bool EnableMagnification { get; init; } = true;
 
         public double MagnificationScale { get; init; } = 1.5;
@@ -118,6 +122,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 HideNativeTaskbar = settings.HideNativeTaskbar,
                 ReserveScreenSpace = settings.ReserveScreenSpace,
                 HideMode = settings.HideMode,
+                ShowOnAllMonitors = settings.ShowOnAllMonitors,
+                IsolateMonitorApps = settings.IsolateMonitorApps,
                 EnableMagnification = settings.EnableMagnification,
                 MagnificationScale = settings.MagnificationScale,
                 EnableWindowPreviews = settings.EnableWindowPreviews,
@@ -132,6 +138,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 HideNativeTaskbar = HideNativeTaskbar,
                 ReserveScreenSpace = ReserveScreenSpace,
                 HideMode = HideMode,
+                ShowOnAllMonitors = ShowOnAllMonitors,
+                IsolateMonitorApps = IsolateMonitorApps,
                 EnableMagnification = EnableMagnification,
                 MagnificationScale = MagnificationScale,
                 EnableWindowPreviews = EnableWindowPreviews,

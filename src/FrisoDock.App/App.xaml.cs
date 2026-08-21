@@ -25,6 +25,8 @@ public partial class App : Application
 
     private ServiceProvider? _services;
     private ITaskbarController? _taskbarController;
+    private DockHost? _dockHost;
+    private TrayHostRunner? _trayHost;
     private Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -68,13 +70,22 @@ public partial class App : Application
             _taskbarController.Hide();
         }
 
-        DockWindow window = _services.GetRequiredService<DockWindow>();
-        MainWindow = window;
-        window.Show();
+        _trayHost = _services.GetRequiredService<TrayHostRunner>();
+        _trayHost.Start();
+
+        _dockHost = _services.GetRequiredService<DockHost>();
+        _dockHost.Start();
+
+        MainWindow = _dockHost.PrimaryWindow;
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // The tray goes back to Explorer before anything else: the docks disappear right after,
+        // and an icon left hanging on an already closed window would never come back.
+        _trayHost?.Dispose();
+        _dockHost?.Dispose();
+
         RestoreTaskbar();
 
         _services?.Dispose();
@@ -150,6 +161,7 @@ public partial class App : Application
 
         // Domain (pure, testable)
         services.AddSingleton<DockItemAggregator>();
+        services.AddSingleton<WindowMonitorMatcher>();
         services.AddSingleton<ClockFormatter>();
         services.AddSingleton<MagnificationCurve>();
         services.AddSingleton<DockVisibilityPolicy>();
@@ -165,8 +177,8 @@ public partial class App : Application
         services.AddSingleton<IAppLauncher, AppLauncher>();
         services.AddSingleton<IScreenProvider, ScreenProvider>();
         services.AddSingleton<ICursorProvider, CursorProvider>();
+        services.AddSingleton<IDisplayWatcher, DisplayWatcher>();
         services.AddSingleton<IWindowPositioner, WindowPositioner>();
-        services.AddSingleton<IAppBarService, AppBarService>();
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IWindowBackdrop, DwmWindowBackdrop>();
@@ -178,19 +190,28 @@ public partial class App : Application
         // Host infrastructure
         services.AddSingleton<IApplicationLifetime, WpfApplicationLifetime>();
         services.AddSingleton<IPinnedAppStore, JsonPinnedAppStore>();
+        services.AddSingleton<PinnedAppsService>();
         services.AddSingleton<IconImageProvider>();
-        services.AddSingleton<DockPlacementService>();
+        services.AddSingleton<TrayHostRunner>();
+        services.AddSingleton<DockHost>();
         services.AddSingleton<JumpListFlyoutFactory>();
         services.AddSingleton<TrayFlyoutFactory>();
         services.AddSingleton<SettingsWindowFactory>();
 
+        // The pinned list is a single one, shared by every dock.
+        services.AddSingleton<IPinnedAppsEditor>(provider => provider.GetRequiredService<PinnedAppsService>());
+
         // Presentation
         services.AddSingleton<ClockViewModel>();
-        services.AddSingleton<DockViewModel>();
 
-        // The bar is what edits the pinned list: it exposes the same instance through both doors.
-        services.AddSingleton<IPinnedAppsEditor>(provider => provider.GetRequiredService<DockViewModel>());
-        services.AddSingleton<DockWindow>();
+        // One dock per monitor: each is born in a scope, with its own appbar, its own
+        // placement and its own item list. Sharing any of the three would make the
+        // docks fight over the same window handle.
+        services.AddScoped<DockMonitorHolder>();
+        services.AddScoped<IAppBarService, AppBarService>();
+        services.AddScoped<DockPlacementService>();
+        services.AddScoped<DockViewModel>();
+        services.AddScoped<DockWindow>();
 
         return services.BuildServiceProvider();
     }

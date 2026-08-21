@@ -20,6 +20,15 @@ public sealed record DockSettings
     /// <summary>Reserve screen space as an appbar, so maximized windows do not cover the dock.</summary>
     public bool ReserveScreenSpace { get; init; } = true;
 
+    /// <summary>Show a dock on every monitor, instead of only on the primary one.</summary>
+    public bool ShowOnAllMonitors { get; init; }
+
+    /// <summary>
+    /// In each dock, show only the apps with a window on that monitor. Pinned apps stay in
+    /// all of them: without those, the dock of an empty monitor would not even serve to open an app.
+    /// </summary>
+    public bool IsolateMonitorApps { get; init; }
+
     /// <summary>When the dock leaves the screen on its own.</summary>
     public DockHideMode HideMode { get; init; } = DockHideMode.Never;
 
@@ -46,6 +55,12 @@ public sealed record DockSettings
 
     /// <summary>Resolution the icons are extracted at, before scaling in the UI.</summary>
     public int IconExtractionSize { get; init; } = 64;
+
+    /// <summary>
+    /// Whether the apps really should be separated per monitor. With a single dock, isolating would
+    /// make no sense: the other monitors' apps would simply vanish from the dock.
+    /// </summary>
+    public bool IsolatesMonitorApps => IsolateMonitorApps && ShowOnAllMonitors;
 
     /// <summary>
     /// Metrics already adjusted to what the clock shows.

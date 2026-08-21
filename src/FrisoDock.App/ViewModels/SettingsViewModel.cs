@@ -44,6 +44,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _showClockSeconds;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanIsolateMonitorApps))]
+    private bool _showOnAllMonitors;
+
+    [ObservableProperty]
+    private bool _isolateMonitorApps;
+
     public SettingsViewModel(DockSettingsService settings)
     {
         _settings = settings;
@@ -79,6 +86,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// </summary>
     public bool CanReserveScreenSpace => HideMode == DockHideMode.Never;
 
+    /// <summary>
+    /// Separating apps per monitor only makes sense with a dock on each. With a single dock, isolating
+    /// would hide the other screens' apps with nothing in return.
+    /// </summary>
+    public bool CanIsolateMonitorApps => ShowOnAllMonitors;
+
     /// <summary>Smallest magnification offered, where the effect is still noticeable.</summary>
     public double MinimumMagnification => 1.1;
 
@@ -98,6 +111,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnEnableWindowPreviewsChanged(bool value) => Apply();
 
     partial void OnShowClockSecondsChanged(bool value) => Apply();
+
+    partial void OnShowOnAllMonitorsChanged(bool value) => Apply();
+
+    partial void OnIsolateMonitorAppsChanged(bool value) => Apply();
 
     private void SelectMode(DockHideMode mode, bool selected)
     {
@@ -120,6 +137,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             MagnificationScale = settings.MagnificationScale;
             EnableWindowPreviews = settings.EnableWindowPreviews;
             ShowClockSeconds = settings.ShowClockSeconds;
+            ShowOnAllMonitors = settings.ShowOnAllMonitors;
+            IsolateMonitorApps = settings.IsolateMonitorApps;
         }
         finally
         {
@@ -143,6 +162,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             MagnificationScale = Math.Round(MagnificationScale, 2),
             EnableWindowPreviews = EnableWindowPreviews,
             ShowClockSeconds = ShowClockSeconds,
+            ShowOnAllMonitors = ShowOnAllMonitors,
+            IsolateMonitorApps = IsolateMonitorApps,
         });
     }
 }

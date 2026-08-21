@@ -29,11 +29,11 @@ public partial class DockWindow : Window
     private readonly DockViewModel _viewModel;
     private readonly DockPlacementService _placement;
     private readonly IShellRestartWatcher _shellRestartWatcher;
+    private readonly IDisplayWatcher _displayWatcher;
     private readonly IAppBarService _appBar;
     private readonly ITaskbarController _taskbarController;
     private readonly JumpListFlyoutFactory _flyoutFactory;
     private readonly TrayFlyoutFactory _trayFlyoutFactory;
-    private readonly ITrayHost _trayHost;
     private readonly DockSettingsService _settings;
     private readonly SettingsWindowFactory _settingsWindows;
     private readonly IWindowThumbnailService _thumbnails;
@@ -50,18 +50,17 @@ public partial class DockWindow : Window
     private WindowPreviewWindow? _preview;
     private DockItemViewModel? _previewCandidate;
     private FrameworkElement? _previewAnchor;
-    private DispatcherTimer? _trayMaintenanceTimer;
     private DispatcherTimer? _previewTimer;
 
     public DockWindow(
         DockViewModel viewModel,
         DockPlacementService placement,
         IShellRestartWatcher shellRestartWatcher,
+        IDisplayWatcher displayWatcher,
         IAppBarService appBar,
         ITaskbarController taskbarController,
         JumpListFlyoutFactory flyoutFactory,
         TrayFlyoutFactory trayFlyoutFactory,
-        ITrayHost trayHost,
         DockSettingsService settings,
         SettingsWindowFactory settingsWindows,
         IWindowThumbnailService thumbnails,
@@ -76,11 +75,11 @@ public partial class DockWindow : Window
         _viewModel = viewModel;
         _placement = placement;
         _shellRestartWatcher = shellRestartWatcher;
+        _displayWatcher = displayWatcher;
         _appBar = appBar;
         _taskbarController = taskbarController;
         _flyoutFactory = flyoutFactory;
         _trayFlyoutFactory = trayFlyoutFactory;
-        _trayHost = trayHost;
         _settings = settings;
         _settingsWindows = settingsWindows;
         _thumbnails = thumbnails;
@@ -114,7 +113,6 @@ public partial class DockWindow : Window
         _viewModel.Start();
         _placement.Update(_viewModel.Items.Count);
 
-        StartTrayHost();
         _autoHide.Start();
     }
 
@@ -122,8 +120,6 @@ public partial class DockWindow : Window
     {
         CloseJumpList();
         CloseTrayFlyout();
-        StopTrayHost();
-
         ClosePreview();
 
         _viewModel.LayoutChanged -= OnLayoutChanged;
@@ -173,41 +169,6 @@ public partial class DockWindow : Window
         }
 
         return PanelBorder.ContextMenu is { IsOpen: true };
-    }
-
-    /// <summary>
-    /// Takes over the notification area. From here on the icons come to the dock and stop
-    /// appearing in Explorer's tray, until <see cref="StopTrayHost"/> gives the role back.
-    /// </summary>
-    private void StartTrayHost()
-    {
-        _trayHost.Start();
-
-        // Windows does not report when Explorer takes the tray back, nor when an app dies without
-        // removing its icon; the periodic maintenance covers both cases.
-        _trayMaintenanceTimer = new DispatcherTimer(DispatcherPriority.Background)
-        {
-            Interval = TimeSpan.FromSeconds(1),
-        };
-        _trayMaintenanceTimer.Tick += OnTrayMaintenanceTick;
-        _trayMaintenanceTimer.Start();
-    }
-
-    private void StopTrayHost()
-    {
-        if (_trayMaintenanceTimer is not null)
-        {
-            _trayMaintenanceTimer.Stop();
-            _trayMaintenanceTimer.Tick -= OnTrayMaintenanceTick;
-            _trayMaintenanceTimer = null;
-        }
-
-        _trayHost.Stop();
-    }
-
-    private void OnTrayMaintenanceTick(object? sender, EventArgs e)
-    {
-        _trayHost.Maintain();
     }
 
     // ------------------------------------------------------------------ settings
@@ -573,6 +534,14 @@ public partial class DockWindow : Window
         uint windowMessage = (uint)message;
 
         if (_shellRestartWatcher.TryHandle(windowMessage))
+        {
+            handled = true;
+            return 0;
+        }
+
+        // Resolution or monitor changed: rebuilding the docks belongs to DockHost, which listens to the
+        // watcher. The window only forwards the message, because it is the one that receives it.
+        if (_displayWatcher.TryHandle(windowMessage))
         {
             handled = true;
             return 0;

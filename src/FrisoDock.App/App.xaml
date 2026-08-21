@@ -1,9 +1,14 @@
 <Application x:Class="FrisoDock.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
     <!--
-        Sem StartupUri: a janela é criada pelo contêiner de injeção de dependências
+        Sem StartupUri: as janelas são criadas pelo contêiner de injeção de dependências
         em App.OnStartup, para que suas dependências sejam explícitas.
+
+        ShutdownMode explícito: refazer o conjunto de docks — ao trocar de monitor ou ligar a
+        opção de exibir em todos — fecha todas as janelas antes de recriá-las. No modo padrão,
+        o instante sem janela nenhuma encerraria o processo, e o dock sumiria de vez.
     -->
     <Application.Resources />
 </Application>

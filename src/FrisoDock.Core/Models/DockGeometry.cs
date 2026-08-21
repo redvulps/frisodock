@@ -37,6 +37,20 @@ public readonly record struct PixelRect(int Left, int Top, int Right, int Bottom
             && Bottom > other.Top;
     }
 
+    /// <summary>Area shared with the other rectangle; zero when they do not touch.</summary>
+    public long IntersectionArea(PixelRect other)
+    {
+        long width = Math.Min(Right, other.Right) - Math.Max(Left, other.Left);
+        long height = Math.Min(Bottom, other.Bottom) - Math.Max(Top, other.Top);
+
+        if (width <= 0 || height <= 0)
+        {
+            return 0;
+        }
+
+        return width * height;
+    }
+
     public static PixelRect FromSize(int left, int top, int width, int height)
     {
         return new PixelRect(left, top, left + width, top + height);

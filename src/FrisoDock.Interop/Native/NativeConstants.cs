@@ -63,6 +63,7 @@ internal static class NativeConstants
 
     // --- Icons ---
     internal const uint WM_GETICON = 0x007F;
+    internal const uint WM_DISPLAYCHANGE = 0x007E;
     internal const nint ICON_SMALL = 0;
     internal const nint ICON_BIG = 1;
     internal const nint ICON_SMALL2 = 2;
