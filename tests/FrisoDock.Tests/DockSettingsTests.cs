@@ -46,7 +46,7 @@ public sealed class DockSettingsTests : IDisposable
     }
 
     [Fact]
-    public void TheWindowIsLargerThanThePanel_ExactlyByTheHeadroom()
+    public void TheWindowIsLargerThanThePanel_OnBothAxes()
     {
         var metrics = new DockMetrics(IconSize: 40);
         var bounds = new PixelRect(0, 0, 1920, 1080);
@@ -56,12 +56,18 @@ public sealed class DockSettingsTests : IDisposable
         PixelRect panel = calculator.CalculatePanelRect(monitor, DockEdge.Bottom, 3, metrics);
         PixelRect window = calculator.CalculateWindowRect(monitor, DockEdge.Bottom, 3, metrics, 1.5);
 
-        Assert.Equal(panel.Width, window.Width);
         Assert.Equal(panel.Height + 20, window.Height);
 
-        // The headroom sits above the panel: the base stays on the same line.
+        // The vertical headroom sits above the panel: the base stays on the same line.
         Assert.Equal(panel.Bottom, window.Bottom);
         Assert.Equal(panel.Top - 20, window.Top);
+
+        // The side one is split between both ends: the panel grows from a centre that stays put.
+        int side = (metrics.CalculateMagnificationWidthHeadroom(3, 1.5) + 1) / 2;
+
+        Assert.True(side > 0);
+        Assert.Equal(panel.Width + (side * 2), window.Width);
+        Assert.Equal(panel.Left - side, window.Left);
     }
 
     [Fact]

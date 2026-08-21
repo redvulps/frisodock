@@ -22,6 +22,7 @@ public sealed class DockAppearance
         SeparatorHeight = Math.Round(metrics.IconSize * 0.64);
         ClockWidth = metrics.ClockWidth;
 
+        ItemSpacing = metrics.ItemSpacing;
         ItemMargin = new Thickness(metrics.ItemSpacing, 0, 0, 0);
         PanelPadding = new Thickness(metrics.Padding);
         PanelBorderThickness = new Thickness(metrics.BorderThickness);
@@ -40,6 +41,9 @@ public sealed class DockAppearance
     public double IconImageSize { get; }
 
     /// <summary>Space before each item.</summary>
+    public double ItemSpacing { get; }
+
+    /// <summary>The same space, in the shape the XAML consumes.</summary>
     public Thickness ItemMargin { get; }
 
     /// <summary>Inner margin of the panel.</summary>

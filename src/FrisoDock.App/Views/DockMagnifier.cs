@@ -6,82 +6,123 @@ using FrisoDock.Core.Services;
 namespace FrisoDock.App.Views;
 
 /// <summary>
-/// Applies magnification to the icons according to the cursor position. That is all (SRP): the effect's
-/// curve belongs to <see cref="MagnificationCurve"/>, a pure function living in Core.
+/// Applies magnification to the icons according to the cursor position. That is all (SRP): the
+/// effect's geometry belongs to <see cref="MagnificationLayout"/>, a pure function living in Core.
 ///
-/// The growth is done with <see cref="ScaleTransform"/>, which does not participate in layout. It is
-/// deliberate: this way the icon overflows out of the panel, as in the macOS dock, instead of
-/// pushing the neighbours and making the whole bar jump on every mouse move. The headroom that
-/// takes that overflow is reserved in the window by <c>DockLayoutCalculator.CalculateWindowRect</c>.
+/// The growth is done by transform, not by layout: the icon overflows upwards, out of
+/// the panel, as in the macOS dock. The horizontal offset is a transform too, but the whole strip
+/// has to take more space — hence the explicit width on the <see cref="ItemsControl"/>,
+/// which is what makes the panel widen with it and keeps the neighbours from being invaded.
 /// </summary>
 public sealed class DockMagnifier
 {
-    private readonly MagnificationCurve _curve = new();
+    private readonly MagnificationLayout _layout = new();
 
     /// <summary>
-    /// Updates each item's scale.
+    /// How much the strip is widened right now. Stored because the panel is centred: when it
+    /// grows, the left edge moves left by half of that, and the cursor position measured
+    /// inside the <see cref="ItemsControl"/> moves with it. Without subtracting, the calculation would feed back.
+    /// </summary>
+    private double _appliedExtra;
+
+    /// <summary>
+    /// Updates each item's scale and position.
     /// </summary>
     /// <param name="items">List of dock icons.</param>
     /// <param name="cursor">Cursor position in <paramref name="items"/> coordinates, or null when the mouse left.</param>
     /// <param name="iconSize">Icon side, in WPF units.</param>
+    /// <param name="spacing">Space before each icon, in WPF units.</param>
     /// <param name="magnification">Maximum scale; 1.0 turns the effect off.</param>
-    public void Apply(ItemsControl items, Point? cursor, double iconSize, double magnification)
+    public void Apply(ItemsControl items, Point? cursor, double iconSize, double spacing, double magnification)
     {
         ArgumentNullException.ThrowIfNull(items);
 
-        for (int index = 0; index < items.Items.Count; index++)
+        int count = items.Items.Count;
+
+        double originX = CalculateOriginX(iconSize, spacing);
+
+        if (cursor is not Point position || magnification <= 1.0)
+        {
+            Reset(items, count, originX);
+            return;
+        }
+
+        double cursorAtRest = position.X - (_appliedExtra / 2);
+        MagnificationLayoutResult result = _layout.Calculate(count, iconSize, spacing, cursorAtRest, magnification);
+
+        for (int index = 0; index < count; index++)
         {
             if (items.ItemContainerGenerator.ContainerFromIndex(index) is not FrameworkElement container)
             {
                 continue;
             }
 
-            double scale = CalculateScaleFor(container, items, cursor, iconSize, magnification);
-            ApplyScale(container, scale);
+            Apply(container, result.Items[index], originX);
         }
+
+        _appliedExtra = result.ExtraWidth;
+        items.Width = (count * (spacing + iconSize)) + result.ExtraWidth;
     }
 
-    private double CalculateScaleFor(
-        FrameworkElement container,
-        ItemsControl items,
-        Point? cursor,
-        double iconSize,
-        double magnification)
+    private void Reset(ItemsControl items, int count, double originX)
     {
-        if (cursor is not Point position || magnification <= 1.0)
+        for (int index = 0; index < count; index++)
         {
-            return 1.0;
+            if (items.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container)
+            {
+                Apply(container, new MagnifiedItem(1.0, 0), originX);
+            }
         }
 
-        if (container.ActualWidth <= 0)
-        {
-            return 1.0;
-        }
-
-        // The item's centre in the ItemsControl space, which is the same space as the cursor position.
-        Point topLeft = container.TranslatePoint(new Point(0, 0), items);
-        double center = topLeft.X + (container.ActualWidth / 2);
-
-        return _curve.CalculateScale(position.X - center, iconSize, magnification);
+        _appliedExtra = 0;
+        items.ClearValue(FrameworkElement.WidthProperty);
     }
 
     /// <summary>
-    /// The transform is created per item on first application, and not in the XAML, because a
-    /// <see cref="ScaleTransform"/> declared in a Setter would be the same instance for every
-    /// item — they would all grow together.
+    /// The transforms are created per item on first application, and not in the XAML, because a
+    /// transform declared in a Setter would be the same instance for every item — they would all
+    /// grow together.
     /// </summary>
-    private static void ApplyScale(FrameworkElement container, double scale)
+    private static void Apply(FrameworkElement container, MagnifiedItem item, double originX)
     {
-        if (container.RenderTransform is not ScaleTransform transform)
-        {
-            transform = new ScaleTransform();
-            container.RenderTransform = transform;
+        // The origin sits at the icon's base and centre: this way it grows upwards, seated on the
+        // same line, and without sliding sideways. It is not the container centre, which is wider
+        // than the icon because of the spacing — scaling around it would displace the icon.
+        container.RenderTransformOrigin = new Point(originX, 1.0);
 
-            // Origin at the base and centre: the icon grows upwards, seated on the same line.
-            container.RenderTransformOrigin = new Point(0.5, 1.0);
+        if (container.RenderTransform is not TransformGroup group)
+        {
+            group = new TransformGroup();
+
+            // Scale first, offset afterwards: this way the offset is in layout units,
+            // without being multiplied by the icon's own scale.
+            group.Children.Add(new ScaleTransform());
+            group.Children.Add(new TranslateTransform());
+
+            container.RenderTransform = group;
         }
 
-        transform.ScaleX = scale;
-        transform.ScaleY = scale;
+        ((ScaleTransform)group.Children[0]).ScaleX = item.Scale;
+        ((ScaleTransform)group.Children[0]).ScaleY = item.Scale;
+        ((TranslateTransform)group.Children[1]).X = item.OffsetX;
+
+        // Without this the larger icon sits behind the right-hand neighbour, which is drawn later.
+        Panel.SetZIndex(container, (int)Math.Round(item.Scale * 1000));
+    }
+
+    /// <summary>
+    /// The icon's centre within the container, as a fraction of its width. The container includes the
+    /// spacing that comes before the icon, so the two centres do not coincide.
+    /// </summary>
+    private static double CalculateOriginX(double iconSize, double spacing)
+    {
+        double slot = spacing + iconSize;
+
+        if (slot <= 0)
+        {
+            return 0.5;
+        }
+
+        return (spacing + (iconSize / 2)) / slot;
     }
 }

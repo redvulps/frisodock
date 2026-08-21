@@ -9,7 +9,7 @@
         Title="FrisoDock"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="Transparent"
+        Background="{x:Null}"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         Topmost="True"
@@ -21,6 +21,10 @@
         Height="60">
 
     <!--
+        Background nulo, e não Transparent: a janela é maior que o painel, e um fundo transparente
+        continua sendo alvo de clique — a folga em volta da barra viraria uma faixa morta que
+        engole cliques destinados à janela de baixo. Sem fundo, o clique atravessa.
+
         Nenhuma medida está chumbada neste arquivo. Tudo vem de DockAppearance, que deriva das
         mesmas DockMetrics usadas para dimensionar a janela. Chumbar valores aqui faria o painel
         divergir do conteúdo e cortar o último ícone.
@@ -124,7 +128,13 @@
         que transborda para fora da barra como no dock do macOS. O painel fica ancorado embaixo.
     -->
     <Grid>
+        <!--
+            HorizontalAlignment centralizado, e não esticado: o painel tem a largura do conteúdo e
+            cresce para os dois lados quando os ícones ampliados empurram os vizinhos. Esticado,
+            ele ocuparia também a folga lateral transparente da janela.
+        -->
         <Border VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource PanelBorderBrush}"
                 BorderThickness="{Binding Appearance.PanelBorderThickness}"

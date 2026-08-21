@@ -59,6 +59,30 @@ public sealed record DockMetrics(
     }
 
     /// <summary>
+    /// Side headroom the window needs beyond the panel.
+    ///
+    /// The magnified icons push the neighbours sideways, so the app strip — and with it
+    /// the whole panel — gets wider while the cursor is over the dock. The window is
+    /// sized for the worst case and does not change size with the mouse: what grows and shrinks is
+    /// the panel, inside it. What is left is transparent area, and does not count in the screen reservation.
+    /// </summary>
+    public int CalculateMagnificationWidthHeadroom(int itemCount, double magnification)
+    {
+        if (magnification <= 1.0)
+        {
+            return 0;
+        }
+
+        double extra = MagnificationLayout.Default.CalculateMaxExtraWidth(
+            Math.Max(itemCount, 0),
+            IconSize,
+            ItemSpacing,
+            magnification);
+
+        return (int)Math.Ceiling(extra);
+    }
+
+    /// <summary>
     /// Panel length for a given number of apps.
     ///
     /// The dock composition is fixed and this calculation is its single source:
@@ -131,9 +155,9 @@ public sealed class DockLayoutCalculator
     /// <summary>
     /// Rectangle of the window that hosts the panel.
     ///
-    /// It is larger than the panel: a transparent band is left outside so the magnified icon
-    /// fits. Without it the icon would be clipped at the window edge, because magnification is a
-    /// rendering effect and does not push the layout.
+    /// It is larger than the panel on both axes: a transparent band is left above, for the magnified
+    /// icon to overflow over the bar, and on the sides, so the panel can widen when the
+    /// icons push the neighbours. Without that headroom the effect would be clipped at the window edge.
     /// </summary>
     public PixelRect CalculateWindowRect(
         MonitorInfo monitor,
@@ -147,17 +171,22 @@ public sealed class DockLayoutCalculator
         PixelRect panel = CalculatePanelRect(monitor, edge, itemCount, metrics);
         int headroom = Scale(metrics.CalculateMagnificationHeadroom(magnification), monitor.DpiScale);
 
-        if (headroom == 0)
+        // The side headroom is split between the two ends because the panel is centred: it
+        // grows to both sides from the centre, which stays put.
+        int widthHeadroom = metrics.CalculateMagnificationWidthHeadroom(itemCount, magnification);
+        int side = Scale((widthHeadroom + 1) / 2, monitor.DpiScale);
+
+        if (headroom == 0 && side == 0)
         {
             return panel;
         }
 
         return edge switch
         {
-            DockEdge.Bottom => new PixelRect(panel.Left, panel.Top - headroom, panel.Right, panel.Bottom),
-            DockEdge.Top => new PixelRect(panel.Left, panel.Top, panel.Right, panel.Bottom + headroom),
-            DockEdge.Left => new PixelRect(panel.Left, panel.Top, panel.Right + headroom, panel.Bottom),
-            DockEdge.Right => new PixelRect(panel.Left - headroom, panel.Top, panel.Right, panel.Bottom),
+            DockEdge.Bottom => new PixelRect(panel.Left - side, panel.Top - headroom, panel.Right + side, panel.Bottom),
+            DockEdge.Top => new PixelRect(panel.Left - side, panel.Top, panel.Right + side, panel.Bottom + headroom),
+            DockEdge.Left => new PixelRect(panel.Left, panel.Top - side, panel.Right + headroom, panel.Bottom + side),
+            DockEdge.Right => new PixelRect(panel.Left - headroom, panel.Top - side, panel.Right, panel.Bottom + side),
             _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
         };
     }

@@ -237,7 +237,12 @@ public partial class DockWindow : Window
             return;
         }
 
-        _magnifier.Apply(AppItems, e.GetPosition(AppItems), _viewModel.Appearance.IconSize, magnification);
+        _magnifier.Apply(
+            AppItems,
+            e.GetPosition(AppItems),
+            _viewModel.Appearance.IconSize,
+            _viewModel.Appearance.ItemSpacing,
+            magnification);
     }
 
     private void OnAppItemsMouseLeave(object sender, MouseEventArgs e)
@@ -247,7 +252,12 @@ public partial class DockWindow : Window
 
     private void ResetMagnification()
     {
-        _magnifier.Apply(AppItems, cursor: null, _viewModel.Appearance.IconSize, magnification: 1.0);
+        _magnifier.Apply(
+            AppItems,
+            cursor: null,
+            _viewModel.Appearance.IconSize,
+            _viewModel.Appearance.ItemSpacing,
+            magnification: 1.0);
     }
 
     // ------------------------------------------------------------------ window thumbnails
