@@ -159,3 +159,78 @@ internal sealed class PropVariant : IDisposable
         GC.SuppressFinalize(this);
     }
 }
+
+/// <summary>
+/// Enumerator of a compound file's elements. .NET brings <c>STATSTG</c>, but not this
+/// enumerator, so it is declared here.
+/// </summary>
+[ComImport]
+[Guid("0000000D-0000-0000-C000-000000000046")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IEnumSTATSTG
+{
+    [PreserveSig]
+    int Next(uint count, [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] STATSTG[] elements, out uint fetched);
+
+    [PreserveSig]
+    int Skip(uint count);
+
+    void Reset();
+
+    void Clone(out IEnumSTATSTG enumerator);
+}
+
+/// <summary>
+/// Structured storage (OLE compound file). Only the used members are declared, but the
+/// vtable order has to be respected up to the last of them — hence the intermediate methods
+/// being here even though unused.
+/// </summary>
+[ComImport]
+[Guid("0000000B-0000-0000-C000-000000000046")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IStorage
+{
+    void CreateStream(
+        [MarshalAs(UnmanagedType.LPWStr)] string name,
+        uint mode,
+        uint reserved1,
+        uint reserved2,
+        out IStream stream);
+
+    void OpenStream(
+        [MarshalAs(UnmanagedType.LPWStr)] string name,
+        nint reserved1,
+        uint mode,
+        uint reserved2,
+        out IStream stream);
+
+    void CreateStorage(
+        [MarshalAs(UnmanagedType.LPWStr)] string name,
+        uint mode,
+        uint reserved1,
+        uint reserved2,
+        out IStorage storage);
+
+    void OpenStorage(
+        [MarshalAs(UnmanagedType.LPWStr)] string? name,
+        IStorage? priority,
+        uint mode,
+        nint exclude,
+        uint reserved,
+        out IStorage storage);
+
+    void CopyTo(uint excludeCount, nint excludeInterfaces, nint excludeNames, IStorage destination);
+
+    void MoveElementTo(
+        [MarshalAs(UnmanagedType.LPWStr)] string name,
+        IStorage destination,
+        [MarshalAs(UnmanagedType.LPWStr)] string newName,
+        uint flags);
+
+    void Commit(uint commitFlags);
+
+    void Revert();
+
+    void EnumElements(uint reserved1, nint reserved2, uint reserved3, out IEnumSTATSTG enumerator);
+}
+

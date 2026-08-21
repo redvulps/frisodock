@@ -21,18 +21,26 @@ namespace FrisoDock.Interop.Services;
 public sealed class JumpListProvider : IJumpListProvider
 {
     private readonly CustomDestinationsParser _parser;
+    private readonly AutomaticDestinationsParser _automaticParser;
     private readonly string _directory;
+    private readonly string _automaticDirectory;
     private readonly Dictionary<string, JumpList> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-    public JumpListProvider(CustomDestinationsParser parser)
-        : this(parser, GetDefaultDirectory())
+    public JumpListProvider(CustomDestinationsParser parser, AutomaticDestinationsParser automaticParser)
+        : this(parser, automaticParser, GetDefaultDirectory(), GetDefaultAutomaticDirectory())
     {
     }
 
-    public JumpListProvider(CustomDestinationsParser parser, string directory)
+    public JumpListProvider(
+        CustomDestinationsParser parser,
+        AutomaticDestinationsParser automaticParser,
+        string directory,
+        string automaticDirectory)
     {
         _parser = parser;
+        _automaticParser = automaticParser;
         _directory = directory;
+        _automaticDirectory = automaticDirectory;
     }
 
     public JumpList GetFor(string executablePath)
@@ -61,19 +69,78 @@ public sealed class JumpListProvider : IJumpListProvider
     private JumpList Load(string executablePath)
     {
         FileInfo? file = FindFileFor(executablePath);
-        if (file is null)
+        var categories = new List<JumpListCategory>();
+
+        if (file is not null)
         {
-            return JumpList.Empty;
+            try
+            {
+                categories.AddRange(_parser.Parse(File.ReadAllBytes(file.FullName)).Categories);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // Without the app's categories; the recent entries may still come.
+            }
         }
 
-        try
+        categories.AddRange(LoadAutomatic(executablePath, file).Categories);
+
+        return new JumpList(categories);
+    }
+
+    /// <summary>
+    /// The user's pinned and recent entries, which live in a separate file.
+    ///
+    /// There are two paths to it, and both are needed. The first is the name: an app's two files
+    /// are named with the hash of the same AppUserModelID, changing only the folder and the extension —
+    /// once the tasks one is found, the recent one comes for free. The second is content, as in the other
+    /// folder: apps with no tasks file, like Remote Desktop Connection, only have the recent
+    /// one, and there the executable appears because the entries themselves point at it.
+    ///
+    /// Known limitation: an app whose recent entries are only documents, and that has no tasks
+    /// file, stays out of reach — nothing in its file mentions the executable.
+    /// </summary>
+    private JumpList LoadAutomatic(string executablePath, FileInfo? customFile)
+    {
+        string? path = FindAutomaticFile(executablePath, customFile);
+
+        return path is null ? JumpList.Empty : _automaticParser.Parse(path);
+    }
+
+    private string? FindAutomaticFile(string executablePath, FileInfo? customFile)
+    {
+        if (customFile is not null)
         {
-            return _parser.Parse(File.ReadAllBytes(file.FullName));
+            string name = Path.GetFileNameWithoutExtension(customFile.Name);
+            string byName = Path.Combine(_automaticDirectory, name + ".automaticDestinations-ms");
+
+            if (File.Exists(byName))
+            {
+                return byName;
+            }
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+
+        var directory = new DirectoryInfo(_automaticDirectory);
+        if (!directory.Exists)
         {
-            return JumpList.Empty;
+            return null;
         }
+
+        byte[] utf16Needle = Encoding.Unicode.GetBytes(executablePath);
+        byte[] asciiNeedle = Encoding.ASCII.GetBytes(executablePath);
+
+        foreach (FileInfo candidate in directory.EnumerateFiles("*.automaticDestinations-ms"))
+        {
+            byte[]? content = TryRead(candidate);
+
+            if (content is not null
+                && (ContainsIgnoringCase(content, utf16Needle) || ContainsIgnoringCase(content, asciiNeedle)))
+            {
+                return candidate.FullName;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -181,7 +248,17 @@ public sealed class JumpListProvider : IJumpListProvider
 
     private static string GetDefaultDirectory()
     {
+        return RecentSubdirectory("CustomDestinations");
+    }
+
+    private static string GetDefaultAutomaticDirectory()
+    {
+        return RecentSubdirectory("AutomaticDestinations");
+    }
+
+    private static string RecentSubdirectory(string name)
+    {
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Combine(appData, "Microsoft", "Windows", "Recent", "CustomDestinations");
+        return Path.Combine(appData, "Microsoft", "Windows", "Recent", name);
     }
 }

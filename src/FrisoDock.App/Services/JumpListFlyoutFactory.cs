@@ -84,7 +84,7 @@ public sealed class JumpListFlyoutFactory
         {
             JumpListEntry captured = entry;
             items.Add(new JumpListItemViewModel(
-                entry.Title,
+                entry.DisplayTitle,
                 LoadEntryIcon(entry),
                 glyph: null,
                 () => _launcher.Launch(captured)));

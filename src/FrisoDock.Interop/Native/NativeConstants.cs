@@ -64,6 +64,18 @@ internal static class NativeConstants
     // --- Icons ---
     internal const uint WM_GETICON = 0x007F;
     internal const uint WM_DISPLAYCHANGE = 0x007E;
+
+    /// <summary>Read, denying writes to others: it is how the shell keeps the file open.</summary>
+    internal const uint STGM_READ_SHARE_DENY_WRITE = 0x00000020;
+
+    /// <summary>
+    /// Exclusive read. It is the mode a stream inside a compound file accepts — the
+    /// sharing was already negotiated when the file was opened.
+    /// </summary>
+    internal const uint STGM_READ_SHARE_EXCLUSIVE = 0x00000010;
+
+    /// <summary>The "stream" element type in a compound file's enumerator.</summary>
+    internal const uint STGTY_STREAM = 2;
     internal const nint ICON_SMALL = 0;
     internal const nint ICON_BIG = 1;
     internal const nint ICON_SMALL2 = 2;

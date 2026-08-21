@@ -50,6 +50,16 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetCursorPos(out POINT point);
 
+    /// <summary>Opens an OLE compound file, which is the automaticDestinations-ms format.</summary>
+    [DllImport("ole32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
+    internal static extern int StgOpenStorage(
+        string name,
+        nint priority,
+        uint mode,
+        nint exclude,
+        uint reserved,
+        out IStorage storage);
+
     [DllImport(User32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool ShowWindow(nint windowHandle, int command);

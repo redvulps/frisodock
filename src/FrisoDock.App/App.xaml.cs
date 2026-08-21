@@ -183,7 +183,9 @@ public partial class App : Application
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IWindowBackdrop, DwmWindowBackdrop>();
+        services.AddSingleton<ShellLinkReader>();
         services.AddSingleton<CustomDestinationsParser>();
+        services.AddSingleton<AutomaticDestinationsParser>();
         services.AddSingleton<IJumpListProvider, JumpListProvider>();
         services.AddSingleton<ITrayHost, TrayHost>();
         services.AddSingleton<IWindowThumbnailService, DwmThumbnailService>();

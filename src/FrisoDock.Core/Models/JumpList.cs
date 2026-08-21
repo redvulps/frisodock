@@ -26,7 +26,37 @@ public sealed record JumpListEntry(
     string TargetPath,
     string Arguments,
     string? IconPath,
-    int IconIndex);
+    int IconIndex)
+{
+    /// <summary>
+    /// Label to display.
+    ///
+    /// The tasks an app writes carry System.Title filled in; recent documents do not —
+    /// there Windows shows the file name, and that is what we do when the title comes empty.
+    /// </summary>
+    public string DisplayTitle
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Title))
+            {
+                return Title;
+            }
+
+            if (string.IsNullOrWhiteSpace(TargetPath))
+            {
+                return string.Empty;
+            }
+
+            string name = Path.GetFileName(TargetPath);
+
+            return string.IsNullOrWhiteSpace(name) ? TargetPath : name;
+        }
+    }
+
+    /// <summary>An entry with no label and no target has nothing to show and nothing to open.</summary>
+    public bool IsEmpty => string.IsNullOrWhiteSpace(DisplayTitle);
+}
 
 /// <summary>One jump list block, with its header and its entries.</summary>
 /// <param name="Kind">Nature of the category.</param>
