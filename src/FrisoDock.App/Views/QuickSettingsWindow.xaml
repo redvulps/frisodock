@@ -52,7 +52,9 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Root" Background="{TemplateBinding Background}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{Binding (views:ButtonCorner.Radius), RelativeSource={RelativeSource TemplatedParent}}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -180,40 +182,42 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:QuickTileViewModel}">
                         <StackPanel Margin="4,4,4,10">
-                            <Border CornerRadius="6"
-                                    ClipToBounds="True"
-                                    Height="48"
-                                    IsEnabled="{Binding IsAvailable}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
+                            <Grid Height="48" IsEnabled="{Binding IsAvailable}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                                    <Button x:Name="ToggleHalf"
-                                            Grid.Column="0"
-                                            Style="{StaticResource TileHalfStyle}"
-                                            Command="{Binding ToggleCommand}">
-                                        <TextBlock Text="{Binding Glyph}" Style="{StaticResource TileGlyphStyle}" />
-                                    </Button>
+                                <!--
+                                    O raio vai em cada metade, e não num Border em volta: só assim
+                                    o bloco partido fecha as pontas de fora e mantém reta a linha
+                                    do meio, que é a forma do painel do Windows.
+                                -->
+                                <Button x:Name="ToggleHalf"
+                                        Grid.Column="0"
+                                        views:ButtonCorner.Radius="6"
+                                        Style="{StaticResource TileHalfStyle}"
+                                        Command="{Binding ToggleCommand}">
+                                    <TextBlock Text="{Binding Glyph}" Style="{StaticResource TileGlyphStyle}" />
+                                </Button>
 
-                                    <Button x:Name="ChevronHalf"
-                                            Grid.Column="1"
-                                            Width="28"
-                                            Style="{StaticResource TileHalfStyle}"
-                                            Command="{Binding NavigateCommand}"
-                                            Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}">
-                                        <TextBlock Text="&#xE76C;" Style="{StaticResource TileGlyphStyle}" FontSize="12" />
-                                    </Button>
+                                <Button x:Name="ChevronHalf"
+                                        Grid.Column="1"
+                                        Width="28"
+                                        views:ButtonCorner.Radius="0,6,6,0"
+                                        Style="{StaticResource TileHalfStyle}"
+                                        Command="{Binding NavigateCommand}"
+                                        Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}">
+                                    <TextBlock Text="&#xE76C;" Style="{StaticResource TileGlyphStyle}" FontSize="12" />
+                                </Button>
 
-                                    <Rectangle x:Name="Divider"
-                                               Grid.Column="1"
-                                               Width="1"
-                                               HorizontalAlignment="Left"
-                                               Fill="{StaticResource DividerBrush}"
-                                               Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}" />
-                                </Grid>
-                            </Border>
+                                <Rectangle x:Name="Divider"
+                                           Grid.Column="1"
+                                           Width="1"
+                                           HorizontalAlignment="Left"
+                                           Fill="{StaticResource DividerBrush}"
+                                           Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}" />
+                            </Grid>
 
                             <TextBlock Text="{Binding DisplayLabel}"
                                        Foreground="{StaticResource TextBrush}"
@@ -227,6 +231,11 @@
                         </StackPanel>
 
                         <DataTemplate.Triggers>
+                            <!-- Split tile: the bottom half loses the right corners, which now belong to the chevron. -->
+                            <DataTrigger Binding="{Binding HasChevron}" Value="True">
+                                <Setter TargetName="ToggleHalf" Property="views:ButtonCorner.Radius" Value="6,0,0,6" />
+                            </DataTrigger>
+
                             <DataTrigger Binding="{Binding IsOn}" Value="True">
                                 <Setter TargetName="ToggleHalf" Property="Background" Value="{StaticResource AccentBrush}" />
                                 <Setter TargetName="ToggleHalf" Property="Foreground" Value="{StaticResource AccentTextBrush}" />

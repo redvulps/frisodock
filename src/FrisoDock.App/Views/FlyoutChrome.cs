@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using FrisoDock.Core.Abstractions;
@@ -64,14 +64,17 @@ public sealed class FlyoutChrome
     /// </summary>
     public static void ApplyAppearance(Window window, IWindowBackdrop backdrop)
     {
-        nint handle = new WindowInteropHelper(window).Handle;
-        backdrop.ApplyFlyoutAppearance(handle, darkMode: true);
-
-        // Without this WPF paints an opaque background over the DWM material.
+        // The order here is not style, it is a requirement: clear the background first, request the
+        // material afterwards. Without this WPF paints an opaque background over the DWM material — and,
+        // worse, touching the CompositionTarget with the material already applied rebuilds the composition
+        // surface and the content disappears, leaving only acrylic in a correctly sized, empty window.
         if (PresentationSource.FromVisual(window) is HwndSource source && source.CompositionTarget is not null)
         {
             source.CompositionTarget.BackgroundColor = Colors.Transparent;
         }
+
+        nint handle = new WindowInteropHelper(window).Handle;
+        backdrop.ApplyFlyoutAppearance(handle, darkMode: true);
     }
 
     /// <summary>
