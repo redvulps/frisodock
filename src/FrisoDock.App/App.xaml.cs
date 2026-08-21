@@ -162,6 +162,7 @@ public partial class App : Application
         // Domain (pure, testable)
         services.AddSingleton<DockItemAggregator>();
         services.AddSingleton<WindowMonitorMatcher>();
+        services.AddSingleton<PinnedAppsReorder>();
         services.AddSingleton<ClockFormatter>();
         services.AddSingleton<MagnificationCurve>();
         services.AddSingleton<DockVisibilityPolicy>();

@@ -118,6 +118,41 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         _disposed = true;
     }
 
+    /// <summary>
+    /// Moves an icon to another position, when it is dragged.
+    ///
+    /// Pinned and unpinned take different paths because their permanence differs: the order of the
+    /// pinned ones goes to disk and applies to every dock, while that of the running apps
+    /// lives only in this bar — it is the same order the aggregator preserves on every update, and it
+    /// starts over when the docks are rebuilt.
+    ///
+    /// One side never invades the other: the pinned ones take the dock's first positions, and dragging
+    /// past the boundary stops there instead of mixing the two blocks.
+    /// </summary>
+    public void MoveItem(AppKey key, int targetIndex)
+    {
+        int from = FindExistingIndex(key, 0);
+
+        if (from < 0)
+        {
+            return;
+        }
+
+        if (Items[from].Model.IsPinned)
+        {
+            _pinnedApps.Reorder(key, targetIndex);
+            return;
+        }
+
+        int firstRunning = Items.Count(item => item.Model.IsPinned);
+        int to = Math.Clamp(targetIndex, firstRunning, Items.Count - 1);
+
+        if (to != from)
+        {
+            Items.Move(from, to);
+        }
+    }
+
     /// <summary>The dock's Start button.</summary>
     [RelayCommand]
     private void OpenStartMenu()

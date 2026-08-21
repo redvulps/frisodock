@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using FrisoDock.App.Services;
 using FrisoDock.App.ViewModels;
@@ -52,6 +53,9 @@ public partial class DockWindow : Window
     private DockItemViewModel? _previewCandidate;
     private FrameworkElement? _previewAnchor;
     private DispatcherTimer? _previewTimer;
+    private DockItemViewModel? _dragCandidate;
+    private Point _dragOrigin;
+    private bool _dragging;
 
     public DockWindow(
         DockViewModel viewModel,
@@ -236,10 +240,130 @@ public partial class DockWindow : Window
         }
     }
 
+    // ------------------------------------------------------------------ drag to reorder
+
+    /// <summary>
+    /// Start of the gesture. The whole click is handled here, on the strip, and not on the item button:
+    /// when the WPF <c>Button</c> captures the mouse on click, movement events stop reaching
+    /// this window, and a drag is never recognized. By consuming the event before that,
+    /// the capture is ours and the gesture can become a click or a drag depending on how the cursor moves.
+    /// </summary>
+    private void OnAppItemsMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _dragCandidate = FindItemAt(e.GetPosition(AppItems));
+
+        if (_dragCandidate is null)
+        {
+            return;
+        }
+
+        _dragOrigin = e.GetPosition(AppItems);
+        _dragging = false;
+
+        AppItems.CaptureMouse();
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Reorders while the cursor crosses the icons. It only becomes a drag after moving far
+    /// enough, otherwise every shaky click would reorder the dock.
+    /// </summary>
+    private void UpdateDrag(MouseEventArgs e)
+    {
+        if (_dragCandidate is null || e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        Point position = e.GetPosition(AppItems);
+
+        if (!_dragging)
+        {
+            if (Math.Abs(position.X - _dragOrigin.X) < SystemParameters.MinimumHorizontalDragDistance)
+            {
+                return;
+            }
+
+            _dragging = true;
+            StopPreviewTimer();
+            ClosePreview();
+        }
+
+        DockItemViewModel? target = FindItemAt(position);
+
+        if (target is not null)
+        {
+            _viewModel.MoveItem(_dragCandidate.Key, _viewModel.Items.IndexOf(target));
+        }
+    }
+
+    /// <summary>
+    /// End of the gesture. With no drag, the click activates the app — which is what the button's
+    /// <c>Command</c> did before the gesture moved here.
+    /// </summary>
+    private void OnAppItemsMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        DockItemViewModel? candidate = _dragCandidate;
+        bool wasDragging = _dragging;
+
+        if (AppItems.IsMouseCaptured)
+        {
+            AppItems.ReleaseMouseCapture();
+        }
+
+        EndDrag();
+
+        if (candidate is null)
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        if (!wasDragging && candidate.ActivateCommand.CanExecute(null))
+        {
+            candidate.ActivateCommand.Execute(null);
+        }
+    }
+
+    private void OnAppItemsLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        EndDrag();
+    }
+
+    private void EndDrag()
+    {
+        _dragCandidate = null;
+        _dragging = false;
+    }
+
+    /// <summary>
+    /// Item under the point. Hit testing already accounts for magnification, so what counts is the icon
+    /// the user sees there, not the one that would be there without the effect.
+    /// </summary>
+    private DockItemViewModel? FindItemAt(Point position)
+    {
+        DependencyObject? current = VisualTreeHelper.HitTest(AppItems, position)?.VisualHit;
+
+        while (current is not null && current != AppItems)
+        {
+            if (current is FrameworkElement { DataContext: DockItemViewModel item })
+            {
+                return item;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
     // ------------------------------------------------------------------ magnification
 
     private void OnAppItemsMouseMove(object sender, MouseEventArgs e)
     {
+        UpdateDrag(e);
+
         double magnification = _settings.Current.EffectiveMagnification;
         if (magnification <= 1.0)
         {
@@ -317,6 +441,13 @@ public partial class DockWindow : Window
 
     private void OnAppIconMouseEnter(object sender, MouseEventArgs e)
     {
+        if (_dragging)
+        {
+            // During a drag the icons pass under the cursor on their own; opening a thumbnail for
+            // each of them would fill the screen with panels.
+            return;
+        }
+
         if (sender is not FrameworkElement { DataContext: DockItemViewModel item } element)
         {
             return;

@@ -205,7 +205,10 @@
             <ItemsControl x:Name="AppItems"
                           ItemsSource="{Binding Items}"
                           MouseMove="OnAppItemsMouseMove"
-                          MouseLeave="OnAppItemsMouseLeave">
+                          MouseLeave="OnAppItemsMouseLeave"
+                          PreviewMouseLeftButtonDown="OnAppItemsMouseDown"
+                          PreviewMouseLeftButtonUp="OnAppItemsMouseUp"
+                          LostMouseCapture="OnAppItemsLostMouseCapture">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="Horizontal" />
@@ -215,7 +218,6 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:DockItemViewModel}">
                         <Button Style="{StaticResource DockButtonStyle}"
-                                Command="{Binding ActivateCommand}"
                                 ToolTipOpening="OnAppIconToolTipOpening"
                                 ContextMenuOpening="OnAppIconContextMenuOpening"
                                 MouseEnter="OnAppIconMouseEnter"

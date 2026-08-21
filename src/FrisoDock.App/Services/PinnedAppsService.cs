@@ -1,5 +1,6 @@
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Services;
 
 namespace FrisoDock.App.Services;
 
@@ -12,12 +13,14 @@ namespace FrisoDock.App.Services;
 public sealed class PinnedAppsService : IPinnedAppsEditor
 {
     private readonly IPinnedAppStore _store;
+    private readonly PinnedAppsReorder _reorder;
 
     private IReadOnlyList<PinnedApp> _apps;
 
-    public PinnedAppsService(IPinnedAppStore store)
+    public PinnedAppsService(IPinnedAppStore store, PinnedAppsReorder reorder)
     {
         _store = store;
+        _reorder = reorder;
         _apps = _store.Load();
     }
 
@@ -49,6 +52,22 @@ public sealed class PinnedAppsService : IPinnedAppsEditor
         else
         {
             updated.Add(CreatePinnedApp(item));
+        }
+
+        _apps = updated;
+        _store.Save(updated);
+
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Moves a pinned app to another position and writes the new order.</summary>
+    public void Reorder(AppKey key, int targetIndex)
+    {
+        IReadOnlyList<PinnedApp> updated = _reorder.Move(_apps, key, targetIndex);
+
+        if (ReferenceEquals(updated, _apps))
+        {
+            return;
         }
 
         _apps = updated;
