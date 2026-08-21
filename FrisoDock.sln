@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{723B685D-ED6C-45A1-B39F-0A6E10372AAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrisoDock.Core", "src\FrisoDock.Core\FrisoDock.Core.csproj", "{C0BB1A99-A907-4DAE-8B90-444DA0066014}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrisoDock.Interop", "src\FrisoDock.Interop\FrisoDock.Interop.csproj", "{CC080144-2DF8-4EDE-B4C5-EE45F1E19599}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrisoDock.App", "src\FrisoDock.App\FrisoDock.App.csproj", "{499734D7-EFEE-42FC-BB14-68B50B27D82F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{37F33775-AD28-4AC1-991C-A78758801108}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrisoDock.Tests", "tests\FrisoDock.Tests\FrisoDock.Tests.csproj", "{72DDC4F1-14A9-46DF-8049-C1F57B4D4048}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C0BB1A99-A907-4DAE-8B90-444DA0066014}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0BB1A99-A907-4DAE-8B90-444DA0066014}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0BB1A99-A907-4DAE-8B90-444DA0066014}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0BB1A99-A907-4DAE-8B90-444DA0066014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC080144-2DF8-4EDE-B4C5-EE45F1E19599}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC080144-2DF8-4EDE-B4C5-EE45F1E19599}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC080144-2DF8-4EDE-B4C5-EE45F1E19599}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC080144-2DF8-4EDE-B4C5-EE45F1E19599}.Release|Any CPU.Build.0 = Release|Any CPU
+		{499734D7-EFEE-42FC-BB14-68B50B27D82F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{499734D7-EFEE-42FC-BB14-68B50B27D82F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{499734D7-EFEE-42FC-BB14-68B50B27D82F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{499734D7-EFEE-42FC-BB14-68B50B27D82F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72DDC4F1-14A9-46DF-8049-C1F57B4D4048}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72DDC4F1-14A9-46DF-8049-C1F57B4D4048}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72DDC4F1-14A9-46DF-8049-C1F57B4D4048}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72DDC4F1-14A9-46DF-8049-C1F57B4D4048}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C0BB1A99-A907-4DAE-8B90-444DA0066014} = {723B685D-ED6C-45A1-B39F-0A6E10372AAA}
+		{CC080144-2DF8-4EDE-B4C5-EE45F1E19599} = {723B685D-ED6C-45A1-B39F-0A6E10372AAA}
+		{499734D7-EFEE-42FC-BB14-68B50B27D82F} = {723B685D-ED6C-45A1-B39F-0A6E10372AAA}
+		{72DDC4F1-14A9-46DF-8049-C1F57B4D4048} = {37F33775-AD28-4AC1-991C-A78758801108}
+	EndGlobalSection
+EndGlobal

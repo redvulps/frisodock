@@ -1,0 +1,254 @@
+<Window x:Class="FrisoDock.App.Views.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
+        mc:Ignorable="d"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        d:DataContext="{d:DesignInstance Type=vm:DockViewModel}"
+        Title="FrisoDock"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Topmost="True"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        Left="0"
+        Top="0"
+        Width="200"
+        Height="60">
+
+    <!--
+        Nenhuma medida está chumbada neste arquivo. Tudo vem de DockAppearance, que deriva das
+        mesmas DockMetrics usadas para dimensionar a janela. Chumbar valores aqui faria o painel
+        divergir do conteúdo e cortar o último ícone.
+    -->
+
+    <Window.Resources>
+
+        <!-- Palette: translucent dark, in the spirit of dash-to-dock. -->
+        <SolidColorBrush x:Key="PanelBrush" Color="#D91B1B1F" />
+        <SolidColorBrush x:Key="PanelBorderBrush" Color="#26FFFFFF" />
+        <SolidColorBrush x:Key="RunningIndicatorBrush" Color="#8AB4F8" />
+        <SolidColorBrush x:Key="ActiveIndicatorBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="HoverBrush" Color="#22FFFFFF" />
+        <SolidColorBrush x:Key="StartGlyphBrush" Color="#E8EAED" />
+        <SolidColorBrush x:Key="ClockDateBrush" Color="#A8ADB4" />
+        <SolidColorBrush x:Key="MenuBrush" Color="#F21B1B1F" />
+        <SolidColorBrush x:Key="MenuTextBrush" Color="#E8EAED" />
+
+        <!-- Panel context menu, in the same look as the dock. -->
+        <Style x:Key="DockMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuTextBrush}" />
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DockContextMenuStyle" TargetType="ContextMenu">
+            <!-- HasDropShadow turns on the popup transparency, without which the rounding does not show. -->
+            <Setter Property="HasDropShadow" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{StaticResource MenuBrush}"
+                                BorderBrush="{StaticResource PanelBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="4">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            Botão sem cromo: o conteúdo é o ícone, e o realce de hover é um retângulo
+            arredondado por trás dele.
+        -->
+        <Style x:Key="DockButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Width"
+                    Value="{Binding DataContext.Appearance.IconSize, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <Setter Property="Height"
+                    Value="{Binding DataContext.Appearance.IconSize, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="{Binding DataContext.Appearance.ItemCornerRadius, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+
+    <Border Background="{StaticResource PanelBrush}"
+            BorderBrush="{StaticResource PanelBorderBrush}"
+            BorderThickness="{Binding Appearance.PanelBorderThickness}"
+            CornerRadius="{Binding Appearance.PanelCornerRadius}"
+            Padding="{Binding Appearance.PanelPadding}">
+
+        <!--
+            Menu do dock. Vale para o fundo do painel, os vãos entre ícones, o separador e o
+            botão Iniciar. Os ícones de app suprimem o evento e terão o próprio menu mais adiante.
+        -->
+        <Border.ContextMenu>
+            <ContextMenu Style="{StaticResource DockContextMenuStyle}">
+                <MenuItem Header="Sair do FrisoDock"
+                          Style="{StaticResource DockMenuItemStyle}"
+                          Command="{Binding ExitCommand}" />
+            </ContextMenu>
+        </Border.ContextMenu>
+
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center">
+
+            <!-- Start button: it fires the Windows key, and the menu opens above the dock. -->
+            <Button x:Name="StartButton"
+                    Style="{StaticResource DockButtonStyle}"
+                    Command="{Binding OpenStartMenuCommand}"
+                    ToolTip="Iniciar">
+                <Path Width="{Binding Appearance.IconImageSize}"
+                      Height="{Binding Appearance.IconImageSize}"
+                      Stretch="Uniform"
+                      Fill="{StaticResource StartGlyphBrush}"
+                      Data="M0,0 L9,0 L9,9 L0,9 Z M11,0 L20,0 L20,9 L11,9 Z M0,11 L9,11 L9,20 L0,20 Z M11,11 L20,11 L20,20 L11,20 Z" />
+            </Button>
+
+            <Rectangle Width="{Binding Appearance.SeparatorWidth}"
+                       Height="{Binding Appearance.SeparatorHeight}"
+                       Margin="{Binding Appearance.SeparatorMargin}"
+                       Fill="{StaticResource PanelBorderBrush}" />
+
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:DockItemViewModel}">
+                        <Button Style="{StaticResource DockButtonStyle}"
+                                Command="{Binding ActivateCommand}"
+                                ToolTip="{Binding DisplayName}"
+                                ContextMenuOpening="OnAppIconContextMenuOpening"
+                                Margin="{Binding DataContext.Appearance.ItemMargin, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <Grid>
+                                <Image Source="{Binding Icon}"
+                                       Width="{Binding DataContext.Appearance.IconImageSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       Height="{Binding DataContext.Appearance.IconImageSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+
+                                <!-- Running app indicator, anchored to the base of the icon. -->
+                                <Border x:Name="RunningIndicator"
+                                        Height="3"
+                                        Width="6"
+                                        CornerRadius="2"
+                                        Margin="0,0,0,-5"
+                                        VerticalAlignment="Bottom"
+                                        HorizontalAlignment="Center"
+                                        Background="{StaticResource RunningIndicatorBrush}"
+                                        Visibility="Collapsed" />
+                            </Grid>
+
+                            <Button.InputBindings>
+                                <MouseBinding MouseAction="MiddleClick"
+                                              Command="{Binding LaunchNewInstanceCommand}" />
+                            </Button.InputBindings>
+                        </Button>
+
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                <Setter TargetName="RunningIndicator"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="RunningIndicator"
+                                        Property="Background"
+                                        Value="{StaticResource ActiveIndicatorBrush}" />
+                                <Setter TargetName="RunningIndicator"
+                                        Property="Width"
+                                        Value="16" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Fixed block on the right, as on the native taskbar. -->
+            <Rectangle Width="{Binding Appearance.SeparatorWidth}"
+                       Height="{Binding Appearance.SeparatorHeight}"
+                       Margin="{Binding Appearance.SeparatorMargin}"
+                       Fill="{StaticResource PanelBorderBrush}" />
+
+            <Button x:Name="TrayButton"
+                    Style="{StaticResource DockButtonStyle}"
+                    Click="OnTrayButtonClick"
+                    ToolTip="Ícones da bandeja">
+                <TextBlock Text="&#xE70E;"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                           FontSize="13"
+                           Foreground="{StaticResource StartGlyphBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Button>
+
+            <Border Width="{Binding Appearance.ClockWidth}"
+                    Margin="{Binding Appearance.ItemMargin}"
+                    Background="Transparent"
+                    ToolTip="{Binding Clock.Tooltip}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Clock.Time}"
+                               FontSize="13"
+                               Foreground="{StaticResource StartGlyphBrush}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding Clock.Date}"
+                               FontSize="11"
+                               Margin="0,1,0,0"
+                               Foreground="{StaticResource ClockDateBrush}"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </Border>
+</Window>

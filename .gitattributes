@@ -1,0 +1,13 @@
+# Normaliza fim de linha na entrada e entrega CRLF no checkout. O projeto é Windows-only
+# e o .editorconfig já pede CRLF, então fixar aqui evita diffs de linha inteira entre
+# máquinas e ferramentas.
+* text=auto eol=crlf
+
+# Arquivos que não podem ser tocados pela normalização.
+*.png binary
+*.jpg binary
+*.ico binary
+*.dll binary
+*.exe binary
+*.pdb binary
+*.snk binary

@@ -1,0 +1,9 @@
+<Application x:Class="FrisoDock.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        Sem StartupUri: a janela é criada pelo contêiner de injeção de dependências
+        em App.OnStartup, para que suas dependências sejam explícitas.
+    -->
+    <Application.Resources />
+</Application>

@@ -1,0 +1,130 @@
+<Window x:Class="FrisoDock.App.Views.JumpListWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
+        mc:Ignorable="d"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        d:DataContext="{d:DesignInstance Type=vm:JumpListFlyoutViewModel}"
+        Title="FrisoDock Jump List"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal"
+        Background="Transparent"
+        MaxWidth="380"
+        MaxHeight="760">
+
+    <!--
+        AllowsTransparency fica DESLIGADO de propósito. Ligá-lo transforma a janela em layered
+        window, e o DWM deixa de desenhar o acrílico do sistema atrás dela. O fundo transparente
+        vem do CompositionTarget, ajustado no code-behind, e o material é pedido ao DWM.
+    -->
+
+    <Window.Resources>
+
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
+
+        <SolidColorBrush x:Key="TextBrush" Color="#F3F3F3" />
+        <SolidColorBrush x:Key="HeaderBrush" Color="#A0A0A0" />
+        <SolidColorBrush x:Key="HoverBrush" Color="#1AFFFFFF" />
+        <SolidColorBrush x:Key="SeparatorBrush" Color="#1FFFFFFF" />
+        <SolidColorBrush x:Key="DestructiveBrush" Color="#F3F3F3" />
+
+        <!-- Menu row: icon on the left, label on a single line with an ellipsis. -->
+        <Style x:Key="FlyoutItemStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="FlyoutItemTemplate" DataType="{x:Type vm:JumpListItemViewModel}">
+            <Button Style="{StaticResource FlyoutItemStyle}"
+                    Command="{Binding InvokeCommand}"
+                    ToolTip="{Binding Title}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Image Grid.Column="0"
+                           Source="{Binding Icon}"
+                           Width="16"
+                           Height="16"
+                           VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="{Binding HasIcon, Converter={StaticResource BooleanToVisibility}}" />
+
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Glyph}"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="14"
+                               Foreground="{StaticResource TextBrush}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Visibility="{Binding HasGlyph, Converter={StaticResource BooleanToVisibility}}" />
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Title}"
+                               Margin="12,0,0,0"
+                               FontSize="13"
+                               Foreground="{StaticResource TextBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Border Padding="4" Background="Transparent">
+        <ItemsControl ItemsSource="{Binding Sections}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:JumpListSectionViewModel}">
+                    <StackPanel>
+                        <Rectangle Height="1"
+                                   Margin="6,5"
+                                   Fill="{StaticResource SeparatorBrush}"
+                                   Visibility="{Binding SeparatedAbove, Converter={StaticResource BooleanToVisibility}}" />
+
+                        <TextBlock Text="{Binding Title}"
+                                   Margin="12,8,12,4"
+                                   FontSize="12"
+                                   Foreground="{StaticResource HeaderBrush}"
+                                   Visibility="{Binding HasTitle, Converter={StaticResource BooleanToVisibility}}" />
+
+                        <ItemsControl ItemsSource="{Binding Items}"
+                                      ItemTemplate="{StaticResource FlyoutItemTemplate}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+</Window>
