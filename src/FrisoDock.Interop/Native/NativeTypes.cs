@@ -156,3 +156,21 @@ internal struct HARDWAREINPUT
     public ushort wParamL;
     public ushort wParamH;
 }
+
+/// <summary>
+/// System power state, as <c>GetSystemPowerStatus</c> returns it.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct SYSTEM_POWER_STATUS
+{
+    public byte ACLineStatus;
+    public byte BatteryFlag;
+    public byte BatteryLifePercent;
+
+    /// <summary>Bit 1 set means battery saver is active.</summary>
+    public byte SystemStatusFlag;
+
+    public uint BatteryLifeTime;
+    public uint BatteryFullLifeTime;
+}
+

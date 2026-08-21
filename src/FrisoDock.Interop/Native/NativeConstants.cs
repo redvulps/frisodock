@@ -74,6 +74,18 @@ internal static class NativeConstants
     /// </summary>
     internal const uint STGM_READ_SHARE_EXCLUSIVE = 0x00000010;
 
+    /// <summary>The "no battery" flag in SYSTEM_POWER_STATUS.BatteryFlag.</summary>
+    internal const byte BATTERY_FLAG_NO_BATTERY = 128;
+
+    /// <summary>The "charging" flag in SYSTEM_POWER_STATUS.BatteryFlag.</summary>
+    internal const byte BATTERY_FLAG_CHARGING = 8;
+
+    /// <summary>Battery saver active, in SYSTEM_POWER_STATUS.SystemStatusFlag.</summary>
+    internal const byte SYSTEM_STATUS_FLAG_POWER_SAVER = 1;
+
+    /// <summary>Unknown percentage in SYSTEM_POWER_STATUS.BatteryLifePercent.</summary>
+    internal const byte BATTERY_PERCENT_UNKNOWN = 255;
+
     /// <summary>The "stream" element type in a compound file's enumerator.</summary>
     internal const uint STGTY_STREAM = 2;
     internal const nint ICON_SMALL = 0;

@@ -36,6 +36,7 @@ public partial class DockWindow : Window
     private readonly ITaskbarController _taskbarController;
     private readonly JumpListFlyoutFactory _flyoutFactory;
     private readonly TrayFlyoutFactory _trayFlyoutFactory;
+    private readonly QuickSettingsFlyoutFactory _quickSettingsFactory;
     private readonly DockSettingsService _settings;
     private readonly SettingsWindowFactory _settingsWindows;
     private readonly IWindowThumbnailService _thumbnails;
@@ -48,6 +49,7 @@ public partial class DockWindow : Window
 
     private JumpListWindow? _jumpList;
     private TrayFlyoutWindow? _trayFlyout;
+    private QuickSettingsWindow? _quickSettings;
     private SettingsWindow? _settingsWindow;
     private WindowPreviewWindow? _preview;
     private DockItemViewModel? _previewCandidate;
@@ -66,6 +68,7 @@ public partial class DockWindow : Window
         ITaskbarController taskbarController,
         JumpListFlyoutFactory flyoutFactory,
         TrayFlyoutFactory trayFlyoutFactory,
+        QuickSettingsFlyoutFactory quickSettingsFactory,
         DockSettingsService settings,
         SettingsWindowFactory settingsWindows,
         IWindowThumbnailService thumbnails,
@@ -85,6 +88,7 @@ public partial class DockWindow : Window
         _taskbarController = taskbarController;
         _flyoutFactory = flyoutFactory;
         _trayFlyoutFactory = trayFlyoutFactory;
+        _quickSettingsFactory = quickSettingsFactory;
         _settings = settings;
         _settingsWindows = settingsWindows;
         _thumbnails = thumbnails;
@@ -125,6 +129,7 @@ public partial class DockWindow : Window
     {
         CloseJumpList();
         CloseTrayFlyout();
+        CloseQuickSettings();
         ClosePreview();
 
         _viewModel.LayoutChanged -= OnLayoutChanged;
@@ -168,7 +173,7 @@ public partial class DockWindow : Window
     /// </summary>
     private bool HasOpenFlyout()
     {
-        if (_jumpList is not null || _trayFlyout is not null || _preview is not null)
+        if (_jumpList is not null || _trayFlyout is not null || _preview is not null || _quickSettings is not null)
         {
             return true;
         }
@@ -578,6 +583,57 @@ public partial class DockWindow : Window
         }
 
         ShowJumpList(item, element);
+    }
+
+    /// <summary>
+    /// Opens the quick settings panel where Windows opens its own: over the network,
+    /// sound and battery group.
+    /// </summary>
+    private void OnQuickSettingsButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement anchor)
+        {
+            return;
+        }
+
+        CloseJumpList();
+        CloseTrayFlyout();
+
+        if (_quickSettings is not null)
+        {
+            CloseQuickSettings();
+            return;
+        }
+
+        QuickSettingsViewModel panel = _quickSettingsFactory.Create();
+
+        _quickSettings = new QuickSettingsWindow(
+            panel,
+            FlyoutChrome.GetScreenRect(anchor),
+            _backdrop,
+            _positioner,
+            _screens);
+
+        _quickSettings.Closed += OnQuickSettingsClosed;
+        _quickSettings.Show();
+        _quickSettings.Activate();
+    }
+
+    private void OnQuickSettingsClosed(object? sender, EventArgs e)
+    {
+        if (_quickSettings is not null)
+        {
+            _quickSettings.Closed -= OnQuickSettingsClosed;
+            _quickSettings = null;
+        }
+
+        // The dock icon group reflects whatever was just changed in the panel.
+        _viewModel.QuickStatus.Refresh();
+    }
+
+    private void CloseQuickSettings()
+    {
+        _quickSettings?.Close();
     }
 
     /// <summary>

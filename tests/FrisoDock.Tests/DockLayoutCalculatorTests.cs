@@ -18,12 +18,13 @@ public sealed class DockLayoutCalculatorTests
         BorderThickness: 1,
         SeparatorWidth: 1,
         SeparatorSpacing: 5,
+        QuickStatusWidth: 50,
         ClockWidth: 60);
 
     // Fixed parts: Start (40) + separator (11) on the left; separator (11) + tray (40)
-    // + spacing (10) + clock (60) on the right = 172.
+    // + spacing (10) + network/sound/battery (50) + spacing (10) + clock (60) on the right = 232.
     // Panel borders and inner margins: (10 + 1) * 2 = 22.
-    private const int FixedLength = 172;
+    private const int FixedLength = 232;
     private const int PanelChrome = 22;
 
     // Each app takes spacing + icon = 50.

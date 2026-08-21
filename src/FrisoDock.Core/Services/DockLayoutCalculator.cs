@@ -17,6 +17,7 @@ namespace FrisoDock.Core.Services;
 /// <param name="BorderThickness">Thickness of the panel border.</param>
 /// <param name="SeparatorWidth">Thickness of the line that separates the blocks.</param>
 /// <param name="SeparatorSpacing">Space on each side of the separator.</param>
+/// <param name="QuickStatusWidth">Width of the network, volume and battery group.</param>
 /// <param name="ClockWidth">Width reserved for the clock.</param>
 /// <param name="ClockWidthWithSeconds">Width reserved when the clock shows the seconds.</param>
 /// <param name="HiddenSliver">Sliver of the panel that stays on screen with the dock hidden.</param>
@@ -28,6 +29,7 @@ public sealed record DockMetrics(
     int BorderThickness = 1,
     int SeparatorWidth = 1,
     int SeparatorSpacing = 6,
+    int QuickStatusWidth = 58,
     int ClockWidth = 62,
     int ClockWidthWithSeconds = 82,
     int HiddenSliver = 2)
@@ -98,7 +100,7 @@ public sealed record DockMetrics(
     /// Panel length for a given number of apps.
     ///
     /// The dock composition is fixed and this calculation is its single source:
-    /// <c>[Start] [separator] [apps…] [separator] [tray] [clock]</c>, each app preceded by its
+    /// <c>[Start] [separator] [apps…] [separator] [tray] [network/sound/battery] [clock]</c>, each app preceded by its
     /// spacing. The XAML reads the same metrics from here — if the two sides diverge, the panel
     /// comes out narrower than the content and the last element shows up clipped.
     /// </summary>
@@ -108,7 +110,10 @@ public sealed record DockMetrics(
 
         int leading = IconSize + SeparatorBlockLength;
         int apps = items * (ItemSpacing + IconSize);
-        int trailing = SeparatorBlockLength + IconSize + ItemSpacing + ClockWidth;
+        int trailing = SeparatorBlockLength
+            + IconSize
+            + ItemSpacing + QuickStatusWidth
+            + ItemSpacing + ClockWidth;
 
         return leading + apps + trailing + (Padding * 2) + (BorderThickness * 2);
     }

@@ -55,6 +55,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         IconImageProvider iconProvider,
         IApplicationLifetime lifetime,
         ClockViewModel clock,
+        QuickStatusViewModel quickStatus,
         DockSettingsService settings,
         DockMonitorHolder monitor)
     {
@@ -72,6 +73,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
 
         _appearance = new DockAppearance(settings.Current.EffectiveMetrics, settings.Current.EffectiveMagnification);
         Clock = clock;
+        QuickStatus = quickStatus;
 
         // The WinEvents arrive in bursts: opening a window fires several events in a row.
         // The timer coalesces the burst into a single recomputation.
@@ -94,12 +96,16 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
     /// <summary>Clock fixed at the right end of the dock.</summary>
     public ClockViewModel Clock { get; }
 
+    /// <summary>Network, volume and battery group, which opens the quick settings panel.</summary>
+    public QuickStatusViewModel QuickStatus { get; }
+
     /// <summary>Reads the current state and starts observing changes.</summary>
     public void Start()
     {
         Refresh();
         _windowEnumerator.Start();
         Clock.Start();
+        QuickStatus.Start();
     }
 
     public void Dispose()

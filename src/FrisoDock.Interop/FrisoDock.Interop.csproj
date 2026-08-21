@@ -4,8 +4,13 @@
     <ProjectReference Include="..\FrisoDock.Core\FrisoDock.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- WMI: é por onde o Windows deixa mudar o brilho do painel interno sem administrador. -->
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

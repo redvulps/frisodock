@@ -189,6 +189,12 @@ public partial class App : Application
         services.AddSingleton<IJumpListProvider, JumpListProvider>();
         services.AddSingleton<ITrayHost, TrayHost>();
         services.AddSingleton<IWindowThumbnailService, DwmThumbnailService>();
+        services.AddSingleton<IRadioController, RadioController>();
+        services.AddSingleton<IBrightnessController, BrightnessController>();
+        services.AddSingleton<IVolumeController, VolumeController>();
+        services.AddSingleton<IBatteryProvider, BatteryProvider>();
+        services.AddSingleton<INetworkProvider, NetworkProvider>();
+        services.AddSingleton<ISettingsPageLauncher, SettingsPageLauncher>();
 
         // Host infrastructure
         services.AddSingleton<IApplicationLifetime, WpfApplicationLifetime>();
@@ -199,6 +205,7 @@ public partial class App : Application
         services.AddSingleton<DockHost>();
         services.AddSingleton<JumpListFlyoutFactory>();
         services.AddSingleton<TrayFlyoutFactory>();
+        services.AddSingleton<QuickSettingsFlyoutFactory>();
         services.AddSingleton<SettingsWindowFactory>();
 
         // The pinned list is a single one, shared by every dock.
@@ -206,6 +213,7 @@ public partial class App : Application
 
         // Presentation
         services.AddSingleton<ClockViewModel>();
+        services.AddSingleton<QuickStatusViewModel>();
 
         // One dock per monitor: each is born in a scope, with its own appbar, its own
         // placement and its own item list. Sharing any of the three would make the

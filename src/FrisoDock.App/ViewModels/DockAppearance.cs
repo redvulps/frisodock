@@ -21,6 +21,7 @@ public sealed class DockAppearance
         IconImageSize = metrics.IconImageSize;
         SeparatorWidth = metrics.SeparatorWidth;
         SeparatorHeight = Math.Round(metrics.IconSize * 0.64);
+        QuickStatusWidth = metrics.QuickStatusWidth;
         ClockWidth = metrics.ClockWidth;
 
         ItemSpacing = metrics.ItemSpacing;
@@ -73,6 +74,9 @@ public sealed class DockAppearance
 
     /// <summary>Space on each side of the separator.</summary>
     public Thickness SeparatorMargin { get; }
+
+    /// <summary>Width of the network, volume and battery group.</summary>
+    public double QuickStatusWidth { get; }
 
     /// <summary>Width reserved for the clock.</summary>
     public double ClockWidth { get; }

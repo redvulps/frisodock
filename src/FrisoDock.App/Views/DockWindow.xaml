@@ -32,6 +32,8 @@
 
     <Window.Resources>
 
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
+
         <!-- Palette: translucent dark, in the spirit of dash-to-dock. -->
         <SolidColorBrush x:Key="PanelBrush" Color="#D91B1B1F" />
         <SolidColorBrush x:Key="PanelBorderBrush" Color="#26FFFFFF" />
@@ -287,6 +289,34 @@
                            Foreground="{StaticResource StartGlyphBrush}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center" />
+            </Button>
+
+            <!-- Network, sound and battery group: it is the quick settings panel button. -->
+            <Button x:Name="QuickSettingsButton"
+                    Style="{StaticResource DockButtonStyle}"
+                    Width="{Binding Appearance.QuickStatusWidth}"
+                    Click="OnQuickSettingsButtonClick"
+                    ToolTip="{Binding QuickStatus.Tooltip}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding QuickStatus.NetworkGlyph}"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="14"
+                               Foreground="{StaticResource StartGlyphBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding QuickStatus.VolumeGlyph}"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="14"
+                               Margin="5,0,0,0"
+                               Foreground="{StaticResource StartGlyphBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding QuickStatus.BatteryGlyph}"
+                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="15"
+                               Margin="5,0,0,0"
+                               Foreground="{StaticResource StartGlyphBrush}"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding QuickStatus.HasBattery, Converter={StaticResource BooleanToVisibility}}" />
+                </StackPanel>
             </Button>
 
             <Border Width="{Binding Appearance.ClockWidth}"
