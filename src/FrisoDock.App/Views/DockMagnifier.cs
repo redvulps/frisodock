@@ -2,7 +2,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Threading;
 using FrisoDock.Core.Services;
 
 namespace FrisoDock.App.Views;
@@ -30,10 +29,25 @@ public sealed class DockMagnifier : IDisposable
     /// </summary>
     private const double ReleaseMilliseconds = 125;
 
-    private readonly MagnificationLayout _layout = new();
-    private readonly DispatcherTimer _timer;
+    /// <summary>
+    /// Duration of the rise, much shorter than that of the fall.
+    ///
+    /// They are asymmetric on purpose: arriving at the dock is the gesture of someone who wants the
+    /// icon now, and any wait there reads as lag. Leaving is the gesture of someone already done, and
+    /// there the delay is what avoids the abrupt cut.
+    /// </summary>
+    private const double RiseMilliseconds = 55;
 
-    /// <summary>Time since the previous frame. It is what gives the fixed duration.</summary>
+    private readonly MagnificationLayout _layout = new();
+
+    /// <summary>
+    /// Time since the previous frame — or since the animation started, on the first frame.
+    ///
+    /// The difference between two <c>RenderingTime</c> values would be more exact, but would force
+    /// spending a frame just to mark the first instant. That frame is a sixteenth of a second of
+    /// waiting before anything moves, and it is precisely at the start of the gesture that the wait
+    /// shows.
+    /// </summary>
     private readonly Stopwatch _clock = new();
 
     private ItemsControl? _items;
@@ -59,17 +73,11 @@ public sealed class DockMagnifier : IDisposable
     private double _strength;
 
     private double _target;
+    private bool _animating;
     private bool _disposed;
 
-    public DockMagnifier()
-    {
-        _timer = new DispatcherTimer(DispatcherPriority.Render)
-        {
-            Interval = TimeSpan.FromMilliseconds(16),
-        };
-
-        _timer.Tick += OnTick;
-    }
+    /// <summary>Instant of the last composed frame, to measure how long it lasted.</summary>
+    private TimeSpan _lastRender;
 
     /// <summary>
     /// Follows the cursor. Outside the icon strip, the retraction starts.
@@ -129,8 +137,7 @@ public sealed class DockMagnifier : IDisposable
     {
         ArgumentNullException.ThrowIfNull(items);
 
-        _timer.Stop();
-        _clock.Reset();
+        StopAnimating();
         _items = items;
         _strength = 0;
         _target = 0;
@@ -156,8 +163,7 @@ public sealed class DockMagnifier : IDisposable
             return;
         }
 
-        _timer.Stop();
-        _timer.Tick -= OnTick;
+        StopAnimating();
         _disposed = true;
     }
 
@@ -165,26 +171,57 @@ public sealed class DockMagnifier : IDisposable
     {
         _target = target;
 
-        if (_strength == _target)
+        if (_strength == _target || _animating)
         {
             return;
         }
 
-        // It restarts the count so the first step does not include the idle time since the end of the
-        // previous animation, which would give a jump in place of the first frame.
+        _lastRender = TimeSpan.MinValue;
         _clock.Restart();
-        _timer.Start();
+        CompositionTarget.Rendering += OnRendering;
+        _animating = true;
     }
 
-    private void OnTick(object? sender, EventArgs e)
+    private void StopAnimating()
     {
+        if (!_animating)
+        {
+            return;
+        }
+
+        CompositionTarget.Rendering -= OnRendering;
+        _animating = false;
+    }
+
+    /// <summary>
+    /// One step per composed frame.
+    ///
+    /// The frame source is WPF itself, and not a 16 ms timer: the timer has no
+    /// relation to the composition clock, and the beat between the two delivered frames of
+    /// 4 ms to 42 ms — measured. The animation lasted the right time and stuttered anyway.
+    /// </summary>
+    private void OnRendering(object? sender, EventArgs e)
+    {
+        if (e is not RenderingEventArgs rendering)
+        {
+            return;
+        }
+
+        // WPF raises this event more than once for the same frame; without this guard, the
+        // same interval would enter the calculation twice.
+        if (rendering.RenderingTime == _lastRender)
+        {
+            return;
+        }
+
+        _lastRender = rendering.RenderingTime;
+
         double elapsed = _clock.Elapsed.TotalMilliseconds;
         _clock.Restart();
 
-        // The step comes from time that really passed, and not from a fixed per-frame value: this way the
-        // total duration is the same with the dock full of icons or with three, and a dropped frame
-        // advances the next instead of stretching the animation.
-        double step = elapsed / ReleaseMilliseconds;
+        // The step comes from time that really passed: the total duration is the same with the dock full
+        // of icons or with three, and a dropped frame advances the next instead of stretching everything.
+        double step = elapsed / (_target > _strength ? RiseMilliseconds : ReleaseMilliseconds);
         _strength = _target > _strength
             ? Math.Min(_strength + step, _target)
             : Math.Max(_strength - step, _target);
@@ -196,7 +233,7 @@ public sealed class DockMagnifier : IDisposable
             return;
         }
 
-        _timer.Stop();
+        StopAnimating();
 
         if (_strength == 0 && _items is ItemsControl items)
         {
