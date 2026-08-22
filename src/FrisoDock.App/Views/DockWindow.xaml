@@ -1,4 +1,4 @@
-<Window x:Class="FrisoDock.App.Views.DockWindow"
+﻿<Window x:Class="FrisoDock.App.Views.DockWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
@@ -163,6 +163,8 @@
         <Border x:Name="PanelBorder"
                 VerticalAlignment="Bottom"
                 HorizontalAlignment="Center"
+                MouseMove="OnPanelMouseMove"
+                MouseLeave="OnPanelMouseLeave"
                 Background="{StaticResource PanelBrush}"
                 BorderBrush="{StaticResource PanelBorderBrush}"
                 BorderThickness="{Binding Appearance.PanelBorderThickness}"
@@ -206,8 +208,6 @@
 
             <ItemsControl x:Name="AppItems"
                           ItemsSource="{Binding Items}"
-                          MouseMove="OnAppItemsMouseMove"
-                          MouseLeave="OnAppItemsMouseLeave"
                           PreviewMouseLeftButtonDown="OnAppItemsMouseDown"
                           PreviewMouseLeftButtonUp="OnAppItemsMouseUp"
                           LostMouseCapture="OnAppItemsLostMouseCapture">

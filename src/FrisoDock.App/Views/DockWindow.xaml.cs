@@ -371,7 +371,16 @@ public partial class DockWindow : Window
 
     // ------------------------------------------------------------------ magnification
 
-    private void OnAppItemsMouseMove(object sender, MouseEventArgs e)
+    /// <summary>
+    /// Magnification follows the cursor across the whole panel, and not across the icon strip.
+    ///
+    /// On the strip it does not work: each icon's spacing is container margin, nobody paints
+    /// there, and with nothing painted WPF does no hit testing — the cursor passing between two icons
+    /// raises <c>MouseLeave</c> on the strip and the whole magnification falls back to rest. Moving slowly,
+    /// that is a flicker at every gap. The panel has a background, so it covers the gaps and also the
+    /// top and bottom margins; the position is still measured relative to the strip.
+    /// </summary>
+    private void OnPanelMouseMove(object sender, MouseEventArgs e)
     {
         UpdateDrag(e);
 
@@ -389,7 +398,7 @@ public partial class DockWindow : Window
             magnification);
     }
 
-    private void OnAppItemsMouseLeave(object sender, MouseEventArgs e)
+    private void OnPanelMouseLeave(object sender, MouseEventArgs e)
     {
         ResetMagnification();
     }
