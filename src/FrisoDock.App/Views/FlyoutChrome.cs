@@ -33,6 +33,7 @@ public sealed class FlyoutChrome
     private readonly PixelRect _anchor;
     private readonly IWindowBackdrop _backdrop;
     private readonly IWindowPositioner _positioner;
+    private readonly IWindowSwitcherExclusion _switcherExclusion;
     private readonly IScreenProvider _screens;
 
     public FlyoutChrome(
@@ -40,12 +41,14 @@ public sealed class FlyoutChrome
         PixelRect anchor,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
+        IWindowSwitcherExclusion switcherExclusion,
         IScreenProvider screens)
     {
         _window = window;
         _anchor = anchor;
         _backdrop = backdrop;
         _positioner = positioner;
+        _switcherExclusion = switcherExclusion;
         _screens = screens;
 
         _window.Left = OffscreenOrigin;
@@ -56,6 +59,10 @@ public sealed class FlyoutChrome
     public void ApplyAppearance()
     {
         ApplyAppearance(_window, _backdrop);
+
+        // A flyout is not an Alt+Tab destination. The settings screen, which uses only the static
+        // overload above, stays in the switcher: it is a window worth coming back to.
+        _switcherExclusion.Exclude(new WindowInteropHelper(_window).Handle);
     }
 
     /// <summary>

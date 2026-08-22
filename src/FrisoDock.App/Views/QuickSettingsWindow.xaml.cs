@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
@@ -22,13 +22,14 @@ public partial class QuickSettingsWindow : Window
         PixelRect anchor,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
+        IWindowSwitcherExclusion switcherExclusion,
         IScreenProvider screens)
     {
         _viewModel = viewModel;
 
         InitializeComponent();
 
-        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, screens);
+        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, switcherExclusion, screens);
         DataContext = _viewModel;
     }
 

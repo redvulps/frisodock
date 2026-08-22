@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -33,6 +33,7 @@ public partial class WindowPreviewWindow : Window
         IWindowActivator activator,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
+        IWindowSwitcherExclusion switcherExclusion,
         IScreenProvider screens)
     {
         _viewModel = viewModel;
@@ -41,7 +42,7 @@ public partial class WindowPreviewWindow : Window
 
         InitializeComponent();
 
-        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, screens);
+        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, switcherExclusion, screens);
 
         DataContext = _viewModel;
     }

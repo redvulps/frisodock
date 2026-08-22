@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -44,6 +44,7 @@ public partial class DockWindow : Window
     private readonly DockMagnifier _magnifier = new();
     private readonly IWindowBackdrop _backdrop;
     private readonly IWindowPositioner _positioner;
+    private readonly IWindowSwitcherExclusion _switcherExclusion;
     private readonly IScreenProvider _screens;
     private readonly DockAutoHide _autoHide;
 
@@ -75,6 +76,7 @@ public partial class DockWindow : Window
         IWindowActivator activator,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
+        IWindowSwitcherExclusion switcherExclusion,
         IScreenProvider screens,
         IWindowEnumerator windowEnumerator,
         DockVisibilityPolicy visibilityPolicy,
@@ -95,6 +97,7 @@ public partial class DockWindow : Window
         _activator = activator;
         _backdrop = backdrop;
         _positioner = positioner;
+        _switcherExclusion = switcherExclusion;
         _screens = screens;
 
         _autoHide = new DockAutoHide(placement, windowEnumerator, settings, visibilityPolicy, cursor, HasOpenFlyout);
@@ -112,6 +115,9 @@ public partial class DockWindow : Window
         base.OnSourceInitialized(e);
 
         nint handle = new WindowInteropHelper(this).Handle;
+
+        // Before the window is shown: it is at show time that Windows decides if it enters Alt+Tab.
+        _switcherExclusion.Exclude(handle);
 
         if (PresentationSource.FromVisual(this) is HwndSource source)
         {
@@ -535,6 +541,7 @@ public partial class DockWindow : Window
                 _activator,
                 _backdrop,
                 _positioner,
+                _switcherExclusion,
                 _screens);
 
             _preview.Closed += OnPreviewClosed;
@@ -612,6 +619,7 @@ public partial class DockWindow : Window
             FlyoutChrome.GetScreenRect(anchor),
             _backdrop,
             _positioner,
+            _switcherExclusion,
             _screens);
 
         _quickSettings.Closed += OnQuickSettingsClosed;
@@ -657,7 +665,7 @@ public partial class DockWindow : Window
             TrayFlyoutViewModel flyout = _trayFlyoutFactory.Create(
                 () => new PixelPoint(anchorRect.Left + (anchorRect.Width / 2), anchorRect.Top));
 
-            _trayFlyout = new TrayFlyoutWindow(flyout, anchorRect, _backdrop, _positioner, _screens);
+            _trayFlyout = new TrayFlyoutWindow(flyout, anchorRect, _backdrop, _positioner, _switcherExclusion, _screens);
             _trayFlyout.Closed += OnTrayFlyoutClosed;
             _trayFlyout.Show();
             _trayFlyout.Activate();
@@ -701,7 +709,7 @@ public partial class DockWindow : Window
                 return;
             }
 
-            _jumpList = new JumpListWindow(flyout, GetScreenRect(anchorElement), _backdrop, _positioner, _screens);
+            _jumpList = new JumpListWindow(flyout, GetScreenRect(anchorElement), _backdrop, _positioner, _switcherExclusion, _screens);
             _jumpList.Closed += OnJumpListClosed;
             _jumpList.Show();
             _jumpList.Activate();

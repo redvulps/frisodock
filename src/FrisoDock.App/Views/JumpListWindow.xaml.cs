@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using FrisoDock.App.ViewModels;
@@ -27,13 +27,14 @@ public partial class JumpListWindow : Window
         PixelRect anchor,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
+        IWindowSwitcherExclusion switcherExclusion,
         IScreenProvider screens)
     {
         _viewModel = viewModel;
 
         InitializeComponent();
 
-        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, screens);
+        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, switcherExclusion, screens);
 
         DataContext = _viewModel;
         _viewModel.SubscribeToInvocations(OnItemInvoked);

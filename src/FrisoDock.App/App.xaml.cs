@@ -187,6 +187,7 @@ public partial class App : Application
         services.AddSingleton<ICursorProvider, CursorProvider>();
         services.AddSingleton<IDisplayWatcher, DisplayWatcher>();
         services.AddSingleton<IWindowPositioner, WindowPositioner>();
+        services.AddSingleton<IWindowSwitcherExclusion, WindowSwitcherExclusion>();
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IWindowBackdrop, DwmWindowBackdrop>();

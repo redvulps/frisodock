@@ -108,6 +108,9 @@ internal static class NativeMethods
     [DllImport(User32, EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
     internal static extern nint GetWindowLongPtr(nint windowHandle, int index);
 
+    [DllImport(User32, EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    internal static extern nint SetWindowLongPtr(nint windowHandle, int index, nint value);
+
     [DllImport(User32, SetLastError = true)]
     internal static extern uint GetWindowThreadProcessId(nint windowHandle, out uint processId);
 
