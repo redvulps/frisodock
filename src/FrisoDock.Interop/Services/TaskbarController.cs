@@ -1,4 +1,5 @@
-using FrisoDock.Core.Abstractions;
+﻿using FrisoDock.Core.Abstractions;
+using FrisoDock.Core.Models;
 using FrisoDock.Interop.Native;
 
 namespace FrisoDock.Interop.Services;
@@ -6,11 +7,12 @@ namespace FrisoDock.Interop.Services;
 /// <summary>
 /// Hides and restores the native taskbar. Nothing beyond that (SRP).
 ///
-/// There are two independent steps, and both matter:
-///  1. Putting Explorer's appbar into autohide (ABM_SETSTATE). Merely hiding the window does not
-///     give the screen work area back — the space would stay reserved and maximized windows
-///     would end up with an empty band at the bottom.
-///  2. Hiding the taskbar windows (the primary one and the secondary one on each monitor).
+/// Hiding is <c>ShowWindow</c> on the taskbar windows — the primary one and the secondary ones on
+/// monitor — and nothing else. Autohide (<c>ABM_SETSTATE</c>) was used for a while, because it is the
+/// only way to give back the band the taskbar reserves; but autohide means Explorer
+/// shows the bar again as soon as the cursor touches the edge, on top of the dock. Really hiding
+/// is worth more than the band: what discounts the band from the dock's reservation is
+/// <see cref="GetReservedBand"/>, and the result on screen is the same.
 ///
 /// It requires no administrator privilege: Explorer runs at the same integrity level
 /// as the user.
@@ -19,8 +21,6 @@ public sealed class TaskbarController : ITaskbarController
 {
     private readonly ITaskbarStateStore _stateStore;
     private readonly IShellTrayPriority _trayPriority;
-
-    private int? _originalAppBarState;
 
     public TaskbarController(ITaskbarStateStore stateStore, IShellTrayPriority trayPriority)
     {
@@ -33,15 +33,10 @@ public sealed class TaskbarController : ITaskbarController
     public void Hide()
     {
         // With the turn yielded, Explorer is once again the first Shell_TrayWnd — which is what this
-        // service looks for, both for the window to hide and for the ABM_SETSTATE target.
-        // Without that, with the tray hosted here, it would find the dock's own window.
+        // service looks for. Without that, with the tray hosted here, it would find the dock's own
+        // window and hide the wrong one.
         using IDisposable priority = _trayPriority.Yield();
 
-        // It stores the original state only the first time, so as not to write "autohide"
-        // as if it were the user's preference on a second call.
-        _originalAppBarState ??= ReadOriginalState();
-
-        SetAppBarState(NativeConstants.ABS_AUTOHIDE | NativeConstants.ABS_ALWAYSONTOP);
         ApplyVisibility(NativeConstants.SW_HIDE);
 
         IsHidden = true;
@@ -53,35 +48,36 @@ public sealed class TaskbarController : ITaskbarController
 
         ApplyVisibility(NativeConstants.SW_SHOW);
 
-        int? state = _originalAppBarState ?? _stateStore.Load();
-        if (state is int original)
+        // A stored value comes from an earlier version, which put the taskbar into autohide to
+        // release the band. Restoring and erasing leaves the machine as the user had it.
+        if (_stateStore.Load() is int pending)
         {
-            SetAppBarState(original);
+            SetAppBarState(pending);
         }
 
         _stateStore.Clear();
-        _originalAppBarState = null;
         IsHidden = false;
     }
 
-    /// <summary>
-    /// State to restore later.
-    ///
-    /// A pending value on disk means the previous run died without restoring: the
-    /// taskbar is already in autohide because of it, and reading the current state would merely store that
-    /// autohide as if it were the user's preference. In that case the stored value is the correct one.
-    /// </summary>
-    private int ReadOriginalState()
+    /// <inheritdoc />
+    public PixelRect? GetReservedBand()
     {
-        if (_stateStore.Load() is int pending)
+        using IDisposable priority = _trayPriority.Yield();
+
+        // Autohide is the user's choice in the Windows settings, and in that mode the taskbar
+        // reserves nothing — there is nothing to discount.
+        if ((GetAppBarState() & NativeConstants.ABS_AUTOHIDE) != 0)
         {
-            return pending;
+            return null;
         }
 
-        int current = GetAppBarState();
-        _stateStore.Save(current);
+        APPBARDATA data = CreateAppBarData();
+        if (NativeMethods.SHAppBarMessage(NativeConstants.ABM_GETTASKBARPOS, ref data) == 0)
+        {
+            return null;
+        }
 
-        return current;
+        return data.rc.ToPixelRect();
     }
 
     private static void ApplyVisibility(int showCommand)

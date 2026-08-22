@@ -1,3 +1,5 @@
+using FrisoDock.Core.Models;
+
 namespace FrisoDock.Core.Abstractions;
 
 /// <summary>
@@ -10,14 +12,27 @@ public interface ITaskbarController
     bool IsHidden { get; }
 
     /// <summary>
-    /// Hides the primary taskbar and the secondary ones, and puts Explorer's appbar into
-    /// autohide to release the screen work area. Idempotent.
+    /// Hides the primary taskbar and the secondary ones. Idempotent.
+    ///
+    /// It hides the window and nothing else: the band it reserves on screen stays reserved, and it is the
+    /// dock that discounts that band from its own — see <see cref="GetReservedBand"/>.
     /// </summary>
     void Hide();
 
     /// <summary>
-    /// Restores the taskbar's visibility and original state. Idempotent and safe
-    /// to call even if <see cref="Hide"/> never ran in this session.
+    /// Restores the taskbar's visibility. Idempotent and safe to call even if
+    /// <see cref="Hide"/> never ran in this session.
     /// </summary>
     void Restore();
+
+    /// <summary>
+    /// Band the native taskbar reserves on screen, or <c>null</c> when it reserves nothing —
+    /// which is the case for whoever chose autohide in the Windows settings.
+    ///
+    /// Hiding the window does not give that band back, and there is no way to give it back from
+    /// outside: on Windows 11 the taskbar answers neither <c>ABM_SETPOS</c> nor <c>ABM_REMOVE</c> from
+    /// Explorer recomputes over <c>SPI_SETWORKAREA</c>. Only autohide releases it, and autohide
+    /// is precisely what makes the bar reappear when the cursor reaches the edge.
+    /// </summary>
+    PixelRect? GetReservedBand();
 }

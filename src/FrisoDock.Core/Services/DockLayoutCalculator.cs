@@ -296,11 +296,24 @@ public sealed class DockLayoutCalculator
     /// Band the appbar should reserve: it takes the whole edge, with the dock's thickness.
     /// The visible panel sits centred inside it.
     /// </summary>
-    public PixelRect CalculateReservationRect(MonitorInfo monitor, DockEdge edge, DockMetrics metrics)
+    /// <param name="nativeBand">
+    /// Band the native taskbar already reserves, or <c>null</c> if it reserves nothing. The shell
+    /// stacks the appbars of a single edge, so asking for the full thickness on top of the taskbar's
+    /// band would reserve both — and the taskbar's sits under the dock, invisible. By discounting it,
+    /// the total goes back to exactly the dock's thickness.
+    /// </param>
+    public PixelRect CalculateReservationRect(
+        MonitorInfo monitor,
+        DockEdge edge,
+        DockMetrics metrics,
+        PixelRect? nativeBand = null)
     {
         ArgumentNullException.ThrowIfNull(metrics);
 
-        int thickness = Scale(metrics.ReservedThickness, monitor.DpiScale);
+        int thickness = Math.Max(
+            0,
+            Scale(metrics.ReservedThickness, monitor.DpiScale) - MeasureNativeBand(monitor, edge, nativeBand));
+
         PixelRect bounds = monitor.Bounds;
 
         return edge switch
@@ -309,6 +322,41 @@ public sealed class DockLayoutCalculator
             DockEdge.Top => new PixelRect(bounds.Left, bounds.Top, bounds.Right, bounds.Top + thickness),
             DockEdge.Left => new PixelRect(bounds.Left, bounds.Top, bounds.Left + thickness, bounds.Bottom),
             DockEdge.Right => new PixelRect(bounds.Right - thickness, bounds.Top, bounds.Right, bounds.Bottom),
+            _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
+        };
+    }
+
+    /// <summary>
+    /// Thickness the native band already takes from this edge of this monitor.
+    ///
+    /// Only the band on the same edge of the same monitor counts: a taskbar on the side, or on the
+    /// next screen, does not compete for space with the dock here. Touching the edge is not enough as a
+    /// criterion — a taskbar on the left runs from top to bottom, and therefore also touches the
+    /// bottom edge. What tells them apart is the shape: a horizontal band belongs to a horizontal
+    /// edge, an upright band to a vertical one.
+    /// </summary>
+    private static int MeasureNativeBand(MonitorInfo monitor, DockEdge edge, PixelRect? nativeBand)
+    {
+        if (nativeBand is not PixelRect band)
+        {
+            return 0;
+        }
+
+        PixelRect bounds = monitor.Bounds;
+
+        if (band.Right <= bounds.Left || band.Left >= bounds.Right || band.Bottom <= bounds.Top || band.Top >= bounds.Bottom)
+        {
+            return 0;
+        }
+
+        bool horizontal = band.Width >= band.Height;
+
+        return edge switch
+        {
+            DockEdge.Bottom => horizontal && band.Bottom >= bounds.Bottom ? band.Height : 0,
+            DockEdge.Top => horizontal && band.Top <= bounds.Top ? band.Height : 0,
+            DockEdge.Left => !horizontal && band.Left <= bounds.Left ? band.Width : 0,
+            DockEdge.Right => !horizontal && band.Right >= bounds.Right ? band.Width : 0,
             _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, "Borda de dock desconhecida."),
         };
     }

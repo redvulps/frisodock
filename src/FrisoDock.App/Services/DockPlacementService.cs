@@ -1,4 +1,4 @@
-using FrisoDock.Core.Abstractions;
+﻿using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using FrisoDock.Core.Services;
 
@@ -20,6 +20,7 @@ public sealed class DockPlacementService
     private readonly IAppBarService _appBar;
     private readonly DockLayoutCalculator _layout;
     private readonly DockSettingsService _settings;
+    private readonly ITaskbarController _taskbar;
     private readonly DockMonitor _monitor;
 
     private nint _windowHandle;
@@ -50,12 +51,14 @@ public sealed class DockPlacementService
         IAppBarService appBar,
         DockLayoutCalculator layout,
         DockSettingsService settings,
+        ITaskbarController taskbar,
         DockMonitorHolder monitor)
     {
         _positioner = positioner;
         _appBar = appBar;
         _layout = layout;
         _settings = settings;
+        _taskbar = taskbar;
         _monitor = monitor.Monitor;
     }
 
@@ -88,7 +91,13 @@ public sealed class DockPlacementService
 
         if (Settings.ReservesScreenSpace)
         {
-            PixelRect reservation = _layout.CalculateReservationRect(monitor, Settings.Edge, Settings.EffectiveMetrics);
+            // The native taskbar band enters the calculation: it sits under the dock, and without
+            // discounting it the shell would stack the two.
+            PixelRect reservation = _layout.CalculateReservationRect(
+                monitor,
+                Settings.Edge,
+                Settings.EffectiveMetrics,
+                _taskbar.GetReservedBand());
             _appBar.SetPosition(Settings.Edge, reservation);
         }
 

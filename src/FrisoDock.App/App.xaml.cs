@@ -69,6 +69,13 @@ public partial class App : Application
         {
             _taskbarController.Hide();
         }
+        else
+        {
+            // Hiding is now ShowWindow, and ShowWindow does not undo itself: if the previous
+            // run died while hiding, the taskbar would stay gone. Showing it on the way in
+            // fixes that at no cost — on an already visible taskbar it does nothing.
+            _taskbarController.Restore();
+        }
 
         _trayHost = _services.GetRequiredService<TrayHostRunner>();
         _trayHost.Start();

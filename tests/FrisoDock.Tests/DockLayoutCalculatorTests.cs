@@ -194,6 +194,53 @@ public sealed class DockLayoutCalculatorTests
     }
 
     [Fact]
+    public void CalculateReservationRect_DiscountsTheBandTheTaskbarAlreadyReserves()
+    {
+        MonitorInfo monitor = CreateMonitor(1920, 1080);
+        var taskbar = new PixelRect(0, 1032, 1920, 1080);
+
+        PixelRect reservation = _calculator.CalculateReservationRect(monitor, DockEdge.Bottom, Metrics, taskbar);
+
+        // The shell stacks the two bands: by asking only for the difference, the total goes back to the
+        // dock's thickness, and nothing disappears behind the hidden taskbar.
+        Assert.Equal(Metrics.ReservedThickness - 48, reservation.Height);
+    }
+
+    [Fact]
+    public void CalculateReservationRect_DoesNotDiscountATaskbarOnAnotherEdge()
+    {
+        MonitorInfo monitor = CreateMonitor(1920, 1080);
+        var taskbarNaEsquerda = new PixelRect(0, 0, 48, 1080);
+
+        PixelRect reservation = _calculator.CalculateReservationRect(monitor, DockEdge.Bottom, Metrics, taskbarNaEsquerda);
+
+        Assert.Equal(Metrics.ReservedThickness, reservation.Height);
+    }
+
+    [Fact]
+    public void CalculateReservationRect_DoesNotDiscountATaskbarOnAnotherMonitor()
+    {
+        var bounds = new PixelRect(1920, 0, 3840, 1080);
+        var monitor = new MonitorInfo(bounds, bounds, IsPrimary: false, DpiScale: 1.0);
+        var taskbarNaTelaPrincipal = new PixelRect(0, 1032, 1920, 1080);
+
+        PixelRect reservation = _calculator.CalculateReservationRect(monitor, DockEdge.Bottom, Metrics, taskbarNaTelaPrincipal);
+
+        Assert.Equal(Metrics.ReservedThickness, reservation.Height);
+    }
+
+    [Fact]
+    public void CalculateReservationRect_NativeBandLargerThanTheDocksDoesNotBecomeNegativeThickness()
+    {
+        MonitorInfo monitor = CreateMonitor(1920, 1080);
+        var taskbarGorda = new PixelRect(0, 900, 1920, 1080);
+
+        PixelRect reservation = _calculator.CalculateReservationRect(monitor, DockEdge.Bottom, Metrics, taskbarGorda);
+
+        Assert.Equal(0, reservation.Height);
+    }
+
+    [Fact]
     public void CalculateReservationRect_ThePanelFitsInsideTheReservedBand()
     {
         MonitorInfo monitor = CreateMonitor(1920, 1080);

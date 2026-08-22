@@ -112,6 +112,7 @@ internal static class NativeConstants
     internal const uint ABM_QUERYPOS = 0x00000002;
     internal const uint ABM_SETPOS = 0x00000003;
     internal const uint ABM_GETSTATE = 0x00000004;
+    internal const uint ABM_GETTASKBARPOS = 0x00000005;
     internal const uint ABM_SETSTATE = 0x0000000A;
 
     internal const uint ABE_LEFT = 0;
