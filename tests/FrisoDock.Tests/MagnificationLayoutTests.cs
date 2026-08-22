@@ -1,4 +1,4 @@
-using FrisoDock.Core.Services;
+﻿using FrisoDock.Core.Services;
 using Xunit;
 
 namespace FrisoDock.Tests;
@@ -20,6 +20,30 @@ public sealed class MagnificationLayoutTests
     private static double RestCenter(int index)
     {
         return Spacing + (index * Slot) + (IconSize / 2);
+    }
+
+    [Fact]
+    public void IsWithinStrip_AppliesFromTheStartToTheEndOfTheStrip()
+    {
+        Assert.True(_layout.IsWithinStrip(Count, IconSize, Spacing, 0));
+        Assert.True(_layout.IsWithinStrip(Count, IconSize, Spacing, RestCenter(0)));
+        Assert.True(_layout.IsWithinStrip(Count, IconSize, Spacing, RestCenter(Count - 1)));
+        Assert.True(_layout.IsWithinStrip(Count, IconSize, Spacing, Count * Slot));
+    }
+
+    [Fact]
+    public void IsWithinStrip_DoesNotApplyAfterTheLastIcon()
+    {
+        // It is where the separator, the tray and the clock sit. The curve's reach gets there, and without
+        // this limit a cursor resting on the clock would leave the last icon magnified.
+        Assert.False(_layout.IsWithinStrip(Count, IconSize, Spacing, (Count * Slot) + 1));
+        Assert.False(_layout.IsWithinStrip(Count, IconSize, Spacing, -1));
+    }
+
+    [Fact]
+    public void IsWithinStrip_WithNoIconsAppliesNowhere()
+    {
+        Assert.False(_layout.IsWithinStrip(0, IconSize, Spacing, 0));
     }
 
     [Theory]

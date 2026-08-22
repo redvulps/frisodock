@@ -48,6 +48,16 @@ public sealed class DockMagnifier
         }
 
         double cursorAtRest = position.X - (_appliedExtra / 2);
+
+        // What follows the cursor is the whole panel, to cover the gaps between the icons — but
+        // the effect belongs to the strip only. Past the separator, the cursor is on the tray or the clock,
+        // and magnifying from there magnifies an icon the mouse is not even touching.
+        if (!_layout.IsWithinStrip(count, iconSize, spacing, cursorAtRest))
+        {
+            Reset(items, count, originX);
+            return;
+        }
+
         MagnificationLayoutResult result = _layout.Calculate(count, iconSize, spacing, cursorAtRest, magnification);
 
         for (int index = 0; index < count; index++)

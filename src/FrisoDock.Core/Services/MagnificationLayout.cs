@@ -32,6 +32,24 @@ public sealed class MagnificationLayout
     private readonly MagnificationCurve _curve = new();
 
     /// <summary>
+    /// Whether the cursor is over the icon strip, the only place where the effect applies.
+    ///
+    /// The curve reaches 2.5 icons to each side, so without this limit a cursor resting
+    /// past the separator — on the tray, on the clock — would still magnify the last icons. The strip
+    /// runs from zero to the end of the last icon, and includes the spacing before each of them.
+    /// </summary>
+    /// <param name="cursorX">Cursor position along the strip axis, in the rest layout.</param>
+    public bool IsWithinStrip(int itemCount, double iconSize, double spacing, double cursorX)
+    {
+        if (itemCount <= 0 || iconSize <= 0)
+        {
+            return false;
+        }
+
+        return cursorX >= 0 && cursorX <= itemCount * (spacing + iconSize);
+    }
+
+    /// <summary>
     /// Computes the whole strip for one cursor position.
     /// </summary>
     /// <param name="itemCount">Number of icons.</param>
