@@ -1,3 +1,4 @@
+﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -15,19 +16,25 @@ namespace FrisoDock.App.Views;
 /// has to take more space — hence the explicit width on the <see cref="ItemsControl"/>,
 /// which is what makes the panel widen with it and keeps the neighbours from being invaded.
 ///
-/// The cursor leaving is not a cut: the effect strength falls over a few frames, and it is the same strength
-/// that rises when the cursor comes back. Since what moves is the frame, not the size, coming back mid-
+/// The cursor leaving is not a cut: the effect strength falls over 125 ms, and it is the same
+/// strength that rises when the cursor comes back. Since what moves is strength, not size, coming
 /// back mid-retraction continues from where it stopped instead of jumping to full size.
 /// </summary>
 public sealed class DockMagnifier : IDisposable
 {
     /// <summary>
-    /// Frames of the retraction, at the same cadence as the dock's hide slide (16 ms each).
+    /// Duration of the whole retraction, from full to rest.
+    ///
+    /// It is time, not a frame count: counting frames, a late frame stretches the
+    /// animation, and the duration would depend on whatever else was happening on screen.
     /// </summary>
-    private const int ReleaseFrames = 12;
+    private const double ReleaseMilliseconds = 125;
 
     private readonly MagnificationLayout _layout = new();
     private readonly DispatcherTimer _timer;
+
+    /// <summary>Time since the previous frame. It is what gives the fixed duration.</summary>
+    private readonly Stopwatch _clock = new();
 
     private ItemsControl? _items;
     private double _iconSize;
@@ -48,8 +55,10 @@ public sealed class DockMagnifier : IDisposable
     /// </summary>
     private double _appliedExtra;
 
-    private int _frame;
-    private int _targetFrame;
+    /// <summary>Effect strength right now, from 0 (rest) to 1 (full), before easing.</summary>
+    private double _strength;
+
+    private double _target;
     private bool _disposed;
 
     public DockMagnifier()
@@ -95,13 +104,12 @@ public sealed class DockMagnifier : IDisposable
 
         _cursorAtRest = cursorAtRest;
 
-        SetTarget(ReleaseFrames);
+        SetTarget(1.0);
         Render();
     }
 
     /// <summary>
-    /// Retracts the magnification over a few frames, from the current size. Called when the cursor
-    /// leaves the panel.
+    /// Retracts the magnification from the current size. Called when the cursor leaves the panel.
     /// </summary>
     public void Release()
     {
@@ -110,7 +118,7 @@ public sealed class DockMagnifier : IDisposable
             return;
         }
 
-        SetTarget(0);
+        SetTarget(0.0);
     }
 
     /// <summary>
@@ -122,9 +130,10 @@ public sealed class DockMagnifier : IDisposable
         ArgumentNullException.ThrowIfNull(items);
 
         _timer.Stop();
+        _clock.Reset();
         _items = items;
-        _frame = 0;
-        _targetFrame = 0;
+        _strength = 0;
+        _target = 0;
 
         double originX = CalculateOriginX(_iconSize, _spacing);
 
@@ -152,31 +161,44 @@ public sealed class DockMagnifier : IDisposable
         _disposed = true;
     }
 
-    private void SetTarget(int target)
+    private void SetTarget(double target)
     {
-        _targetFrame = target;
+        _target = target;
 
-        if (_frame != _targetFrame)
+        if (_strength == _target)
         {
-            _timer.Start();
+            return;
         }
+
+        // It restarts the count so the first step does not include the idle time since the end of the
+        // previous animation, which would give a jump in place of the first frame.
+        _clock.Restart();
+        _timer.Start();
     }
 
     private void OnTick(object? sender, EventArgs e)
     {
-        // One frame at a time towards the target: changing direction midway continues from the
-        // current frame, which is what makes the returning cursor catch the icon at the size it is.
-        _frame += Math.Sign(_targetFrame - _frame);
+        double elapsed = _clock.Elapsed.TotalMilliseconds;
+        _clock.Restart();
+
+        // The step comes from time that really passed, and not from a fixed per-frame value: this way the
+        // total duration is the same with the dock full of icons or with three, and a dropped frame
+        // advances the next instead of stretching the animation.
+        double step = elapsed / ReleaseMilliseconds;
+        _strength = _target > _strength
+            ? Math.Min(_strength + step, _target)
+            : Math.Max(_strength - step, _target);
+
         Render();
 
-        if (_frame != _targetFrame)
+        if (_strength != _target)
         {
             return;
         }
 
         _timer.Stop();
 
-        if (_frame == 0 && _items is ItemsControl items)
+        if (_strength == 0 && _items is ItemsControl items)
         {
             items.ClearValue(FrameworkElement.WidthProperty);
         }
@@ -196,7 +218,7 @@ public sealed class DockMagnifier : IDisposable
 
         int count = items.Items.Count;
         double originX = CalculateOriginX(_iconSize, _spacing);
-        double strength = Easing.Smoothstep(_frame / (double)ReleaseFrames);
+        double strength = Easing.Smoothstep(_strength);
         double magnification = 1.0 + ((_magnification - 1.0) * strength);
 
         MagnificationLayoutResult result = _layout.Calculate(count, _iconSize, _spacing, _cursorAtRest, magnification);
