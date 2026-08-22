@@ -95,8 +95,14 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
+                        <!--
+                            O Padding precisa ser repassado: sem isto o que o botão declara é
+                            ignorado, e o conteúdo encosta na borda do realce. Vale para o bloco
+                            da bateria, que é o único de largura livre.
+                        -->
                         <Border x:Name="Root"
                                 Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
                                 CornerRadius="4">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
