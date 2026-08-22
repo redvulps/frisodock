@@ -110,6 +110,45 @@
             </Setter>
         </Style>
 
+        <!--
+            Botão de diálogo no formato do Windows 11. Precisa de template próprio: sem ele o
+            WPF cai no template padrão, que no hover pinta o azul-claro do Aero — cor que não
+            existe em lugar nenhum deste painel, e que sobre o texto claro fica ilegível.
+        -->
+        <Style x:Key="DialogButtonStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Padding" Value="18,7" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Background" Value="#2D2D2D" />
+            <Setter Property="BorderBrush" Value="{StaticResource SeparatorBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                CornerRadius="4"
+                                BorderThickness="1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#383838" />
+                            </Trigger>
+
+                            <!-- Pressed darkens instead of lightening, like the system buttons. -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#272727" />
+                                <Setter TargetName="Root" Property="TextElement.Foreground" Value="{StaticResource MutedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Settings row: label and explanation on the left, control on the right. -->
         <Style x:Key="SettingRowStyle" TargetType="Border">
             <Setter Property="Padding" Value="14,11" />
@@ -421,12 +460,7 @@
                     Click="OnCloseClick"
                     HorizontalAlignment="Right"
                     Margin="14,12,14,8"
-                    Padding="18,7"
-                    Cursor="Hand"
-                    Foreground="{StaticResource TextBrush}"
-                    Background="#2D2D2D"
-                    BorderBrush="{StaticResource SeparatorBrush}"
-                    BorderThickness="1" />
+                    Style="{StaticResource DialogButtonStyle}" />
 
         </StackPanel>
     </Border>
