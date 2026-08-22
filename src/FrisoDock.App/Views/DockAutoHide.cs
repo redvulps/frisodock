@@ -1,4 +1,4 @@
-using System.Windows.Threading;
+﻿using System.Windows.Threading;
 using FrisoDock.App.Services;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
@@ -171,20 +171,11 @@ public sealed class DockAutoHide : IDisposable
     private void OnAnimationTick(object? sender, EventArgs e)
     {
         _frame += Math.Sign(_targetFrame - _frame);
-        _placement.SetReveal(Ease(_frame / (double)AnimationFrames));
+        _placement.SetReveal(Easing.Smoothstep(_frame / (double)AnimationFrames));
 
         if (_frame == _targetFrame)
         {
             _animationTimer.Stop();
         }
-    }
-
-    /// <summary>
-    /// Eases both ends of the slide. Linear, the dock starts and stops abruptly, and the eye
-    /// reads that as the window being teleported instead of sliding.
-    /// </summary>
-    private static double Ease(double progress)
-    {
-        return progress * progress * (3.0 - (2.0 * progress));
     }
 }

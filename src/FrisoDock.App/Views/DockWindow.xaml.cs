@@ -143,6 +143,7 @@ public partial class DockWindow : Window
         _settings.Changed -= OnSettingsChanged;
 
         _autoHide.Dispose();
+        _magnifier.Dispose();
         _placement.Detach();
         _viewModel.Dispose();
 
@@ -400,17 +401,14 @@ public partial class DockWindow : Window
 
     private void OnPanelMouseLeave(object sender, MouseEventArgs e)
     {
-        ResetMagnification();
+        // It retracts with animation, not at once: the abrupt cut is what made the icon drop to its
+        // rest size the moment the cursor left.
+        _magnifier.Release();
     }
 
     private void ResetMagnification()
     {
-        _magnifier.Apply(
-            AppItems,
-            cursor: null,
-            _viewModel.Appearance.IconSize,
-            _viewModel.Appearance.ItemSpacing,
-            magnification: 1.0);
+        _magnifier.Reset(AppItems);
     }
 
     // ------------------------------------------------------------------ window thumbnails
