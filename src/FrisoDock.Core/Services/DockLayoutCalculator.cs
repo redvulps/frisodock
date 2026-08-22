@@ -17,9 +17,13 @@ namespace FrisoDock.Core.Services;
 /// <param name="BorderThickness">Thickness of the panel border.</param>
 /// <param name="SeparatorWidth">Thickness of the line that separates the blocks.</param>
 /// <param name="SeparatorSpacing">Space on each side of the separator.</param>
-/// <param name="QuickStatusWidth">Width of the network, volume and battery group.</param>
-/// <param name="ClockWidth">Width reserved for the clock.</param>
-/// <param name="ClockWidthWithSeconds">Width reserved when the clock shows the seconds.</param>
+/// <param name="ContentPadding">
+/// Horizontal gap between an element's content and the edge of the highlight around it. It is the
+/// same for all of them: app icon, network/sound/battery group and clock.
+/// </param>
+/// <param name="QuickStatusContentWidth">Width of the network, volume and battery glyphs, measured on screen.</param>
+/// <param name="ClockContentWidth">Width of the clock's widest line — here, the date.</param>
+/// <param name="ClockContentWidthWithSeconds">The same measure when the time carries the seconds.</param>
 /// <param name="HiddenSliver">Sliver of the panel that stays on screen with the dock hidden.</param>
 public sealed record DockMetrics(
     int IconSize = 44,
@@ -29,15 +33,30 @@ public sealed record DockMetrics(
     int BorderThickness = 1,
     int SeparatorWidth = 1,
     int SeparatorSpacing = 6,
-    int QuickStatusWidth = 58,
-    int ClockWidth = 62,
-    int ClockWidthWithSeconds = 82,
+    int ContentPadding = 6,
+    int QuickStatusContentWidth = 52,
+    int ClockContentWidth = 56,
+    int ClockContentWidthWithSeconds = 70,
     int HiddenSliver = 2)
 {
     public static DockMetrics Default { get; } = new();
 
-    /// <summary>Side of the image inside the button, leaving room for the hover highlight.</summary>
-    public int IconImageSize => (int)Math.Round(IconSize * 0.73);
+    /// <summary>
+    /// Side of the image inside the button, leaving the hover highlight's padding.
+    ///
+    /// It comes from the same padding as the other elements, and not from a ratio of its own: it was
+    /// <c>IconSize * 0.73</c>, which gives exactly this same value — the ratio was hiding the padding.
+    /// </summary>
+    public int IconImageSize => IconSize - (ContentPadding * 2);
+
+    /// <summary>Width of the network, volume and battery group, with the padding on both sides.</summary>
+    public int QuickStatusWidth => QuickStatusContentWidth + (ContentPadding * 2);
+
+    /// <summary>Width reserved for the clock, with the padding on both sides.</summary>
+    public int ClockWidth => ClockContentWidth + (ContentPadding * 2);
+
+    /// <summary>The same width when the clock shows the seconds.</summary>
+    public int ClockWidthWithSeconds => ClockContentWidthWithSeconds + (ContentPadding * 2);
 
     /// <summary>Separator length counting the space on both sides.</summary>
     public int SeparatorBlockLength => SeparatorWidth + (SeparatorSpacing * 2);

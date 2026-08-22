@@ -55,6 +55,26 @@ public sealed class DockMetricsTests
     }
 
     [Fact]
+    public void ContentPadding_AppliesEquallyToIconGroupAndClock()
+    {
+        // The padding is a single one: if an element starts computing its own outside, the dock goes back to
+        // having one tight highlight and one loose highlight side by side.
+        var metrics = new DockMetrics(ContentPadding: 7);
+
+        Assert.Equal(metrics.IconSize - 14, metrics.IconImageSize);
+        Assert.Equal(metrics.QuickStatusContentWidth + 14, metrics.QuickStatusWidth);
+        Assert.Equal(metrics.ClockContentWidth + 14, metrics.ClockWidth);
+        Assert.Equal(metrics.ClockContentWidthWithSeconds + 14, metrics.ClockWidthWithSeconds);
+    }
+
+    [Fact]
+    public void IconImageSize_DidNotChangeWhenMovingFromRatioToPadding()
+    {
+        // It was IconSize * 0.73. Swapping it for IconSize - 2 * ContentPadding must not change the icon.
+        Assert.Equal(32, DockMetrics.Default.IconImageSize);
+    }
+
+    [Fact]
     public void LayoutWithDefaultMetrics_ProducesAVisibleDock()
     {
         var bounds = new PixelRect(0, 0, 1920, 1080);

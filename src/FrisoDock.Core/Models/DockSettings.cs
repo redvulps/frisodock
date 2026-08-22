@@ -70,7 +70,7 @@ public sealed record DockSettings
     /// XAML keep reading the same measure, and neither has to know why it changed.
     /// </summary>
     public DockMetrics EffectiveMetrics => ShowClockSeconds
-        ? Metrics with { ClockWidth = Metrics.ClockWidthWithSeconds }
+        ? Metrics with { ClockContentWidth = Metrics.ClockContentWidthWithSeconds }
         : Metrics;
 
     /// <summary>

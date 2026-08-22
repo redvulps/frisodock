@@ -1,4 +1,4 @@
-using FrisoDock.Core.Models;
+﻿using FrisoDock.Core.Models;
 using FrisoDock.Core.Services;
 using Xunit;
 
@@ -18,8 +18,9 @@ public sealed class DockLayoutCalculatorTests
         BorderThickness: 1,
         SeparatorWidth: 1,
         SeparatorSpacing: 5,
-        QuickStatusWidth: 50,
-        ClockWidth: 60);
+        ContentPadding: 5,
+        QuickStatusContentWidth: 40,
+        ClockContentWidth: 50);
 
     // Fixed parts: Start (40) + separator (11) on the left; separator (11) + tray (40)
     // + spacing (10) + network/sound/battery (50) + spacing (10) + clock (60) on the right = 232.
@@ -131,9 +132,11 @@ public sealed class DockLayoutCalculatorTests
     public void CalculatePanelLength_ReservesTheClockSpace()
     {
         // Without this part the panel would come out narrower than the content and clip the clock.
-        var semRelogio = Metrics with { ClockWidth = 0 };
+        var estreito = Metrics with { ClockContentWidth = 0 };
 
-        Assert.Equal(60, Metrics.CalculatePanelLength(3) - semRelogio.CalculatePanelLength(3));
+        Assert.Equal(
+            Metrics.ClockWidth - estreito.ClockWidth,
+            Metrics.CalculatePanelLength(3) - estreito.CalculatePanelLength(3));
     }
 
     [Fact]
