@@ -1,4 +1,4 @@
-namespace FrisoDock.Interop.Native;
+﻿namespace FrisoDock.Interop.Native;
 
 /// <summary>
 /// Win32 constants used by the dock. Declared a single time (DRY): no other
@@ -200,6 +200,23 @@ internal static class NativeConstants
     internal const uint INPUT_KEYBOARD = 1;
     internal const uint KEYEVENTF_KEYUP = 0x0002;
     internal const ushort VK_LWIN = 0x5B;
+
+    // --- Low-level keyboard hook ---
+    internal const int WH_KEYBOARD_LL = 13;
+    internal const int HC_ACTION = 0;
+    internal const uint WM_KEYDOWN = 0x0100;
+    internal const uint WM_KEYUP = 0x0101;
+    internal const uint WM_SYSKEYDOWN = 0x0104;
+    internal const uint WM_SYSKEYUP = 0x0105;
+    internal const uint WM_QUIT = 0x0012;
+
+    internal const uint VK_TAB = 0x09;
+    internal const uint VK_ESCAPE = 0x1B;
+    internal const uint VK_SHIFT = 0x10;
+
+    // The hook reports Alt side by side, never the generic VK_MENU: what arrives is 0xA4 or 0xA5.
+    internal const uint VK_LMENU = 0xA4;
+    internal const uint VK_RMENU = 0xA5;
 
     // --- Monitors ---
     internal const uint MONITOR_DEFAULTTOPRIMARY = 0x00000001;

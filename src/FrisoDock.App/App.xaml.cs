@@ -26,6 +26,7 @@ public partial class App : Application
     private ServiceProvider? _services;
     private ITaskbarController? _taskbarController;
     private DockHost? _dockHost;
+    private WindowSwitcherRunner? _windowSwitcher;
     private TrayHostRunner? _trayHost;
     private Mutex? _singleInstanceMutex;
 
@@ -83,6 +84,9 @@ public partial class App : Application
         _dockHost = _services.GetRequiredService<DockHost>();
         _dockHost.Start();
 
+        _windowSwitcher = _services.GetRequiredService<WindowSwitcherRunner>();
+        _windowSwitcher.Start();
+
         MainWindow = _dockHost.PrimaryWindow;
     }
 
@@ -91,6 +95,10 @@ public partial class App : Application
         // The tray goes back to Explorer before anything else: the docks disappear right after,
         // and an icon left hanging on an already closed window would never come back.
         _trayHost?.Dispose();
+
+        // The keyboard hook goes before the windows: while it exists, every Alt+Tab in the
+        // system passes through here, and an already torn down dock would have nothing to show.
+        _windowSwitcher?.Dispose();
         _dockHost?.Dispose();
 
         RestoreTaskbar();
@@ -173,6 +181,7 @@ public partial class App : Application
         services.AddSingleton<ClockFormatter>();
         services.AddSingleton<MagnificationCurve>();
         services.AddSingleton<DockVisibilityPolicy>();
+        services.AddSingleton<WindowSwitchList>();
         services.AddSingleton<DockLayoutCalculator>();
 
         // Win32 (Interop layer)
@@ -188,6 +197,7 @@ public partial class App : Application
         services.AddSingleton<IDisplayWatcher, DisplayWatcher>();
         services.AddSingleton<IWindowPositioner, WindowPositioner>();
         services.AddSingleton<IWindowSwitcherExclusion, WindowSwitcherExclusion>();
+        services.AddSingleton<IWindowSwitcherGesture, WindowSwitcherGesture>();
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IWindowBackdrop, DwmWindowBackdrop>();
@@ -213,6 +223,7 @@ public partial class App : Application
         services.AddSingleton<PinnedAppsService>();
         services.AddSingleton<IconImageProvider>();
         services.AddSingleton<TrayHostRunner>();
+        services.AddSingleton<WindowSwitcherRunner>();
         services.AddSingleton<DockHost>();
         services.AddSingleton<JumpListFlyoutFactory>();
         services.AddSingleton<TrayFlyoutFactory>();

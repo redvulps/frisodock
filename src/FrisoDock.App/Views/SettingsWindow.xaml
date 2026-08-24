@@ -291,6 +291,34 @@
 
             <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
 
+            <!-- Alternador -->
+            <TextBlock Text="ALTERNAR ENTRE JANELAS"
+                       Foreground="{StaticResource MutedBrush}"
+                       FontSize="11"
+                       Margin="14,10,14,4" />
+
+            <Border Style="{StaticResource SettingRowStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="Usar ALT+Tab agrupado por aplicativo"
+                                   Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock Text="Um item por app em vez de um por janela; ao chegar num app, entra pela janela que estava em uso. Desligado, vale o ALT+Tab do Windows."
+                                   Style="{StaticResource SettingHintStyle}" />
+                    </StackPanel>
+
+                    <CheckBox Grid.Column="1"
+                              Style="{StaticResource ToggleSwitchStyle}"
+                              IsChecked="{Binding UseGroupedWindowSwitcher}" />
+                </Grid>
+            </Border>
+
+            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
+
             <!-- Monitors -->
             <TextBlock Text="MONITORES"
                        Foreground="{StaticResource MutedBrush}"

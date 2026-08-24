@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FrisoDock.App.Services;
 using FrisoDock.Core.Models;
 
@@ -43,6 +43,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _showClockSeconds;
+
+    [ObservableProperty]
+    private bool _useGroupedWindowSwitcher;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanIsolateMonitorApps))]
@@ -112,6 +115,8 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnShowClockSecondsChanged(bool value) => Apply();
 
+    partial void OnUseGroupedWindowSwitcherChanged(bool value) => Apply();
+
     partial void OnShowOnAllMonitorsChanged(bool value) => Apply();
 
     partial void OnIsolateMonitorAppsChanged(bool value) => Apply();
@@ -137,6 +142,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             MagnificationScale = settings.MagnificationScale;
             EnableWindowPreviews = settings.EnableWindowPreviews;
             ShowClockSeconds = settings.ShowClockSeconds;
+            UseGroupedWindowSwitcher = settings.UseGroupedWindowSwitcher;
             ShowOnAllMonitors = settings.ShowOnAllMonitors;
             IsolateMonitorApps = settings.IsolateMonitorApps;
         }
@@ -162,6 +168,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             MagnificationScale = Math.Round(MagnificationScale, 2),
             EnableWindowPreviews = EnableWindowPreviews,
             ShowClockSeconds = ShowClockSeconds,
+            UseGroupedWindowSwitcher = UseGroupedWindowSwitcher,
             ShowOnAllMonitors = ShowOnAllMonitors,
             IsolateMonitorApps = IsolateMonitorApps,
         });

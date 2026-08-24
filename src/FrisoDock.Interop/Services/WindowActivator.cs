@@ -1,4 +1,4 @@
-using FrisoDock.Core.Abstractions;
+﻿using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using FrisoDock.Interop.Native;
 
@@ -18,18 +18,22 @@ public sealed class WindowActivator : IWindowActivator
     {
         ArgumentNullException.ThrowIfNull(window);
 
-        nint handle = window.Handle;
-        if (!NativeMethods.IsWindow(handle))
+        Activate(window.Handle);
+    }
+
+    public void Activate(nint windowHandle)
+    {
+        if (!NativeMethods.IsWindow(windowHandle))
         {
             return;
         }
 
-        if (NativeMethods.IsIconic(handle))
+        if (NativeMethods.IsIconic(windowHandle))
         {
-            NativeMethods.ShowWindow(handle, NativeConstants.SW_RESTORE);
+            NativeMethods.ShowWindow(windowHandle, NativeConstants.SW_RESTORE);
         }
 
-        ForceForeground(handle);
+        ForceForeground(windowHandle);
     }
 
     public void Minimize(WindowInfo window)

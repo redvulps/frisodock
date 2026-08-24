@@ -1,4 +1,4 @@
-using FrisoDock.Core.Models;
+﻿using FrisoDock.Core.Models;
 
 namespace FrisoDock.Core.Abstractions;
 
@@ -9,6 +9,16 @@ public interface IWindowActivator
 {
     /// <summary>Brings the window forward, restoring it if it is minimized.</summary>
     void Activate(WindowInfo window);
+
+    /// <summary>
+    /// The same, for whoever only has the handle.
+    ///
+    /// It exists because not every window to bring forward came from the enumeration: the switcher
+    /// has to bring its own window forward, and give the focus back to whoever had it when the user
+    /// gives up. Inventing a <see cref="WindowInfo"/> with the other fields empty just to call
+    /// the overload above would be lying about what is known of the window.
+    /// </summary>
+    void Activate(nint windowHandle);
 
     /// <summary>Minimizes the window.</summary>
     void Minimize(WindowInfo window);

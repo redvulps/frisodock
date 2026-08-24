@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using FrisoDock.Core.Models;
 
 namespace FrisoDock.Interop.Native;
@@ -18,6 +18,30 @@ internal static class NativeTypes
         int childId,
         uint eventThread,
         uint eventTime);
+
+    internal delegate nint LowLevelKeyboardProc(int code, nint wParam, nint lParam);
+}
+
+/// <summary>Payload of each key seen by the low-level hook.</summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct KBDLLHOOKSTRUCT
+{
+    public uint VirtualKey;
+    public uint ScanCode;
+    public uint Flags;
+    public uint Time;
+    public nuint ExtraInfo;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct MSG
+{
+    public nint WindowHandle;
+    public uint Message;
+    public nint WParam;
+    public nint LParam;
+    public uint Time;
+    public POINT Point;
 }
 
 [StructLayout(LayoutKind.Sequential)]

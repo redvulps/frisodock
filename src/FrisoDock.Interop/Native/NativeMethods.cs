@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
 
 namespace FrisoDock.Interop.Native;
@@ -282,6 +282,41 @@ internal static class NativeMethods
     [DllImport(User32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool UnhookWinEvent(nint hookHandle);
+
+    // ------------------------------------------------------------------ keyboard hook
+
+    [DllImport(User32, SetLastError = true)]
+    internal static extern nint SetWindowsHookEx(
+        int hookId,
+        NativeTypes.LowLevelKeyboardProc callback,
+        nint moduleHandle,
+        uint threadId);
+
+    [DllImport(User32, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool UnhookWindowsHookEx(nint hookHandle);
+
+    [DllImport(User32)]
+    internal static extern nint CallNextHookEx(nint hookHandle, int code, nint wParam, nint lParam);
+
+    [DllImport(User32)]
+    internal static extern short GetAsyncKeyState(int virtualKey);
+
+    // ------------------------------------------------------------------ message pump
+
+    [DllImport(User32)]
+    internal static extern int GetMessage(out MSG message, nint windowHandle, uint filterMin, uint filterMax);
+
+    [DllImport(User32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool TranslateMessage(ref MSG message);
+
+    [DllImport(User32)]
+    internal static extern nint DispatchMessage(ref MSG message);
+
+    [DllImport(User32, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool PostThreadMessage(uint threadId, uint message, nint wParam, nint lParam);
 
     // ------------------------------------------------------------------ synthetic input
 

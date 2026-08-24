@@ -1,4 +1,4 @@
-using FrisoDock.Core.Abstractions;
+﻿using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 
 namespace FrisoDock.App.Services;
@@ -78,6 +78,9 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
 
     /// <summary>True if the per-monitor app separation changed.</summary>
     public bool MonitorIsolationChanged => Previous.IsolatesMonitorApps != Current.IsolatesMonitorApps;
+
+    /// <summary>True if the window switcher changed owner — the dock or Windows.</summary>
+    public bool WindowSwitcherChanged => Previous.UseGroupedWindowSwitcher != Current.UseGroupedWindowSwitcher;
 
     /// <summary>True if the clock changed format.</summary>
     public bool ClockChanged => Previous.ShowClockSeconds != Current.ShowClockSeconds;

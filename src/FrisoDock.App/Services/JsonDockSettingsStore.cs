@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FrisoDock.Core.Abstractions;
@@ -115,6 +115,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
 
         public bool ShowClockSeconds { get; init; }
 
+        public bool UseGroupedWindowSwitcher { get; init; }
+
         public static PersistedSettings From(DockSettings settings)
         {
             return new PersistedSettings
@@ -128,6 +130,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 MagnificationScale = settings.MagnificationScale,
                 EnableWindowPreviews = settings.EnableWindowPreviews,
                 ShowClockSeconds = settings.ShowClockSeconds,
+                UseGroupedWindowSwitcher = settings.UseGroupedWindowSwitcher,
             };
         }
 
@@ -144,6 +147,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 MagnificationScale = MagnificationScale,
                 EnableWindowPreviews = EnableWindowPreviews,
                 ShowClockSeconds = ShowClockSeconds,
+                UseGroupedWindowSwitcher = UseGroupedWindowSwitcher,
             };
         }
     }

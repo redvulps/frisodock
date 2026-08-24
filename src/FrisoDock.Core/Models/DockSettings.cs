@@ -1,4 +1,4 @@
-using FrisoDock.Core.Services;
+﻿using FrisoDock.Core.Services;
 
 namespace FrisoDock.Core.Models;
 
@@ -49,6 +49,14 @@ public sealed record DockSettings
 
     /// <summary>Show window thumbnails when the mouse rests on a running app.</summary>
     public bool EnableWindowPreviews { get; init; } = true;
+
+    /// <summary>
+    /// Replace the Windows Alt+Tab with a switcher that lists applications, not loose windows.
+    ///
+    /// It ships off: the option takes over the whole system's Alt+Tab, and that is the user's choice,
+    /// not a default of ours.
+    /// </summary>
+    public bool UseGroupedWindowSwitcher { get; init; }
 
     /// <summary>Coalescing window for bursts of window events, in milliseconds.</summary>
     public int RefreshDebounceMilliseconds { get; init; } = 150;
