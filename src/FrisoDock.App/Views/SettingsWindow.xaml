@@ -83,27 +83,52 @@
             </Setter>
         </Style>
 
-        <!-- Exclusive choice, in the Windows 11 shape: a ring with the dot at the centre. -->
-        <Style x:Key="RadioStyle" TargetType="RadioButton">
+        <!--
+            Escolha exclusiva que ocupa a linha inteira. Um anel isolado teria uma área clicável
+            ínfima — só o traço, porque um Grid sem fundo e um anel sem preenchimento não recebem
+            hit test no vazio —, e acertá-lo com o mouse é quase impossível. Aqui o RadioButton é a
+            linha toda: o título e a explicação entram como Content, o anel fica à direita como
+            indicador, e clicar em qualquer ponto da linha seleciona. É o que o Windows 11 faz.
+        -->
+        <Style x:Key="HideModeRowStyle" TargetType="RadioButton">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Grid Width="20" Height="20">
-                            <Ellipse x:Name="Ring"
-                                     Width="18"
-                                     Height="18"
-                                     Stroke="{StaticResource MutedBrush}"
-                                     StrokeThickness="1" />
-                            <Ellipse x:Name="Dot"
-                                     Width="8"
-                                     Height="8"
-                                     Fill="#000000"
-                                     Visibility="Collapsed" />
-                        </Grid>
+                        <Border x:Name="Root"
+                                Padding="14,11"
+                                CornerRadius="6"
+                                Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter Grid.Column="0"
+                                                  Margin="0,0,16,0"
+                                                  VerticalAlignment="Center" />
+
+                                <Grid Grid.Column="1" Width="20" Height="20" VerticalAlignment="Center">
+                                    <Ellipse x:Name="Ring"
+                                             Width="18"
+                                             Height="18"
+                                             Stroke="{StaticResource MutedBrush}"
+                                             StrokeThickness="1" />
+                                    <Ellipse x:Name="Dot"
+                                             Width="8"
+                                             Height="8"
+                                             Fill="#000000"
+                                             Visibility="Collapsed" />
+                                </Grid>
+                            </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource HoverBrush}" />
+                            </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Ring" Property="Fill" Value="{StaticResource AccentBrush}" />
                                 <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource AccentBrush}" />
@@ -406,66 +431,36 @@
                 <TabItem Header="Esconder o dock" Tag="&#xE890;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
-                        <Border Style="{StaticResource SettingRowStyle}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                        <RadioButton GroupName="HideMode"
+                                     Style="{StaticResource HideModeRowStyle}"
+                                     IsChecked="{Binding HideNever}">
+                            <StackPanel>
+                                <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="O dock fica na borda o tempo todo."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
 
-                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="O dock fica na borda o tempo todo."
-                                               Style="{StaticResource SettingHintStyle}" />
-                                </StackPanel>
+                        <RadioButton GroupName="HideMode"
+                                     Style="{StaticResource HideModeRowStyle}"
+                                     IsChecked="{Binding HideWhenWindowOverlaps}">
+                            <StackPanel>
+                                <TextBlock Text="Quando uma janela ocupa o lugar dele"
+                                           Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="Com a área livre o dock continua à vista; some quando alguma janela chega ali."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
 
-                                <RadioButton Grid.Column="1"
-                                             GroupName="HideMode"
-                                             Style="{StaticResource RadioStyle}"
-                                             IsChecked="{Binding HideNever}" />
-                            </Grid>
-                        </Border>
-
-                        <Border Style="{StaticResource SettingRowStyle}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Quando uma janela ocupa o lugar dele"
-                                               Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Com a área livre o dock continua à vista; some quando alguma janela chega ali."
-                                               Style="{StaticResource SettingHintStyle}" />
-                                </StackPanel>
-
-                                <RadioButton Grid.Column="1"
-                                             GroupName="HideMode"
-                                             Style="{StaticResource RadioStyle}"
-                                             IsChecked="{Binding HideWhenWindowOverlaps}" />
-                            </Grid>
-                        </Border>
-
-                        <Border Style="{StaticResource SettingRowStyle}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="O dock só aparece quando o cursor encosta na borda da tela."
-                                               Style="{StaticResource SettingHintStyle}" />
-                                </StackPanel>
-
-                                <RadioButton Grid.Column="1"
-                                             GroupName="HideMode"
-                                             Style="{StaticResource RadioStyle}"
-                                             IsChecked="{Binding HideAlways}" />
-                            </Grid>
-                        </Border>
+                        <RadioButton GroupName="HideMode"
+                                     Style="{StaticResource HideModeRowStyle}"
+                                     IsChecked="{Binding HideAlways}">
+                            <StackPanel>
+                                <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="O dock só aparece quando o cursor encosta na borda da tela."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
 
                     </StackPanel>
                 </TabItem>
