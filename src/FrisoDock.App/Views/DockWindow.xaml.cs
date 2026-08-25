@@ -122,6 +122,9 @@ public partial class DockWindow : Window
         // Before the window is shown: it is at show time that Windows decides if it enters Alt+Tab.
         _switcherExclusion.Exclude(handle);
 
+        // The edge decides the magnification axis; it is stable, because switching edge rebuilds the dock.
+        _magnifier.Configure(_settings.Current.Edge);
+
         // The dock is a bar, not a focus target: clicking it must not steal the foreground.
         _activationPolicy.PreventActivation(handle);
 
@@ -218,6 +221,38 @@ public partial class DockWindow : Window
             _settingsWindow.Closed -= OnSettingsWindowClosed;
             _settingsWindow = null;
         }
+    }
+
+    private void OnEdgeBottomMenuClick(object sender, RoutedEventArgs e)
+    {
+        SetEdgeDeferred(DockEdge.Bottom);
+    }
+
+    private void OnEdgeTopMenuClick(object sender, RoutedEventArgs e)
+    {
+        SetEdgeDeferred(DockEdge.Top);
+    }
+
+    private void OnEdgeLeftMenuClick(object sender, RoutedEventArgs e)
+    {
+        SetEdgeDeferred(DockEdge.Left);
+    }
+
+    private void OnEdgeRightMenuClick(object sender, RoutedEventArgs e)
+    {
+        SetEdgeDeferred(DockEdge.Right);
+    }
+
+    /// <summary>
+    /// Applies the edge after the menu finishes its input cycle.
+    ///
+    /// Switching edge rebuilds the dock set — it closes this window. Inside Click, the menu
+    /// is still processing the click over an owner window that would be vanishing under it;
+    /// it is the same trap as the flyout closed mid-click, and the deferral is the same cure.
+    /// </summary>
+    private void SetEdgeDeferred(DockEdge edge)
+    {
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () => _viewModel.SetEdge(edge));
     }
 
     /// <summary>Applies live whatever the settings screen changed.</summary>
@@ -457,7 +492,7 @@ public partial class DockWindow : Window
 
         if (element.ToolTip is ToolTip tooltip)
         {
-            tooltip.CustomPopupPlacementCallback = PlaceLabelAboveIcon;
+            tooltip.CustomPopupPlacementCallback = PlaceLabelByIcon;
         }
     }
 
@@ -465,13 +500,23 @@ public partial class DockWindow : Window
     /// Centres the label on the icon and lifts it above the headroom magnification reserves — that is
     /// the height the icon under the cursor takes, since it is always at full factor.
     /// </summary>
-    private CustomPopupPlacement[] PlaceLabelAboveIcon(Size popupSize, Size targetSize, Point offset)
+    private CustomPopupPlacement[] PlaceLabelByIcon(Size popupSize, Size targetSize, Point offset)
     {
         const double Gap = 8;
 
-        var position = new Point(
-            (targetSize.Width - popupSize.Width) / 2,
-            -(popupSize.Height + Gap + _viewModel.Appearance.IconOverflow));
+        // Outside the magnified icon, towards the interior of the screen — above on a dock at the
+        // bottom, below on a dock at the top, beside on a side dock. The magnification headroom counts
+        // because the icon under the cursor is always at full factor.
+        double clearance = Gap + _viewModel.Appearance.IconOverflow;
+
+        Point position = _viewModel.Appearance.Edge switch
+        {
+            DockEdge.Bottom => new Point((targetSize.Width - popupSize.Width) / 2, -(popupSize.Height + clearance)),
+            DockEdge.Top => new Point((targetSize.Width - popupSize.Width) / 2, targetSize.Height + clearance),
+            DockEdge.Left => new Point(targetSize.Width + clearance, (targetSize.Height - popupSize.Height) / 2),
+            DockEdge.Right => new Point(-(popupSize.Width + clearance), (targetSize.Height - popupSize.Height) / 2),
+            _ => new Point((targetSize.Width - popupSize.Width) / 2, -(popupSize.Height + clearance)),
+        };
 
         return [new CustomPopupPlacement(position, PopupPrimaryAxis.Horizontal)];
     }
@@ -563,6 +608,7 @@ public partial class DockWindow : Window
             _preview = new WindowPreviewWindow(
                 viewModel,
                 FlyoutChrome.GetScreenRect(anchor),
+                _settings.Current.Edge,
                 _thumbnails,
                 _activator,
                 _backdrop,
@@ -643,6 +689,7 @@ public partial class DockWindow : Window
         _quickSettings = new QuickSettingsWindow(
             panel,
             FlyoutChrome.GetScreenRect(anchor),
+            _settings.Current.Edge,
             _backdrop,
             _positioner,
             _switcherExclusion,
@@ -691,7 +738,7 @@ public partial class DockWindow : Window
             TrayFlyoutViewModel flyout = _trayFlyoutFactory.Create(
                 () => new PixelPoint(anchorRect.Left + (anchorRect.Width / 2), anchorRect.Top));
 
-            _trayFlyout = new TrayFlyoutWindow(flyout, anchorRect, _backdrop, _positioner, _switcherExclusion, _screens);
+            _trayFlyout = new TrayFlyoutWindow(flyout, anchorRect, _settings.Current.Edge, _backdrop, _positioner, _switcherExclusion, _screens);
             _trayFlyout.Closed += OnTrayFlyoutClosed;
             _trayFlyout.Show();
             _trayFlyout.Activate();
@@ -735,7 +782,7 @@ public partial class DockWindow : Window
                 return;
             }
 
-            _jumpList = new JumpListWindow(flyout, GetScreenRect(anchorElement), _backdrop, _positioner, _switcherExclusion, _screens);
+            _jumpList = new JumpListWindow(flyout, GetScreenRect(anchorElement), _settings.Current.Edge, _backdrop, _positioner, _switcherExclusion, _screens);
             _jumpList.Closed += OnJumpListClosed;
             _jumpList.Show();
             _jumpList.Activate();

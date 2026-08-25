@@ -1,4 +1,4 @@
-<Window x:Class="FrisoDock.App.Views.SettingsWindow"
+﻿<Window x:Class="FrisoDock.App.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
@@ -90,7 +90,7 @@
             linha toda: o título e a explicação entram como Content, o anel fica à direita como
             indicador, e clicar em qualquer ponto da linha seleciona. É o que o Windows 11 faz.
         -->
-        <Style x:Key="HideModeRowStyle" TargetType="RadioButton">
+        <Style x:Key="RadioRowStyle" TargetType="RadioButton">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -428,11 +428,57 @@
                     </StackPanel>
                 </TabItem>
 
+                <TabItem Header="Posição" Tag="&#xE90E;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
+
+                        <RadioButton GroupName="Edge"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding EdgeBottom}">
+                            <StackPanel>
+                                <TextBlock Text="Inferior" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="O padrão: o dock fica na borda de baixo, onde a barra de tarefas ficava."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton GroupName="Edge"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding EdgeTop}">
+                            <StackPanel>
+                                <TextBlock Text="Superior" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="O dock fica na borda de cima, e os menus abrem para baixo."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton GroupName="Edge"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding EdgeLeft}">
+                            <StackPanel>
+                                <TextBlock Text="Esquerda" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="Dock vertical na borda esquerda, como no GNOME."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton GroupName="Edge"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding EdgeRight}">
+                            <StackPanel>
+                                <TextBlock Text="Direita" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="Dock vertical na borda direita."
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+
+                    </StackPanel>
+                </TabItem>
+
                 <TabItem Header="Esconder o dock" Tag="&#xE890;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <RadioButton GroupName="HideMode"
-                                     Style="{StaticResource HideModeRowStyle}"
+                                     Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding HideNever}">
                             <StackPanel>
                                 <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
@@ -442,7 +488,7 @@
                         </RadioButton>
 
                         <RadioButton GroupName="HideMode"
-                                     Style="{StaticResource HideModeRowStyle}"
+                                     Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding HideWhenWindowOverlaps}">
                             <StackPanel>
                                 <TextBlock Text="Quando uma janela ocupa o lugar dele"
@@ -453,7 +499,7 @@
                         </RadioButton>
 
                         <RadioButton GroupName="HideMode"
-                                     Style="{StaticResource HideModeRowStyle}"
+                                     Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding HideAlways}">
                             <StackPanel>
                                 <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />

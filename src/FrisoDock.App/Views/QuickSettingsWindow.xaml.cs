@@ -20,6 +20,7 @@ public partial class QuickSettingsWindow : Window
     public QuickSettingsWindow(
         QuickSettingsViewModel viewModel,
         PixelRect anchor,
+        DockEdge edge,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
         IWindowSwitcherExclusion switcherExclusion,
@@ -29,7 +30,7 @@ public partial class QuickSettingsWindow : Window
 
         InitializeComponent();
 
-        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, switcherExclusion, screens);
+        _chrome = new FlyoutChrome(this, anchor, edge, backdrop, positioner, switcherExclusion, screens);
         DataContext = _viewModel;
     }
 
@@ -42,7 +43,7 @@ public partial class QuickSettingsWindow : Window
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        _chrome.PositionAboveAnchor();
+        _chrome.PositionByAnchor();
 
         // The panel timer only runs while it is open: outside that, nobody is looking.
         _viewModel.Start();

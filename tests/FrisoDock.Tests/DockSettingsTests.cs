@@ -1,4 +1,4 @@
-using FrisoDock.App.Services;
+﻿using FrisoDock.App.Services;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using FrisoDock.Core.Services;
@@ -113,6 +113,7 @@ public sealed class DockSettingsTests : IDisposable
         var store = new JsonDockSettingsStore(_filePath);
         var saved = new DockSettings
         {
+            Edge = DockEdge.Left,
             EnableMagnification = false,
             MagnificationScale = 1.8,
             EnableWindowPreviews = false,
@@ -123,6 +124,7 @@ public sealed class DockSettingsTests : IDisposable
         store.Save(saved);
         DockSettings loaded = new JsonDockSettingsStore(_filePath).Load();
 
+        Assert.Equal(DockEdge.Left, loaded.Edge);
         Assert.False(loaded.EnableMagnification);
         Assert.Equal(1.8, loaded.MagnificationScale);
         Assert.False(loaded.EnableWindowPreviews);

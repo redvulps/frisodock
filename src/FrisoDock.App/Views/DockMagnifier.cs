@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using FrisoDock.Core.Models;
 using FrisoDock.Core.Services;
 
 namespace FrisoDock.App.Views;
@@ -50,6 +51,8 @@ public sealed class DockMagnifier : IDisposable
     /// </summary>
     private readonly Stopwatch _clock = new();
 
+    private DockEdge _edge = DockEdge.Bottom;
+
     private ItemsControl? _items;
     private double _iconSize;
     private double _spacing;
@@ -80,6 +83,19 @@ public sealed class DockMagnifier : IDisposable
     private TimeSpan _lastRender;
 
     /// <summary>
+    /// Sets the dock edge, and with it the effect axis: the wave runs along the stack, and the
+    /// icon overflows to the side opposite the edge. Called once per window — switching
+    /// edge rebuilds the dock, so the value is stable.
+    /// </summary>
+    public void Configure(DockEdge edge)
+    {
+        _edge = edge;
+    }
+
+    /// <summary>Whether the icon stack stands up, making the effect axis the vertical one.</summary>
+    private bool IsVertical => _edge is DockEdge.Left or DockEdge.Right;
+
+    /// <summary>
     /// Follows the cursor. Outside the icon strip, the retraction starts.
     /// </summary>
     /// <param name="items">List of dock icons.</param>
@@ -102,7 +118,8 @@ public sealed class DockMagnifier : IDisposable
         _spacing = spacing;
         _magnification = magnification;
 
-        double cursorAtRest = cursor.X - (_appliedExtra / 2);
+        // The position along the stack axis: X on a horizontal dock, Y on a vertical one.
+        double cursorAtRest = (IsVertical ? cursor.Y : cursor.X) - (_appliedExtra / 2);
 
         if (!_layout.IsWithinStrip(items.Items.Count, iconSize, spacing, cursorAtRest))
         {
@@ -142,18 +159,19 @@ public sealed class DockMagnifier : IDisposable
         _strength = 0;
         _target = 0;
 
-        double originX = CalculateOriginX(_iconSize, _spacing);
+        double origin = CalculateMainAxisOrigin(_iconSize, _spacing);
 
         for (int index = 0; index < items.Items.Count; index++)
         {
             if (items.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container)
             {
-                Apply(container, new MagnifiedItem(1.0, 0), originX);
+                Apply(container, new MagnifiedItem(1.0, 0), origin);
             }
         }
 
         _appliedExtra = 0;
         items.ClearValue(FrameworkElement.WidthProperty);
+        items.ClearValue(FrameworkElement.HeightProperty);
     }
 
     public void Dispose()
@@ -238,6 +256,7 @@ public sealed class DockMagnifier : IDisposable
         if (_strength == 0 && _items is ItemsControl items)
         {
             items.ClearValue(FrameworkElement.WidthProperty);
+            items.ClearValue(FrameworkElement.HeightProperty);
         }
     }
 
@@ -254,7 +273,7 @@ public sealed class DockMagnifier : IDisposable
         }
 
         int count = items.Items.Count;
-        double originX = CalculateOriginX(_iconSize, _spacing);
+        double origin = CalculateMainAxisOrigin(_iconSize, _spacing);
         double strength = Easing.Smoothstep(_strength);
         double magnification = 1.0 + ((_magnification - 1.0) * strength);
 
@@ -267,11 +286,20 @@ public sealed class DockMagnifier : IDisposable
                 continue;
             }
 
-            Apply(container, result.Items[index], originX);
+            Apply(container, result.Items[index], origin);
         }
 
         _appliedExtra = result.ExtraWidth;
-        items.Width = (count * (_spacing + _iconSize)) + result.ExtraWidth;
+        double stripLength = (count * (_spacing + _iconSize)) + result.ExtraWidth;
+
+        if (IsVertical)
+        {
+            items.Height = stripLength;
+        }
+        else
+        {
+            items.Width = stripLength;
+        }
     }
 
     /// <summary>
@@ -279,12 +307,20 @@ public sealed class DockMagnifier : IDisposable
     /// transform declared in a Setter would be the same instance for every item — they would all
     /// grow together.
     /// </summary>
-    private static void Apply(FrameworkElement container, MagnifiedItem item, double originX)
+    private void Apply(FrameworkElement container, MagnifiedItem item, double mainAxisOrigin)
     {
-        // The origin sits at the icon's base and centre: this way it grows upwards, seated on the
-        // same line, and without sliding sideways. It is not the container centre, which is wider
-        // than the icon because of the spacing — scaling around it would displace the icon.
-        container.RenderTransformOrigin = new Point(originX, 1.0);
+        // The origin sits at the icon centre along the stack, and on the face touching the screen
+        // edge on the other axis: this way it grows out of the bar, seated on the same line, and
+        // without sliding sideways. It is not the container centre, which is longer than the icon
+        // because of the spacing — scaling around it would displace the icon.
+        container.RenderTransformOrigin = _edge switch
+        {
+            DockEdge.Bottom => new Point(mainAxisOrigin, 1.0),
+            DockEdge.Top => new Point(mainAxisOrigin, 0.0),
+            DockEdge.Left => new Point(0.0, mainAxisOrigin),
+            DockEdge.Right => new Point(1.0, mainAxisOrigin),
+            _ => new Point(mainAxisOrigin, 1.0),
+        };
 
         if (container.RenderTransform is not TransformGroup group)
         {
@@ -298,19 +334,32 @@ public sealed class DockMagnifier : IDisposable
             container.RenderTransform = group;
         }
 
+        var translate = (TranslateTransform)group.Children[1];
+
         ((ScaleTransform)group.Children[0]).ScaleX = item.Scale;
         ((ScaleTransform)group.Children[0]).ScaleY = item.Scale;
-        ((TranslateTransform)group.Children[1]).X = item.OffsetX;
 
-        // Without this the larger icon sits behind the right-hand neighbour, which is drawn later.
+        // The push on the neighbours runs along the stack: X on a horizontal dock, Y on a vertical one.
+        if (IsVertical)
+        {
+            translate.X = 0;
+            translate.Y = item.OffsetX;
+        }
+        else
+        {
+            translate.X = item.OffsetX;
+            translate.Y = 0;
+        }
+
+        // Without this the larger icon sits behind the next neighbour, which is drawn later.
         Panel.SetZIndex(container, (int)Math.Round(item.Scale * 1000));
     }
 
     /// <summary>
-    /// The icon's centre within the container, as a fraction of its width. The container includes the
-    /// spacing that comes before the icon, so the two centres do not coincide.
+    /// Icon centre within the container, as a fraction of its length along the stack axis.
+    /// The container includes the spacing that comes before the icon, so the centres do not coincide.
     /// </summary>
-    private static double CalculateOriginX(double iconSize, double spacing)
+    private static double CalculateMainAxisOrigin(double iconSize, double spacing)
     {
         double slot = spacing + iconSize;
 

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Media;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -71,7 +71,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         _settings = settings;
         _monitor = monitor.Monitor;
 
-        _appearance = new DockAppearance(settings.Current.EffectiveMetrics, settings.Current.EffectiveMagnification);
+        _appearance = new DockAppearance(settings.Current.EffectiveMetrics, settings.Current.EffectiveMagnification, settings.Current.Edge);
         Clock = clock;
         QuickStatus = quickStatus;
 
@@ -159,6 +159,24 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Edge the dock is on now, so the context menu can check the current one.</summary>
+    public bool IsEdgeBottom => _settings.Current.Edge == DockEdge.Bottom;
+
+    public bool IsEdgeTop => _settings.Current.Edge == DockEdge.Top;
+
+    public bool IsEdgeLeft => _settings.Current.Edge == DockEdge.Left;
+
+    public bool IsEdgeRight => _settings.Current.Edge == DockEdge.Right;
+
+    /// <summary>
+    /// Changes the dock edge. Without notifying the properties above on purpose: switching
+    /// edge rebuilds the whole dock set, and the new menu is born with the right check.
+    /// </summary>
+    public void SetEdge(DockEdge edge)
+    {
+        _settings.Update(_settings.Current with { Edge = edge });
+    }
+
     /// <summary>
     /// The dock's Start button. Toggles the menu with the Windows key.
     ///
@@ -188,7 +206,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
     {
         if (e.LayoutChanged)
         {
-            Appearance = new DockAppearance(e.Current.EffectiveMetrics, e.Current.EffectiveMagnification);
+            Appearance = new DockAppearance(e.Current.EffectiveMetrics, e.Current.EffectiveMagnification, e.Current.Edge);
         }
 
         if (e.MonitorIsolationChanged)

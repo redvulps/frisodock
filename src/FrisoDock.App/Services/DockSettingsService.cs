@@ -70,6 +70,13 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
     /// </summary>
     public bool ScreenReservationChanged => Previous.ReservesScreenSpace != Current.ReservesScreenSpace;
 
+    /// <summary>
+    /// True if the dock changed edge. Switching edge rebuilds the whole dock set,
+    /// like switching monitor: it changes geometry, panel orientation and appbar edge, and
+    /// patching the existing window would require reopening the appbar anyway.
+    /// </summary>
+    public bool EdgeChanged => Previous.Edge != Current.Edge;
+
     /// <summary>True if the dock hide mode changed.</summary>
     public bool HideModeChanged => Previous.HideMode != Current.HideMode;
 

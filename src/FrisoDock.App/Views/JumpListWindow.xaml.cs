@@ -25,6 +25,7 @@ public partial class JumpListWindow : Window
     public JumpListWindow(
         JumpListFlyoutViewModel viewModel,
         PixelRect anchor,
+        DockEdge edge,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
         IWindowSwitcherExclusion switcherExclusion,
@@ -34,7 +35,7 @@ public partial class JumpListWindow : Window
 
         InitializeComponent();
 
-        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, switcherExclusion, screens);
+        _chrome = new FlyoutChrome(this, anchor, edge, backdrop, positioner, switcherExclusion, screens);
 
         DataContext = _viewModel;
         _viewModel.SubscribeToInvocations(OnItemInvoked);
@@ -49,7 +50,7 @@ public partial class JumpListWindow : Window
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        _chrome.PositionAboveAnchor();
+        _chrome.PositionByAnchor();
     }
 
     protected override void OnDeactivated(EventArgs e)

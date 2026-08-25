@@ -70,6 +70,108 @@
             </Setter>
         </Style>
 
+        <!--
+            Item de submenu com marca de seleção: a bolinha à esquerda diz qual borda está em
+            uso. IsChecked é lido uma vez, sem notificação — trocar de borda refaz o dock, e o
+            menu novo nasce com a marca certa.
+        -->
+        <Style x:Key="DockRadioMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuTextBrush}" />
+            <Setter Property="Padding" Value="10,7,14,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="Check"
+                                         Width="5"
+                                         Height="5"
+                                         Margin="0,0,8,0"
+                                         VerticalAlignment="Center"
+                                         Fill="{StaticResource MenuTextBrush}"
+                                         Visibility="Hidden" />
+                                <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            Cabeçalho de submenu. Precisa de template próprio porque o DockMenuItemStyle não tem
+            Popup: um MenuItem com filhos e sem Popup no template simplesmente não abre nada.
+            O fundo do submenu repete o do menu, para os dois parecerem um só.
+        -->
+        <Style x:Key="DockSubmenuHeaderStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource MenuTextBrush}" />
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter Grid.Column="0"
+                                                  ContentSource="Header"
+                                                  VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Column="1"
+                                           Text="&#xE76C;"
+                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           FontSize="10"
+                                           Margin="18,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource MenuTextBrush}" />
+
+                                <Popup Placement="Right"
+                                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                       AllowsTransparency="True"
+                                       Focusable="False"
+                                       PopupAnimation="Fade">
+                                    <Border Background="{StaticResource MenuBrush}"
+                                            BorderBrush="{StaticResource PanelBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="10"
+                                            Padding="4"
+                                            Margin="4,0,0,0">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Root"
+                                        Property="Background"
+                                        Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="DockContextMenuStyle" TargetType="ContextMenu">
             <!-- HasDropShadow turns on the popup transparency, without which the rounding does not show. -->
             <Setter Property="HasDropShadow" Value="True" />
@@ -161,8 +263,8 @@
             ele ocuparia também a folga lateral transparente da janela.
         -->
         <Border x:Name="PanelBorder"
-                VerticalAlignment="Bottom"
-                HorizontalAlignment="Center"
+                VerticalAlignment="{Binding Appearance.PanelVerticalAlignment}"
+                HorizontalAlignment="{Binding Appearance.PanelHorizontalAlignment}"
                 MouseMove="OnPanelMouseMove"
                 MouseLeave="OnPanelMouseLeave"
                 Background="{StaticResource PanelBrush}"
@@ -177,6 +279,25 @@
         -->
         <Border.ContextMenu>
             <ContextMenu Style="{StaticResource DockContextMenuStyle}">
+                <MenuItem Header="Posição do dock"
+                          Style="{StaticResource DockSubmenuHeaderStyle}">
+                    <MenuItem Header="Inferior"
+                              Style="{StaticResource DockRadioMenuItemStyle}"
+                              IsChecked="{Binding IsEdgeBottom, Mode=OneTime}"
+                              Click="OnEdgeBottomMenuClick" />
+                    <MenuItem Header="Superior"
+                              Style="{StaticResource DockRadioMenuItemStyle}"
+                              IsChecked="{Binding IsEdgeTop, Mode=OneTime}"
+                              Click="OnEdgeTopMenuClick" />
+                    <MenuItem Header="Esquerda"
+                              Style="{StaticResource DockRadioMenuItemStyle}"
+                              IsChecked="{Binding IsEdgeLeft, Mode=OneTime}"
+                              Click="OnEdgeLeftMenuClick" />
+                    <MenuItem Header="Direita"
+                              Style="{StaticResource DockRadioMenuItemStyle}"
+                              IsChecked="{Binding IsEdgeRight, Mode=OneTime}"
+                              Click="OnEdgeRightMenuClick" />
+                </MenuItem>
                 <MenuItem Header="Configurações…"
                           Style="{StaticResource DockMenuItemStyle}"
                           Click="OnSettingsMenuClick" />
@@ -186,8 +307,9 @@
             </ContextMenu>
         </Border.ContextMenu>
 
-        <StackPanel Orientation="Horizontal"
-                    VerticalAlignment="Center">
+        <StackPanel Orientation="{Binding Appearance.StripOrientation}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
 
             <!--
                 Botão Iniciar: dispara a tecla Windows, e o menu abre acima do dock.
@@ -220,7 +342,7 @@
                           LostMouseCapture="OnAppItemsLostMouseCapture">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
+                        <StackPanel Orientation="{Binding DataContext.Appearance.StripOrientation, RelativeSource={RelativeSource AncestorType=Window}}" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
 
@@ -243,14 +365,14 @@
                                        Height="{Binding DataContext.Appearance.IconImageSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                        RenderOptions.BitmapScalingMode="HighQuality" />
 
-                                <!-- Running app indicator, anchored to the base of the icon. -->
+                                <!-- Running app indicator, on the face turned towards the screen edge. -->
                                 <Border x:Name="RunningIndicator"
-                                        Height="3"
-                                        Width="6"
+                                        Height="{Binding DataContext.Appearance.IndicatorHeight, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Width="{Binding DataContext.Appearance.IndicatorWidth, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CornerRadius="2"
-                                        Margin="0,0,0,-5"
-                                        VerticalAlignment="Bottom"
-                                        HorizontalAlignment="Center"
+                                        Margin="{Binding DataContext.Appearance.IndicatorMargin, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        VerticalAlignment="{Binding DataContext.Appearance.IndicatorVerticalAlignment, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        HorizontalAlignment="{Binding DataContext.Appearance.IndicatorHorizontalAlignment, RelativeSource={RelativeSource AncestorType=Window}}"
                                         Background="{StaticResource RunningIndicatorBrush}"
                                         Visibility="Collapsed" />
                             </Grid>
@@ -273,7 +395,10 @@
                                         Value="{StaticResource ActiveIndicatorBrush}" />
                                 <Setter TargetName="RunningIndicator"
                                         Property="Width"
-                                        Value="16" />
+                                        Value="{Binding DataContext.Appearance.IndicatorActiveWidth, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <Setter TargetName="RunningIndicator"
+                                        Property="Height"
+                                        Value="{Binding DataContext.Appearance.IndicatorActiveHeight, RelativeSource={RelativeSource AncestorType=Window}}" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
@@ -301,32 +426,37 @@
             <!-- Network, sound and battery group: it is the quick settings panel button. -->
             <Button x:Name="QuickSettingsButton"
                     Style="{StaticResource DockButtonStyle}"
-                    Width="{Binding Appearance.QuickStatusWidth}"
+                    Width="{Binding Appearance.QuickStatusButtonWidth}"
+                    Height="{Binding Appearance.QuickStatusButtonHeight}"
                     Click="OnQuickSettingsButtonClick"
                     ToolTip="{Binding QuickStatus.Tooltip}">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Orientation="{Binding Appearance.QuickStatusOrientation}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
                     <TextBlock Text="{Binding QuickStatus.NetworkGlyph}"
                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                FontSize="14"
                                Foreground="{StaticResource StartGlyphBrush}"
-                               VerticalAlignment="Center" />
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding QuickStatus.VolumeGlyph}"
                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                FontSize="14"
-                               Margin="5,0,0,0"
+                               Margin="{Binding Appearance.QuickStatusGlyphMargin}"
                                Foreground="{StaticResource StartGlyphBrush}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="{Binding QuickStatus.BatteryGlyph}"
                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                FontSize="15"
-                               Margin="5,0,0,0"
+                               Margin="{Binding Appearance.QuickStatusGlyphMargin}"
                                Foreground="{StaticResource StartGlyphBrush}"
                                VerticalAlignment="Center"
                                Visibility="{Binding QuickStatus.HasBattery, Converter={StaticResource BooleanToVisibility}}" />
                 </StackPanel>
             </Button>
 
-            <Border Width="{Binding Appearance.ClockWidth}"
+            <Border Width="{Binding Appearance.ClockBlockWidth}"
+                    Height="{Binding Appearance.ClockBlockHeight}"
                     Margin="{Binding Appearance.ItemMargin}"
                     Background="Transparent"
                     ToolTip="{Binding Clock.Tooltip}">
@@ -335,11 +465,14 @@
                                FontSize="13"
                                Foreground="{StaticResource StartGlyphBrush}"
                                HorizontalAlignment="Center" />
+
+                    <!-- On the vertical dock the date does not fit the thickness; it stays in the tooltip only. -->
                     <TextBlock Text="{Binding Clock.Date}"
                                FontSize="11"
                                Margin="0,1,0,0"
                                Foreground="{StaticResource ClockDateBrush}"
-                               HorizontalAlignment="Center" />
+                               HorizontalAlignment="Center"
+                               Visibility="{Binding Appearance.ClockDateVisibility}" />
                 </StackPanel>
             </Border>
 

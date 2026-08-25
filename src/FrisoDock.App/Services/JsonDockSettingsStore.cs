@@ -97,6 +97,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
     /// </summary>
     private sealed record PersistedSettings
     {
+        public DockEdge Edge { get; init; } = DockEdge.Bottom;
+
         public bool HideNativeTaskbar { get; init; } = true;
 
         public bool ReserveScreenSpace { get; init; } = true;
@@ -123,6 +125,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
         {
             return new PersistedSettings
             {
+                Edge = settings.Edge,
                 HideNativeTaskbar = settings.HideNativeTaskbar,
                 ReserveScreenSpace = settings.ReserveScreenSpace,
                 HideMode = settings.HideMode,
@@ -141,6 +144,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
         {
             return new DockSettings
             {
+                Edge = Edge,
                 HideNativeTaskbar = HideNativeTaskbar,
                 ReserveScreenSpace = ReserveScreenSpace,
                 HideMode = HideMode,

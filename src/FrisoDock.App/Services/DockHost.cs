@@ -1,4 +1,4 @@
-using System.Windows.Threading;
+﻿using System.Windows.Threading;
 using FrisoDock.App.Views;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
@@ -75,7 +75,9 @@ public sealed class DockHost : IDisposable
 
     private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
     {
-        if (e.MonitorLayoutChanged)
+        // Switching edge rebuilds the docks like switching monitor: geometry, panel
+        // orientation and appbar edge change together, and the new windows are born correct.
+        if (e.MonitorLayoutChanged || e.EdgeChanged)
         {
             Rebuild();
         }

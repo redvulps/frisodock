@@ -29,6 +29,7 @@ public partial class WindowPreviewWindow : Window
     public WindowPreviewWindow(
         WindowPreviewViewModel viewModel,
         PixelRect anchor,
+        DockEdge edge,
         IWindowThumbnailService thumbnails,
         IWindowActivator activator,
         IWindowBackdrop backdrop,
@@ -42,7 +43,7 @@ public partial class WindowPreviewWindow : Window
 
         InitializeComponent();
 
-        _chrome = new FlyoutChrome(this, anchor, backdrop, positioner, switcherExclusion, screens);
+        _chrome = new FlyoutChrome(this, anchor, edge, backdrop, positioner, switcherExclusion, screens);
 
         DataContext = _viewModel;
     }
@@ -57,7 +58,7 @@ public partial class WindowPreviewWindow : Window
     {
         base.OnContentRendered(e);
 
-        _chrome.PositionAboveAnchor();
+        _chrome.PositionByAnchor();
         RegisterThumbnails();
     }
 

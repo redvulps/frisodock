@@ -23,6 +23,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _hideNativeTaskbar;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EdgeBottom))]
+    [NotifyPropertyChangedFor(nameof(EdgeTop))]
+    [NotifyPropertyChangedFor(nameof(EdgeLeft))]
+    [NotifyPropertyChangedFor(nameof(EdgeRight))]
+    private DockEdge _edge;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanReserveScreenSpace))]
     [NotifyPropertyChangedFor(nameof(HideNever))]
     [NotifyPropertyChangedFor(nameof(HideAlways))]
@@ -68,6 +75,34 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// RadioButton. Only the true value chooses: the false one arrives when the other button is
     /// checked, and obeying it would erase the choice that was just made.
     /// </summary>
+    /// <summary>
+    /// The four edges as exclusive switches, in the same pattern as the hide modes:
+    /// only the true value chooses, because the false one arrives when the other button is checked.
+    /// </summary>
+    public bool EdgeBottom
+    {
+        get => Edge == DockEdge.Bottom;
+        set => SelectEdge(DockEdge.Bottom, value);
+    }
+
+    public bool EdgeTop
+    {
+        get => Edge == DockEdge.Top;
+        set => SelectEdge(DockEdge.Top, value);
+    }
+
+    public bool EdgeLeft
+    {
+        get => Edge == DockEdge.Left;
+        set => SelectEdge(DockEdge.Left, value);
+    }
+
+    public bool EdgeRight
+    {
+        get => Edge == DockEdge.Right;
+        set => SelectEdge(DockEdge.Right, value);
+    }
+
     public bool HideNever
     {
         get => HideMode == DockHideMode.Never;
@@ -104,6 +139,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Largest magnification offered; beyond that the dock starts covering the screen.</summary>
     public double MaximumMagnification => 2.0;
 
+    partial void OnEdgeChanged(DockEdge value) => Apply();
+
     partial void OnHideModeChanged(DockHideMode value) => Apply();
 
     partial void OnHideNativeTaskbarChanged(bool value) => Apply();
@@ -134,6 +171,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    private void SelectEdge(DockEdge edge, bool selected)
+    {
+        if (selected)
+        {
+            Edge = edge;
+        }
+    }
+
     private void Load(DockSettings settings)
     {
         _applying = true;
@@ -141,6 +186,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             HideNativeTaskbar = settings.HideNativeTaskbar;
+            Edge = settings.Edge;
             HideMode = settings.HideMode;
             ReserveScreenSpace = settings.ReserveScreenSpace;
             EnableMagnification = settings.EnableMagnification;
@@ -168,6 +214,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.Update(_settings.Current with
         {
             HideNativeTaskbar = HideNativeTaskbar,
+            Edge = Edge,
             HideMode = HideMode,
             ReserveScreenSpace = ReserveScreenSpace,
             EnableMagnification = EnableMagnification,

@@ -19,6 +19,9 @@ public sealed class FlyoutChrome
     /// <summary>Gap between the flyout and the element that opened it, in the Windows standard.</summary>
     private const int AnchorGap = 8;
 
+    /// <summary>Edge the dock is on: it decides which side of the anchor the flyout opens.</summary>
+    private readonly DockEdge _edge;
+
     /// <summary>
     /// Where the window is born, far from any real desktop area.
     ///
@@ -39,12 +42,14 @@ public sealed class FlyoutChrome
     public FlyoutChrome(
         Window window,
         PixelRect anchor,
+        DockEdge edge,
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
         IWindowSwitcherExclusion switcherExclusion,
         IScreenProvider screens)
     {
         _window = window;
+        _edge = edge;
         _anchor = anchor;
         _backdrop = backdrop;
         _positioner = positioner;
@@ -85,10 +90,12 @@ public sealed class FlyoutChrome
     }
 
     /// <summary>
-    /// Moves the flyout above the anchor element. Since the window was born off screen, it is this
-    /// call that makes it visible — which is why it can only happen after the measurement.
+    /// Moves the flyout to the inner side of the anchor element — above a dock at the bottom,
+    /// below a dock at the top, beside a side dock. Since the window was born off
+    /// screen, it is this call that makes it visible — which is why it can only happen after the
+    /// measurement.
     /// </summary>
-    public void PositionAboveAnchor()
+    public void PositionByAnchor()
     {
         MonitorInfo monitor = _screens.GetPrimaryMonitor();
         double scale = monitor.DpiScale <= 0 ? 1.0 : monitor.DpiScale;
@@ -97,12 +104,28 @@ public sealed class FlyoutChrome
         int height = (int)Math.Ceiling(_window.ActualHeight * scale);
         int gap = (int)Math.Round(AnchorGap * scale);
 
-        int left = _anchor.Left + ((_anchor.Width - width) / 2);
-        int top = _anchor.Top - height - gap;
+        // Along the stack axis the flyout centres on the anchor; on the other, it opens towards the screen interior.
+        int left;
+        int top;
+
+        if (_edge is DockEdge.Bottom or DockEdge.Top)
+        {
+            left = _anchor.Left + ((_anchor.Width - width) / 2);
+            top = _edge == DockEdge.Bottom
+                ? _anchor.Top - height - gap
+                : _anchor.Bottom + gap;
+        }
+        else
+        {
+            top = _anchor.Top + ((_anchor.Height - height) / 2);
+            left = _edge == DockEdge.Left
+                ? _anchor.Right + gap
+                : _anchor.Left - width - gap;
+        }
 
         // Keeps the flyout from leaving the screen when the anchor is near one of the edges.
         left = Math.Clamp(left, monitor.Bounds.Left, Math.Max(monitor.Bounds.Right - width, monitor.Bounds.Left));
-        top = Math.Max(top, monitor.Bounds.Top);
+        top = Math.Clamp(top, monitor.Bounds.Top, Math.Max(monitor.Bounds.Bottom - height, monitor.Bounds.Top));
 
         _positioner.SetBounds(
             new WindowInteropHelper(_window).Handle,
