@@ -197,6 +197,7 @@ public partial class App : Application
         services.AddSingleton<IDisplayWatcher, DisplayWatcher>();
         services.AddSingleton<IWindowPositioner, WindowPositioner>();
         services.AddSingleton<IWindowSwitcherExclusion, WindowSwitcherExclusion>();
+        services.AddSingleton<IWindowActivationPolicy, WindowActivationPolicy>();
         services.AddSingleton<IWindowSwitcherGesture, WindowSwitcherGesture>();
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();
         services.AddSingleton<IClock, SystemClock>();

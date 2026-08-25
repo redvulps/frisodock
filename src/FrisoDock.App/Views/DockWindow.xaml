@@ -189,10 +189,17 @@
         <StackPanel Orientation="Horizontal"
                     VerticalAlignment="Center">
 
-            <!-- Start button: it fires the Windows key, and the menu opens above the dock. -->
+            <!--
+                Botão Iniciar: dispara a tecla Windows, e o menu abre acima do dock.
+
+                O clique é tratado no pressionar, não pelo Command (que dispara no soltar): quando
+                o Iniciar já está aberto, o clique no dock tira o foco dele e ele fecha sozinho, e
+                só o estado lido antes disso diz se é para abrir ou deixar fechar. No soltar já
+                seria tarde — o Iniciar já teria começado a sumir.
+            -->
             <Button x:Name="StartButton"
                     Style="{StaticResource DockButtonStyle}"
-                    Command="{Binding OpenStartMenuCommand}"
+                    PreviewMouseLeftButtonDown="OnStartButtonMouseDown"
                     ToolTip="Iniciar">
                 <Path Width="{Binding Appearance.IconImageSize}"
                       Height="{Binding Appearance.IconImageSize}"

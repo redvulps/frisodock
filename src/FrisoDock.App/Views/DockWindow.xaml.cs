@@ -45,6 +45,7 @@ public partial class DockWindow : Window
     private readonly IWindowBackdrop _backdrop;
     private readonly IWindowPositioner _positioner;
     private readonly IWindowSwitcherExclusion _switcherExclusion;
+    private readonly IWindowActivationPolicy _activationPolicy;
     private readonly IScreenProvider _screens;
     private readonly DockAutoHide _autoHide;
 
@@ -77,6 +78,7 @@ public partial class DockWindow : Window
         IWindowBackdrop backdrop,
         IWindowPositioner positioner,
         IWindowSwitcherExclusion switcherExclusion,
+        IWindowActivationPolicy activationPolicy,
         IScreenProvider screens,
         IWindowEnumerator windowEnumerator,
         DockVisibilityPolicy visibilityPolicy,
@@ -98,6 +100,7 @@ public partial class DockWindow : Window
         _backdrop = backdrop;
         _positioner = positioner;
         _switcherExclusion = switcherExclusion;
+        _activationPolicy = activationPolicy;
         _screens = screens;
 
         _autoHide = new DockAutoHide(placement, windowEnumerator, settings, visibilityPolicy, cursor, HasOpenFlyout);
@@ -118,6 +121,9 @@ public partial class DockWindow : Window
 
         // Before the window is shown: it is at show time that Windows decides if it enters Alt+Tab.
         _switcherExclusion.Exclude(handle);
+
+        // The dock is a bar, not a focus target: clicking it must not steal the foreground.
+        _activationPolicy.PreventActivation(handle);
 
         if (PresentationSource.FromVisual(this) is HwndSource source)
         {
@@ -250,6 +256,19 @@ public partial class DockWindow : Window
         {
             ClosePreview();
         }
+    }
+
+    /// <summary>
+    /// Start button, handled on mouse down.
+    ///
+    /// It is on the press, and not on the release, because clicking with Start open takes its focus and
+    /// closes it: by the release the state would already have changed, and the decision to open or not
+    /// would come out wrong. The event is consumed so the button does not run its own click cycle over it.
+    /// </summary>
+    private void OnStartButtonMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _viewModel.ToggleStartMenu();
+        e.Handled = true;
     }
 
     // ------------------------------------------------------------------ drag to reorder

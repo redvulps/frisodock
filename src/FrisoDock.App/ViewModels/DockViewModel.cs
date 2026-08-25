@@ -159,9 +159,14 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>The dock's Start button.</summary>
-    [RelayCommand]
-    private void OpenStartMenu()
+    /// <summary>
+    /// The dock's Start button. Toggles the menu with the Windows key.
+    ///
+    /// It works as a real toggle — clicking again hides it — because the dock window does not
+    /// steal the focus (<c>WS_EX_NOACTIVATE</c>): without that, the click took the focus from Start,
+    /// which closed by itself, and the Windows key right after reopened it.
+    /// </summary>
+    public void ToggleStartMenu()
     {
         _startMenu.Toggle();
     }
