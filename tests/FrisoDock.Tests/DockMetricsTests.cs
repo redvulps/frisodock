@@ -115,6 +115,18 @@ public sealed class DockMetricsTests
     }
 
     [Fact]
+    public void VerticalPanel_WithTheClockFittingTheMargin_DoesNotThickenEvenWithSeconds()
+    {
+        // It is this machine's case after the measurement: "09:34:23" measures 48 px, less than the date,
+        // so turning seconds on changes no width at all.
+        var metrics = new DockMetrics(ClockContentWidth: 56, ClockContentWidthWithSeconds: 56);
+        var vertical = new DockSettings { Edge = DockEdge.Left, Metrics = metrics, ShowClockSeconds = true };
+        var horizontal = new DockSettings { Edge = DockEdge.Bottom, Metrics = metrics, ShowClockSeconds = true };
+
+        Assert.Equal(horizontal.EffectiveMetrics.PanelThickness, vertical.EffectiveMetrics.PanelThickness);
+    }
+
+    [Fact]
     public void VerticalPanel_WithSeconds_ThickensOnlyByWhatDidNotFitTheMargin()
     {
         var withSeconds = new DockSettings { Edge = DockEdge.Right, ShowClockSeconds = true }.EffectiveMetrics;

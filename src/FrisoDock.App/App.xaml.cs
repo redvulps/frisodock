@@ -63,6 +63,14 @@ public partial class App : Application
         var settingsStore = new JsonDockSettingsStore();
         DockSettings settings = options.ApplyTo(settingsStore.Load());
 
+        // The clock widths depend on the culture and the system font, which are only known
+        // here. Without this measurement, the dock reserves space by a constant that fits one
+        // machine only — and on a vertical dock that constant becomes panel thickness.
+        settings = settings with
+        {
+            Metrics = ClockWidthMeasurer.Measure(settings.Metrics, new ClockFormatter()),
+        };
+
         _services = BuildServiceProvider(settingsStore, settings);
         _taskbarController = _services.GetRequiredService<ITaskbarController>();
 

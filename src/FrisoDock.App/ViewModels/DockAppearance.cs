@@ -61,6 +61,9 @@ public sealed class DockAppearance
         QuickStatusButtonHeight = IsVertical ? metrics.QuickStatusWidth : metrics.IconSize;
         QuickStatusOrientation = IsVertical ? Orientation.Vertical : Orientation.Horizontal;
         QuickStatusGlyphMargin = IsVertical ? new Thickness(0, 4, 0, 0) : new Thickness(5, 0, 0, 0);
+        ClockTimeFontSize = metrics.ClockTimeFontSize;
+        ClockDateFontSize = metrics.ClockDateFontSize;
+
         ClockBlockWidth = IsVertical ? metrics.VerticalClockWidth : metrics.ClockWidth;
         ClockBlockHeight = IsVertical ? metrics.ClockWidth : metrics.IconSize;
 
@@ -200,6 +203,12 @@ public sealed class DockAppearance
 
     /// <summary>Height of the clock block.</summary>
     public double ClockBlockHeight { get; }
+
+    /// <summary>Font size of the time line. It comes from the metrics because the clock width is measured in it.</summary>
+    public double ClockTimeFontSize { get; }
+
+    /// <summary>Font size of the date line, for the same reason.</summary>
+    public double ClockDateFontSize { get; }
 
     /// <summary>Margin of the clock block, negative on the sides of a vertical dock.</summary>
     public Thickness ClockBlockMargin { get; }

@@ -22,8 +22,14 @@ namespace FrisoDock.Core.Services;
 /// same for all of them: app icon, network/sound/battery group and clock.
 /// </param>
 /// <param name="QuickStatusContentWidth">Width of the network, volume and battery glyphs, measured on screen.</param>
-/// <param name="ClockContentWidth">Width of the clock's widest line — here, the date.</param>
+/// <param name="ClockContentWidth">
+/// Width of the clock's widest line. The value here is only a starting point: what replaces it
+/// with the real measure, in the machine's font and culture, is
+/// <c>ClockWidthMeasurer</c> at startup.
+/// </param>
 /// <param name="ClockContentWidthWithSeconds">The same measure when the time carries the seconds.</param>
+/// <param name="ClockTimeFontSize">Font size of the time line.</param>
+/// <param name="ClockDateFontSize">Font size of the date line.</param>
 /// <param name="VerticalClockEdgeInset">
 /// Gap between the clock text and the panel edge, on a vertical dock. Smaller than the panel's
 /// inner margin on purpose: it is what lets the clock invade that margin instead of
@@ -50,6 +56,8 @@ public sealed record DockMetrics(
     int QuickStatusContentWidth = 52,
     int ClockContentWidth = 56,
     int ClockContentWidthWithSeconds = 70,
+    int ClockTimeFontSize = 13,
+    int ClockDateFontSize = 11,
     int VerticalClockEdgeInset = 2,
     int? PanelContentThickness = null,
     int HiddenSliver = 2)

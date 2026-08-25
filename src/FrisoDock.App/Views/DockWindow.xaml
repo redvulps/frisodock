@@ -472,14 +472,14 @@
 
                     <TextBlock Grid.Row="{Binding Appearance.ClockTimeRow}"
                                Text="{Binding Clock.Time}"
-                               FontSize="13"
+                               FontSize="{Binding Appearance.ClockTimeFontSize}"
                                Margin="{Binding Appearance.ClockTimeMargin}"
                                Foreground="{StaticResource StartGlyphBrush}"
                                HorizontalAlignment="Center" />
 
                     <TextBlock Grid.Row="{Binding Appearance.ClockDateRow}"
                                Text="{Binding Clock.Date}"
-                               FontSize="11"
+                               FontSize="{Binding Appearance.ClockDateFontSize}"
                                Margin="{Binding Appearance.ClockDateMargin}"
                                Foreground="{StaticResource ClockDateBrush}"
                                HorizontalAlignment="Center" />
