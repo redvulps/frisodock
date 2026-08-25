@@ -189,7 +189,19 @@ public partial class DockWindow : Window
     /// </summary>
     private bool HasOpenFlyout()
     {
-        if (_jumpList is not null || _trayFlyout is not null || _preview is not null || _quickSettings is not null)
+        return _preview is not null || HasOpenPanel();
+    }
+
+    /// <summary>
+    /// Whether a panel is open that the thumbnail must not cover.
+    ///
+    /// The jump list is born from the same icon the cursor rests on: nothing takes the mouse off the
+    /// button, so the thumbnail wait keeps running under the already open menu. Right-clicking
+    /// before the wait elapsed put the thumbnail over the jump list.
+    /// </summary>
+    private bool HasOpenPanel()
+    {
+        if (_jumpList is not null || _trayFlyout is not null || _quickSettings is not null)
         {
             return true;
         }
@@ -289,7 +301,7 @@ public partial class DockWindow : Window
 
         if (!e.Current.EnableWindowPreviews)
         {
-            ClosePreview();
+            CancelPreview();
         }
     }
 
@@ -351,8 +363,7 @@ public partial class DockWindow : Window
             }
 
             _dragging = true;
-            StopPreviewTimer();
-            ClosePreview();
+            CancelPreview();
         }
 
         DockItemViewModel? target = FindItemAt(position);
@@ -540,6 +551,11 @@ public partial class DockWindow : Window
             return;
         }
 
+        if (HasOpenPanel())
+        {
+            return;
+        }
+
         _previewCandidate = item;
         _previewAnchor = element;
 
@@ -551,6 +567,12 @@ public partial class DockWindow : Window
         _previewCandidate = null;
         _previewAnchor = null;
 
+        CancelPreview();
+    }
+
+    /// <summary>Disarms the thumbnail: the wait in progress and whatever is already on screen.</summary>
+    private void CancelPreview()
+    {
         StopPreviewTimer();
         ClosePreview();
     }
@@ -595,6 +617,13 @@ public partial class DockWindow : Window
     private void ShowPreview(DockItemViewModel item, FrameworkElement anchor)
     {
         ClosePreview();
+
+        // The panel may have opened between the timer elapsing and the event being delivered: the
+        // thumbnail is topmost and would be born on top of it.
+        if (HasOpenPanel())
+        {
+            return;
+        }
 
         // Thumbnails are an accessory: a window that cannot be mirrored does not kill the dock.
         try
@@ -677,6 +706,7 @@ public partial class DockWindow : Window
 
         CloseJumpList();
         CloseTrayFlyout();
+        CancelPreview();
 
         if (_quickSettings is not null)
         {
@@ -728,6 +758,7 @@ public partial class DockWindow : Window
         }
 
         CloseJumpList();
+        CancelPreview();
 
         try
         {
@@ -770,6 +801,7 @@ public partial class DockWindow : Window
     {
         CloseJumpList();
         CloseTrayFlyout();
+        CancelPreview();
 
         // The jump list is an accessory: an app with a malformed file, a corrupt icon or a
         // layout failure must not kill the dock — falling here would leave the user's taskbar hidden
