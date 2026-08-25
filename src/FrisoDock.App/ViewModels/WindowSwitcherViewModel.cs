@@ -5,40 +5,55 @@ using FrisoDock.Core.Models;
 
 namespace FrisoDock.App.ViewModels;
 
-/// <summary>One app in the switcher list.</summary>
+/// <summary>One item in the switcher list — an app (Alt+Tab) or a single window (Alt+').</summary>
 public sealed partial class WindowSwitcherEntryViewModel : ObservableObject
 {
     [ObservableProperty]
     private bool _isSelected;
 
-    public WindowSwitcherEntryViewModel(DockItem item, ImageSource? image)
+    private WindowSwitcherEntryViewModel(WindowInfo target, ImageSource? image, string caption)
+    {
+        Target = target;
+        Image = image;
+        Caption = caption;
+    }
+
+    /// <summary>
+    /// An app in the Alt+Tab list. The target is the item's first window, which is the last one that
+    /// was in use — the list arrives in Z order. The count goes into the label because it is exactly
+    /// what grouping hides: without it, an app with eight windows looks like it has one.
+    /// </summary>
+    public static WindowSwitcherEntryViewModel ForApp(DockItem item, ImageSource? image)
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        DisplayName = item.DisplayName;
-        Image = image;
-        WindowCount = item.Windows.Count;
+        string caption = item.Windows.Count > 1
+            ? $"{item.DisplayName}  ·  {item.Windows.Count} janelas"
+            : item.DisplayName;
 
-        // The item's first window is the last one that was in use: the list arrives in Z order.
-        Target = item.Windows[0];
+        return new WindowSwitcherEntryViewModel(item.Windows[0], image, caption);
     }
 
-    public string DisplayName { get; }
+    /// <summary>
+    /// A window in the Alt+' list. The label is the window title, which is what tells apart the
+    /// windows of a single app; when the title comes empty, the app name stands in.
+    /// </summary>
+    public static WindowSwitcherEntryViewModel ForWindow(WindowInfo window, ImageSource? image)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+
+        string caption = string.IsNullOrWhiteSpace(window.Title) ? window.DisplayName : window.Title;
+
+        return new WindowSwitcherEntryViewModel(window, image, caption);
+    }
 
     public ImageSource? Image { get; }
-
-    public int WindowCount { get; }
 
     /// <summary>Window the switcher activates if this item is the chosen one.</summary>
     public WindowInfo Target { get; }
 
-    /// <summary>
-    /// Label shown under the icon row. The window count comes in because it is exactly what
-    /// grouping hides: without it, an app with eight windows looks like it has one.
-    /// </summary>
-    public string Caption => WindowCount > 1
-        ? $"{DisplayName}  ·  {WindowCount} janelas"
-        : DisplayName;
+    /// <summary>Label shown under the icon row, for the item under the selection.</summary>
+    public string Caption { get; }
 }
 
 /// <summary>

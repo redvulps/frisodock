@@ -122,4 +122,73 @@ public sealed class WindowSwitchListTests
     {
         Assert.Equal(0, _list.Step(count: 0, current: 0, backwards: false));
     }
+
+    [Fact]
+    public void BuildSameApp_BringsOnlyTheFocusedAppsWindows()
+    {
+        WindowInfo[] windows =
+        [
+            new WindowInfo(1, "brave a", 1, @"C:\apps\brave.exe", false, IsForeground: true),
+            new WindowInfo(2, "code", 2, @"C:\apps\code.exe", false, false),
+            new WindowInfo(3, "brave b", 3, @"C:\apps\brave.exe", false, false),
+        ];
+
+        IReadOnlyList<WindowInfo> sameApp = _list.BuildSameApp(windows, foreground: 1);
+
+        Assert.Equal(2, sameApp.Count);
+        Assert.All(sameApp, window => Assert.Equal(@"c:\apps\brave.exe", window.Key.Value));
+    }
+
+    [Fact]
+    public void BuildSameApp_KeepsTheFocusedWindowFirst()
+    {
+        // The Z order brings the focused window to the top, and that is what makes the first step land on
+        // the second — the last used before this one.
+        WindowInfo[] windows =
+        [
+            new WindowInfo(10, "atual", 1, @"C:\apps\brave.exe", false, IsForeground: true),
+            new WindowInfo(20, "anterior", 1, @"C:\apps\brave.exe", false, false),
+        ];
+
+        IReadOnlyList<WindowInfo> sameApp = _list.BuildSameApp(windows, foreground: 10);
+
+        Assert.Equal(10, sameApp[0].Handle);
+        Assert.Equal(20, sameApp[1].Handle);
+    }
+
+    [Fact]
+    public void BuildSameApp_WithNoFocusUsesTheAppAtTheTopOfTheStack()
+    {
+        // Focus on the desktop: no window is the foreground one, but the gesture still applies to the top app.
+        WindowInfo[] windows =
+        [
+            new WindowInfo(1, "code a", 1, @"C:\apps\code.exe", false, false),
+            new WindowInfo(2, "code b", 1, @"C:\apps\code.exe", false, false),
+            new WindowInfo(3, "brave", 2, @"C:\apps\brave.exe", false, false),
+        ];
+
+        IReadOnlyList<WindowInfo> sameApp = _list.BuildSameApp(windows, foreground: 0);
+
+        Assert.Equal(2, sameApp.Count);
+        Assert.All(sameApp, window => Assert.Equal(@"c:\apps\code.exe", window.Key.Value));
+    }
+
+    [Fact]
+    public void BuildSameApp_AppWithOneWindowReturnsOne()
+    {
+        // Deciding not to open the switcher is the caller's job; here the single window is returned as is.
+        WindowInfo[] windows =
+        [
+            new WindowInfo(1, "sozinha", 1, @"C:\apps\notepad.exe", false, IsForeground: true),
+            new WindowInfo(2, "brave", 2, @"C:\apps\brave.exe", false, false),
+        ];
+
+        Assert.Single(_list.BuildSameApp(windows, foreground: 1));
+    }
+
+    [Fact]
+    public void BuildSameApp_WithNoWindowsReturnsEmpty()
+    {
+        Assert.Empty(_list.BuildSameApp([], foreground: 1));
+    }
 }

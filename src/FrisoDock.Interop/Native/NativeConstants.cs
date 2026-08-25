@@ -214,6 +214,10 @@ internal static class NativeConstants
     internal const uint VK_ESCAPE = 0x1B;
     internal const uint VK_SHIFT = 0x10;
 
+    // The key that on the US keyboard carries the backtick, and on ABNT2 the apostrophe. It is the
+    // same physical key macOS uses to switch between windows of one app; here it becomes ALT+'.
+    internal const uint VK_OEM_3 = 0xC0;
+
     // The hook reports Alt side by side, never the generic VK_MENU: what arrives is 0xA4 or 0xA5.
     internal const uint VK_LMENU = 0xA4;
     internal const uint VK_RMENU = 0xA5;

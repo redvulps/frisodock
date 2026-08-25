@@ -117,6 +117,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
 
         public bool UseGroupedWindowSwitcher { get; init; }
 
+        public bool UseSameAppWindowSwitcher { get; init; }
+
         public static PersistedSettings From(DockSettings settings)
         {
             return new PersistedSettings
@@ -131,6 +133,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 EnableWindowPreviews = settings.EnableWindowPreviews,
                 ShowClockSeconds = settings.ShowClockSeconds,
                 UseGroupedWindowSwitcher = settings.UseGroupedWindowSwitcher,
+                UseSameAppWindowSwitcher = settings.UseSameAppWindowSwitcher,
             };
         }
 
@@ -148,6 +151,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
                 EnableWindowPreviews = EnableWindowPreviews,
                 ShowClockSeconds = ShowClockSeconds,
                 UseGroupedWindowSwitcher = UseGroupedWindowSwitcher,
+                UseSameAppWindowSwitcher = UseSameAppWindowSwitcher,
             };
         }
     }

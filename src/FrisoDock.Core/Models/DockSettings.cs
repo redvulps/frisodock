@@ -58,6 +58,14 @@ public sealed record DockSettings
     /// </summary>
     public bool UseGroupedWindowSwitcher { get; init; }
 
+    /// <summary>
+    /// Switch between the focused app's windows with Alt+', macOS style.
+    ///
+    /// Independent of the grouped Alt+Tab: one handles switching apps, the other moving between the
+    /// windows of a single app. It ships off for the same reason — it takes over a system key.
+    /// </summary>
+    public bool UseSameAppWindowSwitcher { get; init; }
+
     /// <summary>Coalescing window for bursts of window events, in milliseconds.</summary>
     public int RefreshDebounceMilliseconds { get; init; } = 150;
 

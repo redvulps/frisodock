@@ -1,3 +1,4 @@
+﻿using System.Windows.Media;
 using System.Windows.Threading;
 using FrisoDock.App.ViewModels;
 using FrisoDock.App.Views;
@@ -78,7 +79,7 @@ public sealed class WindowSwitcherRunner : IDisposable
         _gesture.Cancelled += OnCancelled;
         _settings.Changed += OnSettingsChanged;
 
-        ApplyMode();
+        ApplyModes();
     }
 
     public void Dispose()
@@ -101,26 +102,26 @@ public sealed class WindowSwitcherRunner : IDisposable
 
     private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
     {
-        if (e.WindowSwitcherChanged)
+        if (e.WindowSwitcherChanged || e.SameAppWindowSwitcherChanged)
         {
-            ApplyMode();
+            ApplyModes();
         }
     }
 
     /// <summary>
-    /// Turns the hook on or off as configured. Off, Alt+Tab goes back to being the Windows one
-    /// right away, with no dock restart.
+    /// Turns each gesture on as configured. With both off the hook goes away, and the keys
+    /// become the Windows ones right away, with no dock restart.
     /// </summary>
-    private void ApplyMode()
+    private void ApplyModes()
     {
-        if (_settings.Current.UseGroupedWindowSwitcher)
-        {
-            _gesture.Start();
-            return;
-        }
+        DockSettings settings = _settings.Current;
 
-        _gesture.Stop();
-        CloseView();
+        _gesture.SetModes(settings.UseGroupedWindowSwitcher, settings.UseSameAppWindowSwitcher);
+
+        if (!settings.UseGroupedWindowSwitcher && !settings.UseSameAppWindowSwitcher)
+        {
+            CloseView();
+        }
     }
 
     // All three events arrive from the hook thread, which is in the path of every keystroke.
@@ -145,29 +146,33 @@ public sealed class WindowSwitcherRunner : IDisposable
     {
         if (_viewModel is null)
         {
-            Begin(step.Backwards);
+            Begin(step.Scope, step.Backwards);
             return;
         }
 
         _viewModel.Select(_list.Step(_viewModel.Entries.Count, _viewModel.SelectedIndex, step.Backwards));
     }
 
-    private void Begin(bool backwards)
+    private void Begin(WindowSwitchScope scope, bool backwards)
     {
         IReadOnlyList<WindowInfo> windows = _windows.GetWindows();
-        IReadOnlyList<DockItem> apps = _list.Build(windows);
+        nint foreground = FindForeground(windows);
 
-        if (apps.Count == 0)
+        IReadOnlyList<WindowSwitcherEntryViewModel> entries = scope == WindowSwitchScope.SameApp
+            ? BuildSameAppEntries(windows, foreground)
+            : BuildAppEntries(windows);
+
+        // Nothing to switch to: with a single app (or a single window, in the same-app gesture) the
+        // switcher would have nowhere to go, and opening it would only flash a window on screen.
+        if (entries.Count < 2)
         {
             return;
         }
 
-        _previousForeground = FindForeground(windows);
+        _previousForeground = foreground;
 
-        var viewModel = new WindowSwitcherViewModel(
-            apps.Select(app => new WindowSwitcherEntryViewModel(app, _icons.GetIcon(app))));
-
-        viewModel.Select(_list.SelectFirst(apps.Count, backwards));
+        var viewModel = new WindowSwitcherViewModel(entries);
+        viewModel.Select(_list.SelectFirst(entries.Count, backwards));
 
         var view = new WindowSwitcherWindow(
             viewModel,
@@ -175,10 +180,6 @@ public sealed class WindowSwitcherRunner : IDisposable
             _backdrop,
             _positioner,
             _switcherExclusion);
-
-        // Losing focus ends the session: it is the safety net for the case where the Alt release
-        // never reaches the hook — without it the window would stay on screen with nothing to close it.
-        view.Deactivated += OnViewDeactivated;
 
         _viewModel = viewModel;
         _view = view;
@@ -191,6 +192,57 @@ public sealed class WindowSwitcherRunner : IDisposable
         // it would arrive there without the Tab that came with it, and many apps read that as the
         // shortcut that opens the menu.
         _activator.Activate(view.Handle);
+
+        // The focus safety net is armed only now, and not before the Show.
+        //
+        // Showing a window from a process that is not the foreground — the case here,
+        // because what is in front is the user's app — causes a focus round trip
+        // before the activator pins the focus on us. A Deactivated armed before that
+        // would close the window during that bounce, before it appeared. Deferred to the end of the
+        // queue, it only takes effect once the focus has settled, and then it serves its purpose:
+        // closing when the user clicks outside.
+        _dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            if (_view == view)
+            {
+                view.Deactivated += OnViewDeactivated;
+            }
+        });
+    }
+
+    /// <summary>One item per running app, for Alt+Tab.</summary>
+    private IReadOnlyList<WindowSwitcherEntryViewModel> BuildAppEntries(IReadOnlyList<WindowInfo> windows)
+    {
+        return _list.Build(windows)
+            .Select(app => WindowSwitcherEntryViewModel.ForApp(app, _icons.GetIcon(app)))
+            .ToList();
+    }
+
+    /// <summary>
+    /// One item per window of the focused app, for Alt+'.
+    ///
+    /// The icon is resolved once and reused in every entry: the windows belong to the same app,
+    /// so the icon is the same, and extracting one per window would be repeated work. What tells
+    /// the items apart is the title, which goes into the label.
+    /// </summary>
+    private IReadOnlyList<WindowSwitcherEntryViewModel> BuildSameAppEntries(
+        IReadOnlyList<WindowInfo> windows,
+        nint foreground)
+    {
+        IReadOnlyList<WindowInfo> appWindows = _list.BuildSameApp(windows, foreground);
+
+        if (appWindows.Count == 0)
+        {
+            return [];
+        }
+
+        WindowInfo first = appWindows[0];
+        var appItem = new DockItem(first.Key, first.DisplayName, first.ExecutablePath, null, appWindows);
+        ImageSource? image = _icons.GetIcon(appItem);
+
+        return appWindows
+            .Select(window => WindowSwitcherEntryViewModel.ForWindow(window, image))
+            .ToList();
     }
 
     private void Commit()

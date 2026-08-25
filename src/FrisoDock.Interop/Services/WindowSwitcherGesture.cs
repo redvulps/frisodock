@@ -1,12 +1,12 @@
-using FrisoDock.Core.Abstractions;
+﻿using FrisoDock.Core.Abstractions;
 using FrisoDock.Interop.Native;
 using System.Runtime.InteropServices;
 
 namespace FrisoDock.Interop.Services;
 
 /// <summary>
-/// Recognizes Alt+Tab and swallows it, so the dock's switcher appears in place of the native one.
-/// That is all (SRP): it does not know what a window is nor what will be shown.
+/// Recognizes Alt+Tab and Alt+' and swallows them, so the dock's switchers appear in place of the
+/// native ones. That is all (SRP): it does not know what a window is nor what will be shown.
 ///
 /// The low-level keyboard hook is the only path, and the alternatives were measured, not
 /// assumed: <c>RegisterHotKey(MOD_ALT, VK_TAB)</c> returns <c>ERROR_HOTKEY_ALREADY_REGISTERED</c>
@@ -16,6 +16,10 @@ namespace FrisoDock.Interop.Services;
 /// <c>WH_KEYBOARD_LL</c> is global but not injected: no code of ours enters another
 /// process, and Windows is the one calling back here — the same family as the WinEvent hooks the dock
 /// already uses to watch windows, and with no administrator required.
+///
+/// Both gestures share the same hook: what changes between them is only which key is swallowed, and
+/// which scope the step carries. A session in progress locks the scope — pressing the other
+/// gesture's key in the middle of a session does nothing.
 /// </summary>
 public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
 {
@@ -35,6 +39,9 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
     private nint _hook;
     private bool _altDown;
     private bool _sessionActive;
+    private WindowSwitchScope _sessionScope;
+    private volatile bool _recognizeByApp;
+    private volatile bool _recognizeSameApp;
     private bool _disposed;
 
     public event EventHandler<WindowSwitcherStepEventArgs>? Stepped;
@@ -43,33 +50,20 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
 
     public event EventHandler? Cancelled;
 
-    public void Start()
+    public void SetModes(bool groupedByApp, bool sameApp)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        lock (_sync)
+        _recognizeByApp = groupedByApp;
+        _recognizeSameApp = sameApp;
+
+        if (groupedByApp || sameApp)
         {
-            if (_thread is not null)
-            {
-                return;
-            }
-
-            using var ready = new ManualResetEventSlim(false);
-
-            // A thread of its own, and not the UI one: this hook's return is in the path of every key
-            // in the system, and Windows drops a hook that takes too long to answer. On the UI thread,
-            // a dock animation in progress would be enough to slow everyone's typing down.
-            var thread = new Thread(() => Run(ready))
-            {
-                Name = "FrisoDock.WindowSwitcherGesture",
-                IsBackground = true,
-            };
-
-            thread.Start();
-            ready.Wait(StopTimeout);
-
-            _thread = thread;
+            Start();
+            return;
         }
+
+        Stop();
     }
 
     public void Stop()
@@ -103,6 +97,33 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
 
         Stop();
         _disposed = true;
+    }
+
+    private void Start()
+    {
+        lock (_sync)
+        {
+            if (_thread is not null)
+            {
+                return;
+            }
+
+            using var ready = new ManualResetEventSlim(false);
+
+            // A thread of its own, and not the UI one: this hook's return is in the path of every key
+            // in the system, and Windows drops a hook that takes too long to answer. On the UI thread,
+            // a dock animation in progress would be enough to slow everyone's typing down.
+            var thread = new Thread(() => Run(ready))
+            {
+                Name = "FrisoDock.WindowSwitcherGesture",
+                IsBackground = true,
+            };
+
+            thread.Start();
+            ready.Wait(StopTimeout);
+
+            _thread = thread;
+        }
     }
 
     /// <summary>Installs the hook and keeps the message pump that feeds it.</summary>
@@ -144,8 +165,8 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
     /// <summary>
     /// One key. Returning 1 swallows it; anything else lets it through.
     ///
-    /// What is swallowed is only Tab, and only while the gesture is in progress. Alt goes on its
-    /// way deliberately: swallowing it would leave the apps thinking it is still held down,
+    /// What is swallowed is only the gesture's key, and only while the gesture is in progress. Alt goes
+    /// on its way deliberately: swallowing it would leave the apps thinking it is still held down,
     /// because the release would never reach them.
     /// </summary>
     private nint OnKey(int code, nint wParam, nint lParam)
@@ -165,17 +186,17 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
             return NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
         }
 
-        if (key.VirtualKey == NativeConstants.VK_TAB && (_altDown || _sessionActive))
+        if (key.VirtualKey == NativeConstants.VK_TAB && _recognizeByApp && CanStep(WindowSwitchScope.ByApp))
         {
-            if (down)
-            {
-                bool starts = !_sessionActive;
-                _sessionActive = true;
-
-                Stepped?.Invoke(this, new WindowSwitcherStepEventArgs(IsShiftDown(), starts));
-            }
+            Step(WindowSwitchScope.ByApp, down);
 
             // The release is swallowed too: letting it through would hand the app half a Tab.
+            return 1;
+        }
+
+        if (key.VirtualKey == NativeConstants.VK_OEM_3 && _recognizeSameApp && CanStep(WindowSwitchScope.SameApp))
+        {
+            Step(WindowSwitchScope.SameApp, down);
             return 1;
         }
 
@@ -188,6 +209,36 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
         }
 
         return NativeMethods.CallNextHookEx(_hook, code, wParam, lParam);
+    }
+
+    /// <summary>
+    /// Whether this scope's key should act now.
+    ///
+    /// Outside a session, Alt being held is enough. Inside one, only the key of the scope that
+    /// opened the session keeps working — pressing the other gesture's key midway changes nothing.
+    /// </summary>
+    private bool CanStep(WindowSwitchScope scope)
+    {
+        if (_sessionActive)
+        {
+            return _sessionScope == scope;
+        }
+
+        return _altDown;
+    }
+
+    private void Step(WindowSwitchScope scope, bool down)
+    {
+        if (!down)
+        {
+            return;
+        }
+
+        bool starts = !_sessionActive;
+        _sessionActive = true;
+        _sessionScope = scope;
+
+        Stepped?.Invoke(this, new WindowSwitcherStepEventArgs(scope, IsShiftDown(), starts));
     }
 
     private void HandleAlt(bool down)

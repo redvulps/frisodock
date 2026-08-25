@@ -66,6 +66,64 @@ public sealed class WindowSwitchList
     }
 
     /// <summary>
+    /// The focused app's windows, in usage order, for the same-app switcher (Alt+').
+    ///
+    /// One window per item, not grouped: here what is switched are the windows themselves. The order
+    /// is the same input Z order, so the focused window comes first — and that is why the
+    /// first step lands on the second, the last used before this one, which is the most common gesture.
+    ///
+    /// The app is the focused window's; with none focused (everything minimized, focus on the desktop),
+    /// the app of the first window stands, which is the one at the top of the stack.
+    /// </summary>
+    /// <param name="windows">Windows in Z order, from the most recent to the oldest.</param>
+    /// <param name="foreground">Handle of the foreground window, or zero if there is none.</param>
+    public IReadOnlyList<WindowInfo> BuildSameApp(IReadOnlyList<WindowInfo> windows, nint foreground)
+    {
+        ArgumentNullException.ThrowIfNull(windows);
+
+        AppKey key = ResolveActiveApp(windows, foreground);
+
+        if (key.IsEmpty)
+        {
+            return [];
+        }
+
+        var appWindows = new List<WindowInfo>();
+
+        foreach (WindowInfo window in windows)
+        {
+            if (window.Key == key)
+            {
+                appWindows.Add(window);
+            }
+        }
+
+        return appWindows;
+    }
+
+    /// <summary>App the same-app gesture belongs to: the focused window's, or the first one's.</summary>
+    private static AppKey ResolveActiveApp(IReadOnlyList<WindowInfo> windows, nint foreground)
+    {
+        foreach (WindowInfo window in windows)
+        {
+            if (window.Handle == foreground && !window.Key.IsEmpty)
+            {
+                return window.Key;
+            }
+        }
+
+        foreach (WindowInfo window in windows)
+        {
+            if (!window.Key.IsEmpty)
+            {
+                return window.Key;
+            }
+        }
+
+        return default;
+    }
+
+    /// <summary>
     /// Next index of the wheel, wrapping at both ends.
     /// </summary>
     public int Step(int count, int current, bool backwards)

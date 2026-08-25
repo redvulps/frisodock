@@ -48,6 +48,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _useGroupedWindowSwitcher;
 
     [ObservableProperty]
+    private bool _useSameAppWindowSwitcher;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanIsolateMonitorApps))]
     private bool _showOnAllMonitors;
 
@@ -117,6 +120,8 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnUseGroupedWindowSwitcherChanged(bool value) => Apply();
 
+    partial void OnUseSameAppWindowSwitcherChanged(bool value) => Apply();
+
     partial void OnShowOnAllMonitorsChanged(bool value) => Apply();
 
     partial void OnIsolateMonitorAppsChanged(bool value) => Apply();
@@ -143,6 +148,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             EnableWindowPreviews = settings.EnableWindowPreviews;
             ShowClockSeconds = settings.ShowClockSeconds;
             UseGroupedWindowSwitcher = settings.UseGroupedWindowSwitcher;
+            UseSameAppWindowSwitcher = settings.UseSameAppWindowSwitcher;
             ShowOnAllMonitors = settings.ShowOnAllMonitors;
             IsolateMonitorApps = settings.IsolateMonitorApps;
         }
@@ -169,6 +175,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             EnableWindowPreviews = EnableWindowPreviews,
             ShowClockSeconds = ShowClockSeconds,
             UseGroupedWindowSwitcher = UseGroupedWindowSwitcher,
+            UseSameAppWindowSwitcher = UseSameAppWindowSwitcher,
             ShowOnAllMonitors = ShowOnAllMonitors,
             IsolateMonitorApps = IsolateMonitorApps,
         });

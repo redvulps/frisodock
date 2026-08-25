@@ -82,6 +82,9 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
     /// <summary>True if the window switcher changed owner — the dock or Windows.</summary>
     public bool WindowSwitcherChanged => Previous.UseGroupedWindowSwitcher != Current.UseGroupedWindowSwitcher;
 
+    /// <summary>True if the same-app window switcher (Alt+') was turned on or off.</summary>
+    public bool SameAppWindowSwitcherChanged => Previous.UseSameAppWindowSwitcher != Current.UseSameAppWindowSwitcher;
+
     /// <summary>True if the clock changed format.</summary>
     public bool ClockChanged => Previous.ShowClockSeconds != Current.ShowClockSeconds;
 

@@ -493,6 +493,26 @@
                             </Grid>
                         </Border>
 
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Alternar entre janelas do mesmo app (ALT+&#x27;)"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Com ALT segurado, a tecla ' percorre as janelas do app em foco, ao estilo do macOS."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding UseSameAppWindowSwitcher}" />
+                            </Grid>
+                        </Border>
+
                     </StackPanel>
                 </TabItem>
 
