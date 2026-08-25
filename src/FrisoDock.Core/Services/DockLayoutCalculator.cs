@@ -24,6 +24,11 @@ namespace FrisoDock.Core.Services;
 /// <param name="QuickStatusContentWidth">Width of the network, volume and battery glyphs, measured on screen.</param>
 /// <param name="ClockContentWidth">Width of the clock's widest line — here, the date.</param>
 /// <param name="ClockContentWidthWithSeconds">The same measure when the time carries the seconds.</param>
+/// <param name="VerticalClockEdgeInset">
+/// Gap between the clock text and the panel edge, on a vertical dock. Smaller than the panel's
+/// inner margin on purpose: it is what lets the clock invade that margin instead of
+/// forcing the panel to thicken.
+/// </param>
 /// <param name="PanelContentThickness">
 /// Usable panel thickness, inside the margin, when it is not an icon's. Null is the
 /// common case; what fills it in is <see cref="Models.DockSettings.EffectiveMetrics"/>, so the
@@ -45,6 +50,7 @@ public sealed record DockMetrics(
     int QuickStatusContentWidth = 52,
     int ClockContentWidth = 56,
     int ClockContentWidthWithSeconds = 70,
+    int VerticalClockEdgeInset = 2,
     int? PanelContentThickness = null,
     int HiddenSliver = 2)
 {
@@ -69,6 +75,18 @@ public sealed record DockMetrics(
 
     /// <summary>Separator length counting the space on both sides.</summary>
     public int SeparatorBlockLength => SeparatorWidth + (SeparatorSpacing * 2);
+
+    /// <summary>
+    /// How far a vertical dock's clock advances into the panel margin, on each side.
+    ///
+    /// The margin exists to separate the icons from the edge, and an icon has width to spare. The
+    /// clock does not: horizontally it is wider than an icon, and respecting the same margin would
+    /// force the whole panel to thicken because of a single line of text.
+    /// </summary>
+    public int VerticalClockBleed => Math.Max(Padding - VerticalClockEdgeInset, 0);
+
+    /// <summary>Clock width on a vertical dock, already counting the advance over the margin.</summary>
+    public int VerticalClockWidth => ContentThickness + (VerticalClockBleed * 2);
 
     /// <summary>Usable panel thickness: an icon's, unless explicitly adjusted.</summary>
     public int ContentThickness => PanelContentThickness ?? IconSize;

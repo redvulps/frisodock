@@ -98,12 +98,16 @@ public sealed record DockSettings
                 return metrics;
             }
 
-            // On a vertical dock the panel thickness is the clock's width, not the icon's: the
-            // date measures 56 px in its font and the time with seconds reaches 70, against an icon's
-            // 44 px. Without this the clock comes out clipped at both ends.
+            // Horizontally, the clock is wider than an icon: the date measures 56 px in its font and the
+            // time with seconds reaches 70, against an icon's 44 px. Before thickening the panel
+            // because of that, the clock spends the inner margin — only what does not fit even so
+            // becomes thickness. With the date and without seconds the sum closes at 44, and the vertical
+            // panel ends up with the same 62 px as the horizontal one.
+            int neededForClock = metrics.ClockContentWidth - (metrics.VerticalClockBleed * 2);
+
             return metrics with
             {
-                PanelContentThickness = Math.Max(metrics.IconSize, metrics.ClockContentWidth),
+                PanelContentThickness = Math.Max(metrics.IconSize, neededForClock),
             };
         }
     }

@@ -61,8 +61,15 @@ public sealed class DockAppearance
         QuickStatusButtonHeight = IsVertical ? metrics.QuickStatusWidth : metrics.IconSize;
         QuickStatusOrientation = IsVertical ? Orientation.Vertical : Orientation.Horizontal;
         QuickStatusGlyphMargin = IsVertical ? new Thickness(0, 4, 0, 0) : new Thickness(5, 0, 0, 0);
-        ClockBlockWidth = IsVertical ? metrics.ContentThickness : metrics.ClockWidth;
+        ClockBlockWidth = IsVertical ? metrics.VerticalClockWidth : metrics.ClockWidth;
         ClockBlockHeight = IsVertical ? metrics.ClockWidth : metrics.IconSize;
+
+        // Negative margin on the sides: it is what lets the clock take over the panel's inner margin
+        // instead of the panel thickening. The space before the item, along the stack axis, is the
+        // same as the others.
+        ClockBlockMargin = IsVertical
+            ? new Thickness(-metrics.VerticalClockBleed, metrics.ItemSpacing, -metrics.VerticalClockBleed, 0)
+            : ItemMargin;
 
         // On the vertical dock the date comes on top and the time below; on the horizontal one, the
         // opposite. Each line keeps its own font and color, so what swaps is the grid row, not the text.
@@ -193,6 +200,9 @@ public sealed class DockAppearance
 
     /// <summary>Height of the clock block.</summary>
     public double ClockBlockHeight { get; }
+
+    /// <summary>Margin of the clock block, negative on the sides of a vertical dock.</summary>
+    public Thickness ClockBlockMargin { get; }
 
     /// <summary>Clock grid row the time sits in.</summary>
     public int ClockTimeRow { get; }

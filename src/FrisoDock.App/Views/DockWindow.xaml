@@ -457,7 +457,7 @@
 
             <Border Width="{Binding Appearance.ClockBlockWidth}"
                     Height="{Binding Appearance.ClockBlockHeight}"
-                    Margin="{Binding Appearance.ItemMargin}"
+                    Margin="{Binding Appearance.ClockBlockMargin}"
                     Background="Transparent"
                     ToolTip="{Binding Clock.Tooltip}">
                 <!--

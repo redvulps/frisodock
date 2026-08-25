@@ -103,25 +103,29 @@ public sealed class DockMetricsTests
     }
 
     [Fact]
-    public void VerticalPanel_FitsTheHorizontalClock()
+    public void VerticalPanel_WithTheDateFittingTheMargin_DoesNotThicken()
     {
-        // "25/08/2026" measures 56 px in the date font, against an icon's 44 px: without thickening the
-        // panel, the clock would come out clipped at both ends.
-        var settings = new DockSettings { Edge = DockEdge.Left, ShowClockSeconds = false };
-        DockMetrics metrics = settings.EffectiveMetrics;
+        // "25/08/2026" measures 56 px in the date font, against an icon's 44 px. The missing 12 px
+        // come from the panel's inner margin, not from its thickness.
+        var vertical = new DockSettings { Edge = DockEdge.Left, ShowClockSeconds = false }.EffectiveMetrics;
+        var horizontal = new DockSettings { Edge = DockEdge.Bottom, ShowClockSeconds = false }.EffectiveMetrics;
 
-        Assert.Equal(metrics.ClockContentWidth, metrics.ContentThickness);
-        Assert.True(metrics.ContentThickness > metrics.IconSize);
+        Assert.Equal(horizontal.PanelThickness, vertical.PanelThickness);
+        Assert.Equal(vertical.ClockContentWidth, vertical.VerticalClockWidth);
     }
 
     [Fact]
-    public void VerticalPanel_WithSeconds_UsesTheLargerWidth()
+    public void VerticalPanel_WithSeconds_ThickensOnlyByWhatDidNotFitTheMargin()
     {
         var withSeconds = new DockSettings { Edge = DockEdge.Right, ShowClockSeconds = true }.EffectiveMetrics;
         var without = new DockSettings { Edge = DockEdge.Right, ShowClockSeconds = false }.EffectiveMetrics;
 
-        Assert.Equal(DockMetrics.Default.ClockContentWidthWithSeconds, withSeconds.ContentThickness);
+        // The time with seconds still fits whole, and the panel grows only by the difference.
+        Assert.Equal(withSeconds.ClockContentWidth, withSeconds.VerticalClockWidth);
         Assert.True(withSeconds.PanelThickness > without.PanelThickness);
+        Assert.Equal(
+            withSeconds.ClockContentWidth - (withSeconds.VerticalClockBleed * 2),
+            withSeconds.ContentThickness);
     }
 
     [Fact]
