@@ -11,8 +11,8 @@
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterScreen"
-        SizeToContent="Height"
-        Width="420"
+        Width="620"
+        Height="430"
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Ideal"
         Background="Transparent">
@@ -20,6 +20,10 @@
     <!--
         Sem AllowsTransparency: é o que permite ao DWM desenhar o acrílico e arredondar os
         cantos, o mesmo acabamento dos flyouts. Ver FlyoutChrome.
+
+        Tamanho fixo, e não SizeToContent: com as categorias em abas, a janela mudaria de altura
+        a cada troca de aba, e o botão Fechar saltaria de lugar debaixo do cursor. A altura é a
+        da categoria mais alta, e as menores sobram espaço — que é o que o Windows faz.
     -->
 
     <Window.Resources>
@@ -31,6 +35,7 @@
         <SolidColorBrush x:Key="ThumbBrush" Color="#F3F3F3" />
         <SolidColorBrush x:Key="SeparatorBrush" Color="#1FFFFFFF" />
         <SolidColorBrush x:Key="HoverBrush" Color="#14FFFFFF" />
+        <SolidColorBrush x:Key="NavSelectedBrush" Color="#1FFFFFFF" />
 
         <!-- Toggle in the Windows 11 shape: rounded track with the thumb sliding.  -->
         <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
@@ -178,318 +183,422 @@
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
+        <!--
+            Item da navegação lateral, no formato das Configurações do Windows 11: a barrinha de
+            destaque à esquerda marca a categoria aberta. O glifo vem do Tag do item, e não de
+            uma propriedade nova, porque é a única coisa que varia além do texto.
+        -->
+        <Style x:Key="NavItemStyle" TargetType="TabItem">
+            <Setter Property="Cursor" Value="Hand" />
+
+            <!--
+                Focusable fica ligado (o padrão): o TabItem acopla a seleção ao foco, e
+                OnMouseLeftButtonDown só marca IsSelected se conseguir focar. Com Focusable=False
+                o clique não trocava de aba. O retângulo de foco pontilhado é suprimido à parte —
+                ele só apareceria na navegação por teclado, e aqui destoa do resto do painel.
+            -->
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Root"
+                                CornerRadius="4"
+                                Margin="0,1"
+                                Padding="10,9"
+                                Background="Transparent">
+                            <Grid>
+                                <Rectangle x:Name="Accent"
+                                           Width="3"
+                                           Height="16"
+                                           RadiusX="1.5"
+                                           RadiusY="1.5"
+                                           HorizontalAlignment="Left"
+                                           Fill="{StaticResource AccentBrush}"
+                                           Visibility="Collapsed" />
+
+                                <StackPanel Orientation="Horizontal" Margin="13,0,0,0">
+                                    <TextBlock Text="{TemplateBinding Tag}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               FontSize="15"
+                                               Width="20"
+                                               Foreground="{StaticResource MutedBrush}"
+                                               VerticalAlignment="Center" />
+
+                                    <ContentPresenter ContentSource="Header"
+                                                      VerticalAlignment="Center"
+                                                      TextElement.FontSize="13"
+                                                      TextElement.Foreground="{StaticResource TextBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                <Setter TargetName="Accent" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            O TabControl entra só como mecanismo de seleção; a moldura padrão dele — fundo,
+            borda e a fila de abas em cima — é inteiramente substituída pela navegação lateral.
+        -->
+        <Style x:Key="SettingsTabsStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="184" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" IsItemsHost="True" Margin="4,0" />
+
+                            <Rectangle Grid.Column="1"
+                                       Width="1"
+                                       Fill="{StaticResource SeparatorBrush}"
+                                       Margin="6,2" />
+
+                            <!-- Scrolling per category: one of them may grow past the fixed height. -->
+                            <ScrollViewer Grid.Column="2"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          Padding="0,0,4,0">
+                                <ContentPresenter ContentSource="SelectedContent" />
+                            </ScrollViewer>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Window.Resources>
 
     <Border Padding="10">
-        <StackPanel>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-            <TextBlock Text="Configurações"
-                       Foreground="{StaticResource TextBrush}"
-                       FontSize="18"
-                       Margin="14,8,14,2" />
-            <TextBlock Text="As mudanças valem na hora e ficam guardadas."
-                       Style="{StaticResource SettingHintStyle}"
-                       Margin="14,0,14,10" />
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="Configurações"
+                           Foreground="{StaticResource TextBrush}"
+                           FontSize="18"
+                           Margin="14,6,14,2" />
+                <TextBlock Text="As mudanças valem na hora e ficam guardadas."
+                           Style="{StaticResource SettingHintStyle}"
+                           Margin="14,0,14,8" />
 
-            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,0,10,6" />
+                <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,0,10,8" />
+            </StackPanel>
 
-            <!-- Appearance -->
-            <TextBlock Text="APARÊNCIA"
-                       Foreground="{StaticResource MutedBrush}"
-                       FontSize="11"
-                       Margin="14,8,14,4" />
+            <TabControl Grid.Row="1" Style="{StaticResource SettingsTabsStyle}">
 
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <TabItem Header="Aparência" Tag="&#xE771;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Ampliar o ícone sob o cursor"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="O ícone cresce por cima da barra, e os vizinhos acompanham."
-                                   Style="{StaticResource SettingHintStyle}" />
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Ampliar o ícone sob o cursor"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="O ícone cresce por cima da barra, e os vizinhos acompanham."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding EnableMagnification}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingRowStyle}"
+                                IsEnabled="{Binding EnableMagnification}">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="Intensidade da ampliação"
+                                               Style="{StaticResource SettingTitleStyle}" />
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding MagnificationScale, StringFormat={}{0:0.0}x}"
+                                               Foreground="{StaticResource MutedBrush}"
+                                               FontSize="12"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+
+                                <Slider Minimum="{Binding MinimumMagnification}"
+                                        Maximum="{Binding MaximumMagnification}"
+                                        Value="{Binding MagnificationScale}"
+                                        TickFrequency="0.1"
+                                        IsSnapToTickEnabled="True"
+                                        Margin="0,8,0,0"
+                                        Foreground="{StaticResource AccentBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Miniaturas das janelas"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Ao pousar o mouse num app aberto, mostra o que há em cada janela."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding EnableWindowPreviews}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Exibir os segundos"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="O relógio passa a contar de segundo em segundo, e a barra alarga para caber."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding ShowClockSeconds}" />
+                            </Grid>
+                        </Border>
+
                     </StackPanel>
+                </TabItem>
 
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding EnableMagnification}" />
-                </Grid>
-            </Border>
+                <TabItem Header="Esconder o dock" Tag="&#xE890;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
 
-            <Border Style="{StaticResource SettingRowStyle}"
-                    IsEnabled="{Binding EnableMagnification}">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0"
-                                   Text="Intensidade da ampliação"
-                                   Style="{StaticResource SettingTitleStyle}" />
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="O dock fica na borda o tempo todo."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
 
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding MagnificationScale, StringFormat={}{0:0.0}x}"
-                                   Foreground="{StaticResource MutedBrush}"
-                                   FontSize="12"
-                                   VerticalAlignment="Center" />
-                    </Grid>
+                                <RadioButton Grid.Column="1"
+                                             GroupName="HideMode"
+                                             Style="{StaticResource RadioStyle}"
+                                             IsChecked="{Binding HideNever}" />
+                            </Grid>
+                        </Border>
 
-                    <Slider Minimum="{Binding MinimumMagnification}"
-                            Maximum="{Binding MaximumMagnification}"
-                            Value="{Binding MagnificationScale}"
-                            TickFrequency="0.1"
-                            IsSnapToTickEnabled="True"
-                            Margin="0,8,0,0"
-                            Foreground="{StaticResource AccentBrush}" />
-                </StackPanel>
-            </Border>
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Quando uma janela ocupa o lugar dele"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Com a área livre o dock continua à vista; some quando alguma janela chega ali."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Miniaturas das janelas"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Ao pousar o mouse num app aberto, mostra o que há em cada janela."
-                                   Style="{StaticResource SettingHintStyle}" />
+                                <RadioButton Grid.Column="1"
+                                             GroupName="HideMode"
+                                             Style="{StaticResource RadioStyle}"
+                                             IsChecked="{Binding HideWhenWindowOverlaps}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="O dock só aparece quando o cursor encosta na borda da tela."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <RadioButton Grid.Column="1"
+                                             GroupName="HideMode"
+                                             Style="{StaticResource RadioStyle}"
+                                             IsChecked="{Binding HideAlways}" />
+                            </Grid>
+                        </Border>
+
                     </StackPanel>
+                </TabItem>
 
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding EnableWindowPreviews}" />
-                </Grid>
-            </Border>
+                <TabItem Header="Alternar janelas" Tag="&#xE7C4;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
 
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Exibir os segundos"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="O relógio passa a contar de segundo em segundo, e a barra alarga para caber."
-                                   Style="{StaticResource SettingHintStyle}" />
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Usar ALT+Tab agrupado por aplicativo"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Um item por app em vez de um por janela; ao chegar num app, entra pela janela que estava em uso. Desligado, vale o ALT+Tab do Windows."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding UseGroupedWindowSwitcher}" />
+                            </Grid>
+                        </Border>
+
                     </StackPanel>
+                </TabItem>
 
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding ShowClockSeconds}" />
-                </Grid>
-            </Border>
+                <TabItem Header="Monitores" Tag="&#xE7F4;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
 
-            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-            <!-- Alternador -->
-            <TextBlock Text="ALTERNAR ENTRE JANELAS"
-                       Foreground="{StaticResource MutedBrush}"
-                       FontSize="11"
-                       Margin="14,10,14,4" />
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Exibir em todos os monitores"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Um dock em cada tela. Desligado, o dock fica só no monitor principal."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
 
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding ShowOnAllMonitors}" />
+                            </Grid>
+                        </Border>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Usar ALT+Tab agrupado por aplicativo"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Um item por app em vez de um por janela; ao chegar num app, entra pela janela que estava em uso. Desligado, vale o ALT+Tab do Windows."
-                                   Style="{StaticResource SettingHintStyle}" />
+                        <Border Style="{StaticResource SettingRowStyle}"
+                                IsEnabled="{Binding CanIsolateMonitorApps}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Exibir somente apps presentes no monitor"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Cada dock mostra só as janelas da sua tela. Os apps fixados continuam em todos."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding IsolateMonitorApps}" />
+                            </Grid>
+                        </Border>
+
                     </StackPanel>
+                </TabItem>
 
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding UseGroupedWindowSwitcher}" />
-                </Grid>
-            </Border>
+                <TabItem Header="Área de trabalho" Tag="&#xE7F8;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
 
-            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-            <!-- Monitors -->
-            <TextBlock Text="MONITORES"
-                       Foreground="{StaticResource MutedBrush}"
-                       FontSize="11"
-                       Margin="14,10,14,4" />
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Esconder a barra de tarefas do Windows"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Desligar traz a barra nativa de volta sem fechar o dock."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
 
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding HideNativeTaskbar}" />
+                            </Grid>
+                        </Border>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Exibir em todos os monitores"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Um dock em cada tela. Desligado, o dock fica só no monitor principal."
-                                   Style="{StaticResource SettingHintStyle}" />
+                        <Border Style="{StaticResource SettingRowStyle}"
+                                IsEnabled="{Binding CanReserveScreenSpace}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Reservar espaço na tela"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="Impede que janelas maximizadas fiquem por baixo do dock. Só vale com o dock sempre à vista."
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding ReserveScreenSpace}" />
+                            </Grid>
+                        </Border>
+
                     </StackPanel>
+                </TabItem>
 
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding ShowOnAllMonitors}" />
-                </Grid>
-            </Border>
+            </TabControl>
 
-            <Border Style="{StaticResource SettingRowStyle}"
-                    IsEnabled="{Binding CanIsolateMonitorApps}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Exibir somente apps presentes no monitor"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Cada dock mostra só as janelas da sua tela. Os apps fixados continuam em todos."
-                                   Style="{StaticResource SettingHintStyle}" />
-                    </StackPanel>
-
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding IsolateMonitorApps}" />
-                </Grid>
-            </Border>
-
-            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
-
-            <!-- Behaviour -->
-            <TextBlock Text="ESCONDER O DOCK"
-                       Foreground="{StaticResource MutedBrush}"
-                       FontSize="11"
-                       Margin="14,10,14,4" />
-
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="O dock fica na borda o tempo todo."
-                                   Style="{StaticResource SettingHintStyle}" />
-                    </StackPanel>
-
-                    <RadioButton Grid.Column="1"
-                                 GroupName="HideMode"
-                                 Style="{StaticResource RadioStyle}"
-                                 IsChecked="{Binding HideNever}" />
-                </Grid>
-            </Border>
-
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Quando uma janela ocupa o lugar dele"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Com a área livre o dock continua à vista; some quando alguma janela chega ali."
-                                   Style="{StaticResource SettingHintStyle}" />
-                    </StackPanel>
-
-                    <RadioButton Grid.Column="1"
-                                 GroupName="HideMode"
-                                 Style="{StaticResource RadioStyle}"
-                                 IsChecked="{Binding HideWhenWindowOverlaps}" />
-                </Grid>
-            </Border>
-
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="O dock só aparece quando o cursor encosta na borda da tela."
-                                   Style="{StaticResource SettingHintStyle}" />
-                    </StackPanel>
-
-                    <RadioButton Grid.Column="1"
-                                 GroupName="HideMode"
-                                 Style="{StaticResource RadioStyle}"
-                                 IsChecked="{Binding HideAlways}" />
-                </Grid>
-            </Border>
-
-            <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="10,8,10,0" />
-
-            <!-- Desktop -->
-            <TextBlock Text="ÁREA DE TRABALHO"
-                       Foreground="{StaticResource MutedBrush}"
-                       FontSize="11"
-                       Margin="14,10,14,4" />
-
-            <Border Style="{StaticResource SettingRowStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Esconder a barra de tarefas do Windows"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Desligar traz a barra nativa de volta sem fechar o dock."
-                                   Style="{StaticResource SettingHintStyle}" />
-                    </StackPanel>
-
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding HideNativeTaskbar}" />
-                </Grid>
-            </Border>
-
-            <Border Style="{StaticResource SettingRowStyle}"
-                    IsEnabled="{Binding CanReserveScreenSpace}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Reservar espaço na tela"
-                                   Style="{StaticResource SettingTitleStyle}" />
-                        <TextBlock Text="Impede que janelas maximizadas fiquem por baixo do dock. Só vale com o dock sempre à vista."
-                                   Style="{StaticResource SettingHintStyle}" />
-                    </StackPanel>
-
-                    <CheckBox Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              IsChecked="{Binding ReserveScreenSpace}" />
-                </Grid>
-            </Border>
-
-            <Button Content="Fechar"
+            <Button Grid.Row="2"
+                    Content="Fechar"
                     Click="OnCloseClick"
                     HorizontalAlignment="Right"
-                    Margin="14,12,14,8"
+                    Margin="14,10,14,6"
                     Style="{StaticResource DialogButtonStyle}" />
 
-        </StackPanel>
+        </Grid>
     </Border>
 </Window>
