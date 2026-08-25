@@ -38,6 +38,30 @@ public sealed class ClockFormatter
         return instant.ToString(pattern, _culture);
     }
 
+    /// <summary>
+    /// The same time with one part per line, for the vertical dock.
+    ///
+    /// The panel thickness is an icon's, and the time does not fit it horizontally: "06:45:25" measures
+    /// 70 px in the clock font, against the 44 px available. Stacked, each line has two
+    /// characters and there is room to spare — it is what the vertical panels of Plasma and friends do.
+    ///
+    /// The break comes from the already formatted text, and not from a hand-written pattern: the separator
+    /// comes from the culture, and the "PM" of 12-hour cultures gets its own line because it is separated by a
+    /// space — including the hard space the ICU uses.
+    /// </summary>
+    public string FormatTimeStacked(DateTimeOffset instant, bool includeSeconds = false)
+    {
+        string formatted = FormatTime(instant, includeSeconds);
+        string separator = _culture.DateTimeFormat.TimeSeparator;
+
+        if (!string.IsNullOrEmpty(separator))
+        {
+            formatted = formatted.Replace(separator, "\n", StringComparison.Ordinal);
+        }
+
+        return string.Join('\n', formatted.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+    }
+
     /// <summary>Short date.</summary>
     public string FormatDate(DateTimeOffset instant)
     {

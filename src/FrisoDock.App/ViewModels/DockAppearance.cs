@@ -24,7 +24,7 @@ public sealed class DockAppearance
         ArgumentNullException.ThrowIfNull(metrics);
 
         Edge = edge;
-        IsVertical = edge is DockEdge.Left or DockEdge.Right;
+        IsVertical = edge.IsVertical();
 
         IconOverflow = metrics.CalculateMagnificationHeadroom(magnification);
         IconSize = metrics.IconSize;

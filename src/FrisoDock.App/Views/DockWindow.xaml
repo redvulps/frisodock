@@ -461,8 +461,15 @@
                     Background="Transparent"
                     ToolTip="{Binding Clock.Tooltip}">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <!--
+                        TextAlignment, e não só HorizontalAlignment: no dock vertical a hora vem
+                        empilhada, e o alinhamento do bloco não centraliza as linhas dentro dele.
+                    -->
                     <TextBlock Text="{Binding Clock.Time}"
                                FontSize="13"
+                               LineHeight="15"
+                               LineStackingStrategy="BlockLineHeight"
+                               TextAlignment="Center"
                                Foreground="{StaticResource StartGlyphBrush}"
                                HorizontalAlignment="Center" />
 

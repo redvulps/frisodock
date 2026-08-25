@@ -9,6 +9,19 @@ public enum DockEdge
     Bottom = 3,
 }
 
+/// <summary>Questions about the edge that more than one place has to ask.</summary>
+public static class DockEdgeExtensions
+{
+    /// <summary>
+    /// Whether the dock stands up on this edge. It decides the icon stack direction, the
+    /// magnification axis and the shape of the clock.
+    /// </summary>
+    public static bool IsVertical(this DockEdge edge)
+    {
+        return edge is DockEdge.Left or DockEdge.Right;
+    }
+}
+
 /// <summary>Rectangle in physical pixels, independent of any UI framework.</summary>
 /// <param name="Left">Left coordinate.</param>
 /// <param name="Top">Top coordinate.</param>

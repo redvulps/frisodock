@@ -31,6 +31,46 @@ public sealed class ClockFormatterTests
     }
 
     [Fact]
+    public void FormatTimeStacked_BreaksAtTheCultureSeparator()
+    {
+        // On the vertical dock the horizontal time does not fit the panel thickness; stacked, each
+        // line has two characters.
+        var formatter = new ClockFormatter(new CultureInfo("pt-BR"));
+
+        Assert.Equal("21\n05", formatter.FormatTimeStacked(Instant));
+        Assert.Equal("21\n05\n42", formatter.FormatTimeStacked(Instant, includeSeconds: true));
+    }
+
+    [Fact]
+    public void FormatTimeStacked_GivesALineToTheTwelveHourSuffix()
+    {
+        // The "PM" comes separated by a space — and in ICU cultures by a hard space, which the
+        // whitespace split also catches.
+        var formatter = new ClockFormatter(new CultureInfo("en-US"));
+
+        Assert.Equal("9\n05\nPM", formatter.FormatTimeStacked(Instant));
+        Assert.Equal("9\n05\n42\nPM", formatter.FormatTimeStacked(Instant, includeSeconds: true));
+    }
+
+    [Fact]
+    public void FormatTimeStacked_LeavesNoEmptyLine()
+    {
+        // An empty line would become a hole in the middle of the clock, and the block would grow for nothing.
+        foreach (string name in new[] { "pt-BR", "en-US", "de-DE", "ja-JP" })
+        {
+            var formatter = new ClockFormatter(new CultureInfo(name));
+
+            foreach (bool seconds in new[] { false, true })
+            {
+                string[] lines = formatter.FormatTimeStacked(Instant, seconds).Split('\n');
+
+                Assert.All(lines, line => Assert.False(string.IsNullOrWhiteSpace(line)));
+                Assert.NotEmpty(lines);
+            }
+        }
+    }
+
+    [Fact]
     public void FormatDate_FollowsTheCultureOrder()
     {
         Assert.Equal("21/08/2026", new ClockFormatter(new CultureInfo("pt-BR")).FormatDate(Instant));

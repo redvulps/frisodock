@@ -93,7 +93,7 @@ public sealed class DockMagnifier : IDisposable
     }
 
     /// <summary>Whether the icon stack stands up, making the effect axis the vertical one.</summary>
-    private bool IsVertical => _edge is DockEdge.Left or DockEdge.Right;
+    private bool IsVertical => _edge.IsVertical();
 
     /// <summary>
     /// Follows the cursor. Outside the icon strip, the retraction starts.
