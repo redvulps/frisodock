@@ -14,10 +14,12 @@ public interface ITaskbarController
     /// <summary>
     /// Hides the primary taskbar and the secondary ones. Idempotent.
     ///
-    /// It hides the window and nothing else: the band it reserves on screen stays reserved, and it is the
-    /// dock that discounts that band from its own — see <see cref="GetReservedBand"/>.
+    /// The dock edge comes in because it decides what to do with the band the taskbar reserves:
+    /// on its own edge the dock covers it and discounting it is enough (<see cref="GetReservedBand"/>);
+    /// on any other edge nobody covers it, and it is released.
     /// </summary>
-    void Hide();
+    /// <param name="dockEdge">Edge the dock is anchored to.</param>
+    void Hide(DockEdge dockEdge);
 
     /// <summary>
     /// Restores the taskbar's visibility. Idempotent and safe to call even if
@@ -31,8 +33,8 @@ public interface ITaskbarController
     ///
     /// Hiding the window does not give that band back, and there is no way to give it back from
     /// outside: on Windows 11 the taskbar answers neither <c>ABM_SETPOS</c> nor <c>ABM_REMOVE</c> from
-    /// Explorer recomputes over <c>SPI_SETWORKAREA</c>. Only autohide releases it, and autohide
-    /// is precisely what makes the bar reappear when the cursor reaches the edge.
+    /// another process, and Explorer recomputes over <c>SPI_SETWORKAREA</c>. Only autohide releases it —
+    /// which is what <see cref="Hide"/> does when the dock is not on the taskbar's edge.
     /// </summary>
     PixelRect? GetReservedBand();
 }

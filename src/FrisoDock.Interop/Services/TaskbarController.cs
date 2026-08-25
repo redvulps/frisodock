@@ -8,11 +8,14 @@ namespace FrisoDock.Interop.Services;
 /// Hides and restores the native taskbar. Nothing beyond that (SRP).
 ///
 /// Hiding is <c>ShowWindow</c> on the taskbar windows — the primary one and the secondary ones on
-/// monitor — and nothing else. Autohide (<c>ABM_SETSTATE</c>) was used for a while, because it is the
-/// only way to give back the band the taskbar reserves; but autohide means Explorer
-/// shows the bar again as soon as the cursor touches the edge, on top of the dock. Really hiding
-/// is worth more than the band: what discounts the band from the dock's reservation is
-/// <see cref="GetReservedBand"/>, and the result on screen is the same.
+/// each monitor. The band the taskbar reserves on screen does not go with it: measured, the work
+/// area stays 1920x1032 with the window invisible, and the only way to recover it is autohide
+/// (<c>ABM_SETSTATE</c>), which gives it back whole (1920x1080).
+///
+/// Autohide is not always applied because it has a price: on that edge Explorer brings the bar
+/// back when the cursor arrives. Hence the rule being the dock's edge — with both on the same edge,
+/// the dock window covers the band and discounting it is enough (<see cref="GetReservedBand"/>); on any
+/// other edge nobody covers it and it would become a hole on screen, so releasing it is worth it.
 ///
 /// It requires no administrator privilege: Explorer runs at the same integrity level
 /// as the user.
@@ -30,12 +33,21 @@ public sealed class TaskbarController : ITaskbarController
 
     public bool IsHidden { get; private set; }
 
-    public void Hide()
+    public void Hide(DockEdge dockEdge)
     {
         // With the turn yielded, Explorer is once again the first Shell_TrayWnd — which is what this
         // service looks for. Without that, with the tray hosted here, it would find the dock's own
         // window and hide the wrong one.
         using IDisposable priority = _trayPriority.Yield();
+
+        if (ReadTaskbarEdge() is DockEdge taskbarEdge && taskbarEdge != dockEdge)
+        {
+            ReleaseReservedBand();
+        }
+        else
+        {
+            RestoreReleasedBand();
+        }
 
         ApplyVisibility(NativeConstants.SW_HIDE);
 
@@ -48,8 +60,8 @@ public sealed class TaskbarController : ITaskbarController
 
         ApplyVisibility(NativeConstants.SW_SHOW);
 
-        // A stored value comes from an earlier version, which put the taskbar into autohide to
-        // release the band. Restoring and erasing leaves the machine as the user had it.
+        // A stored value means the band was released — in this run or in one that never
+        // got to restore. Restoring and erasing leaves the machine as the user had it.
         if (_stateStore.Load() is int pending)
         {
             SetAppBarState(pending);
@@ -78,6 +90,72 @@ public sealed class TaskbarController : ITaskbarController
         }
 
         return data.rc.ToPixelRect();
+    }
+
+    /// <summary>
+    /// Puts the taskbar into autohide, storing the state the user had beforehand.
+    ///
+    /// The state goes to disk because it has to survive an abnormal shutdown: without that the next
+    /// instance would read the autohide left behind as the user's preference and
+    /// would restore to autohide forever after.
+    /// </summary>
+    private void ReleaseReservedBand()
+    {
+        int state = GetAppBarState();
+
+        // Already in autohide by the user's choice: there is no band to release and no state of ours
+        // to store. Overwriting here would erase the true state written by a previous run
+        // that did not restore.
+        if ((state & NativeConstants.ABS_AUTOHIDE) != 0)
+        {
+            return;
+        }
+
+        _stateStore.Save(state);
+        SetAppBarState(state | NativeConstants.ABS_AUTOHIDE);
+    }
+
+    /// <summary>
+    /// Undoes the autohide we turned on, when the dock moves onto the taskbar's edge.
+    /// Without this, moving the dock from the side to the bottom edge would leave the bar reappearing
+    /// on top of it.
+    /// </summary>
+    private void RestoreReleasedBand()
+    {
+        if (_stateStore.Load() is not int original)
+        {
+            return;
+        }
+
+        SetAppBarState(original);
+        _stateStore.Clear();
+    }
+
+    /// <summary>
+    /// Edge the taskbar is anchored to, told by the shell itself:
+    /// <c>ABM_GETTASKBARPOS</c> fills in <c>uEdge</c>, which spares us deducing it from the shape of the
+    /// rectangle.
+    ///
+    /// It does not yield the turn because it already runs inside a yielded scope — yielding again would
+    /// restore the position on leaving the inner scope, with the outer one thinking it is still yielded.
+    /// </summary>
+    private static DockEdge? ReadTaskbarEdge()
+    {
+        APPBARDATA data = CreateAppBarData();
+
+        if (NativeMethods.SHAppBarMessage(NativeConstants.ABM_GETTASKBARPOS, ref data) == 0)
+        {
+            return null;
+        }
+
+        return data.uEdge switch
+        {
+            NativeConstants.ABE_LEFT => DockEdge.Left,
+            NativeConstants.ABE_TOP => DockEdge.Top,
+            NativeConstants.ABE_RIGHT => DockEdge.Right,
+            NativeConstants.ABE_BOTTOM => DockEdge.Bottom,
+            _ => null,
+        };
     }
 
     private static void ApplyVisibility(int showCommand)

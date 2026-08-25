@@ -273,11 +273,13 @@ public partial class DockWindow : Window
     /// <summary>Applies live whatever the settings screen changed.</summary>
     private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
     {
-        if (e.TaskbarVisibilityChanged)
+        // The edge enters the calculation along with visibility: it is what decides whether the taskbar
+        // band is discounted or released, and changing edge swaps that answer.
+        if (e.TaskbarVisibilityChanged || e.EdgeChanged)
         {
             if (e.Current.HideNativeTaskbar)
             {
-                _taskbarController.Hide();
+                _taskbarController.Hide(e.Current.Edge);
             }
             else
             {
@@ -870,7 +872,7 @@ public partial class DockWindow : Window
     {
         if (_taskbarController.IsHidden)
         {
-            _taskbarController.Hide();
+            _taskbarController.Hide(_settings.Current.Edge);
         }
 
         _placement.Update(_viewModel.Items.Count);

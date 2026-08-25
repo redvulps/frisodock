@@ -68,7 +68,7 @@ public partial class App : Application
 
         if (settings.HideNativeTaskbar)
         {
-            _taskbarController.Hide();
+            _taskbarController.Hide(settings.Edge);
         }
         else
         {
