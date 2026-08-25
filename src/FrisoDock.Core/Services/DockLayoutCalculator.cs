@@ -24,6 +24,14 @@ namespace FrisoDock.Core.Services;
 /// <param name="QuickStatusContentWidth">Width of the network, volume and battery glyphs, measured on screen.</param>
 /// <param name="ClockContentWidth">Width of the clock's widest line — here, the date.</param>
 /// <param name="ClockContentWidthWithSeconds">The same measure when the time carries the seconds.</param>
+/// <param name="PanelContentThickness">
+/// Usable panel thickness, inside the margin, when it is not an icon's. Null is the
+/// common case; what fills it in is <see cref="Models.DockSettings.EffectiveMetrics"/>, so the
+/// clock fits horizontally on a vertical dock.
+///
+/// Null instead of repeating 44: a number written here would drift from <paramref name="IconSize"/>
+/// the first time the metrics were built with another icon size.
+/// </param>
 /// <param name="HiddenSliver">Sliver of the panel that stays on screen with the dock hidden.</param>
 public sealed record DockMetrics(
     int IconSize = 44,
@@ -37,6 +45,7 @@ public sealed record DockMetrics(
     int QuickStatusContentWidth = 52,
     int ClockContentWidth = 56,
     int ClockContentWidthWithSeconds = 70,
+    int? PanelContentThickness = null,
     int HiddenSliver = 2)
 {
     public static DockMetrics Default { get; } = new();
@@ -61,8 +70,11 @@ public sealed record DockMetrics(
     /// <summary>Separator length counting the space on both sides.</summary>
     public int SeparatorBlockLength => SeparatorWidth + (SeparatorSpacing * 2);
 
+    /// <summary>Usable panel thickness: an icon's, unless explicitly adjusted.</summary>
+    public int ContentThickness => PanelContentThickness ?? IconSize;
+
     /// <summary>Thickness of the visible panel (height, when anchored at the bottom).</summary>
-    public int PanelThickness => IconSize + (Padding * 2) + (BorderThickness * 2);
+    public int PanelThickness => ContentThickness + (Padding * 2) + (BorderThickness * 2);
 
     /// <summary>Thickness reserved on screen: the panel plus the gap to the edge.</summary>
     public int ReservedThickness => PanelThickness + EdgeMargin;

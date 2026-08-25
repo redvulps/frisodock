@@ -61,12 +61,17 @@ public sealed class DockAppearance
         QuickStatusButtonHeight = IsVertical ? metrics.QuickStatusWidth : metrics.IconSize;
         QuickStatusOrientation = IsVertical ? Orientation.Vertical : Orientation.Horizontal;
         QuickStatusGlyphMargin = IsVertical ? new Thickness(0, 4, 0, 0) : new Thickness(5, 0, 0, 0);
-        ClockBlockWidth = IsVertical ? metrics.IconSize : metrics.ClockWidth;
+        ClockBlockWidth = IsVertical ? metrics.ContentThickness : metrics.ClockWidth;
         ClockBlockHeight = IsVertical ? metrics.ClockWidth : metrics.IconSize;
 
-        // The date does not fit a vertical dock's thickness ("25/08/2026" is wider than an
-        // icon) and shrinking the font would make it unreadable. Only the time stays; the date already lives in the tooltip.
-        ClockDateVisibility = IsVertical ? Visibility.Collapsed : Visibility.Visible;
+        // On the vertical dock the date comes on top and the time below; on the horizontal one, the
+        // opposite. Each line keeps its own font and color, so what swaps is the grid row, not the text.
+        ClockTimeRow = IsVertical ? 1 : 0;
+        ClockDateRow = IsVertical ? 0 : 1;
+
+        // The gap always sits between the two lines, that is, on the bottom one.
+        ClockTimeMargin = IsVertical ? new Thickness(0, 1, 0, 0) : default;
+        ClockDateMargin = IsVertical ? default : new Thickness(0, 1, 0, 0);
 
         // The panel meets the edge the dock is anchored to; the rest of the window is the transparent
         // headroom that takes the magnified icon and the widening of the bar.
@@ -189,8 +194,17 @@ public sealed class DockAppearance
     /// <summary>Height of the clock block.</summary>
     public double ClockBlockHeight { get; }
 
-    /// <summary>Whether the date line appears. On the vertical dock it does not fit; it stays in the tooltip.</summary>
-    public Visibility ClockDateVisibility { get; }
+    /// <summary>Clock grid row the time sits in.</summary>
+    public int ClockTimeRow { get; }
+
+    /// <summary>Clock grid row the date sits in.</summary>
+    public int ClockDateRow { get; }
+
+    /// <summary>Gap above the time, when it is the bottom line.</summary>
+    public Thickness ClockTimeMargin { get; }
+
+    /// <summary>Gap above the date, when it is the bottom line.</summary>
+    public Thickness ClockDateMargin { get; }
 
     /// <summary>Width of the running app indicator, at rest.</summary>
     public double IndicatorWidth { get; }

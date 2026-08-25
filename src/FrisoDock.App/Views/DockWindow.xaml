@@ -460,27 +460,30 @@
                     Margin="{Binding Appearance.ItemMargin}"
                     Background="Transparent"
                     ToolTip="{Binding Clock.Tooltip}">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <!--
-                        TextAlignment, e não só HorizontalAlignment: no dock vertical a hora vem
-                        empilhada, e o alinhamento do bloco não centraliza as linhas dentro dele.
-                    -->
-                    <TextBlock Text="{Binding Clock.Time}"
+                <!--
+                    Grade, e não pilha: no dock vertical a data vem em cima e a hora embaixo, e a
+                    ordem troca pela linha de cada uma em vez de por dois blocos alternativos.
+                -->
+                <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="{Binding Appearance.ClockTimeRow}"
+                               Text="{Binding Clock.Time}"
                                FontSize="13"
-                               LineHeight="15"
-                               LineStackingStrategy="BlockLineHeight"
-                               TextAlignment="Center"
+                               Margin="{Binding Appearance.ClockTimeMargin}"
                                Foreground="{StaticResource StartGlyphBrush}"
                                HorizontalAlignment="Center" />
 
-                    <!-- On the vertical dock the date does not fit the thickness; it stays in the tooltip only. -->
-                    <TextBlock Text="{Binding Clock.Date}"
+                    <TextBlock Grid.Row="{Binding Appearance.ClockDateRow}"
+                               Text="{Binding Clock.Date}"
                                FontSize="11"
-                               Margin="0,1,0,0"
+                               Margin="{Binding Appearance.ClockDateMargin}"
                                Foreground="{StaticResource ClockDateBrush}"
-                               HorizontalAlignment="Center"
-                               Visibility="{Binding Appearance.ClockDateVisibility}" />
-                </StackPanel>
+                               HorizontalAlignment="Center" />
+                </Grid>
             </Border>
 
         </StackPanel>

@@ -92,4 +92,45 @@ public sealed class DockMetricsTests
         Assert.True(panel.Bottom < bounds.Bottom);
         Assert.True(panel.Top > 0);
     }
+
+    [Fact]
+    public void HorizontalPanel_HasTheThicknessOfAnIcon()
+    {
+        var settings = new DockSettings { Edge = DockEdge.Bottom };
+        DockMetrics metrics = settings.EffectiveMetrics;
+
+        Assert.Equal(metrics.IconSize, metrics.ContentThickness);
+    }
+
+    [Fact]
+    public void VerticalPanel_FitsTheHorizontalClock()
+    {
+        // "25/08/2026" measures 56 px in the date font, against an icon's 44 px: without thickening the
+        // panel, the clock would come out clipped at both ends.
+        var settings = new DockSettings { Edge = DockEdge.Left, ShowClockSeconds = false };
+        DockMetrics metrics = settings.EffectiveMetrics;
+
+        Assert.Equal(metrics.ClockContentWidth, metrics.ContentThickness);
+        Assert.True(metrics.ContentThickness > metrics.IconSize);
+    }
+
+    [Fact]
+    public void VerticalPanel_WithSeconds_UsesTheLargerWidth()
+    {
+        var withSeconds = new DockSettings { Edge = DockEdge.Right, ShowClockSeconds = true }.EffectiveMetrics;
+        var without = new DockSettings { Edge = DockEdge.Right, ShowClockSeconds = false }.EffectiveMetrics;
+
+        Assert.Equal(DockMetrics.Default.ClockContentWidthWithSeconds, withSeconds.ContentThickness);
+        Assert.True(withSeconds.PanelThickness > without.PanelThickness);
+    }
+
+    [Fact]
+    public void VerticalPanel_IsNeverThinnerThanAnIcon()
+    {
+        // A narrow clock must not squeeze the icons, which keep their full side.
+        var metrics = new DockMetrics(ClockContentWidth: 10, ClockContentWidthWithSeconds: 12);
+        var settings = new DockSettings { Edge = DockEdge.Left, Metrics = metrics };
+
+        Assert.Equal(metrics.IconSize, settings.EffectiveMetrics.ContentThickness);
+    }
 }

@@ -85,9 +85,28 @@ public sealed record DockSettings
     /// panel length. Adjusting here keeps a single source: the window placement and the
     /// XAML keep reading the same measure, and neither has to know why it changed.
     /// </summary>
-    public DockMetrics EffectiveMetrics => ShowClockSeconds
-        ? Metrics with { ClockContentWidth = Metrics.ClockContentWidthWithSeconds }
-        : Metrics;
+    public DockMetrics EffectiveMetrics
+    {
+        get
+        {
+            DockMetrics metrics = ShowClockSeconds
+                ? Metrics with { ClockContentWidth = Metrics.ClockContentWidthWithSeconds }
+                : Metrics;
+
+            if (!Edge.IsVertical())
+            {
+                return metrics;
+            }
+
+            // On a vertical dock the panel thickness is the clock's width, not the icon's: the
+            // date measures 56 px in its font and the time with seconds reaches 70, against an icon's
+            // 44 px. Without this the clock comes out clipped at both ends.
+            return metrics with
+            {
+                PanelContentThickness = Math.Max(metrics.IconSize, metrics.ClockContentWidth),
+            };
+        }
+    }
 
     /// <summary>
     /// Whether the appbar really should reserve screen space.

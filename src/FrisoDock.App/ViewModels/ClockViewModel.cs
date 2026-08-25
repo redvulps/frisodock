@@ -2,7 +2,6 @@ using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FrisoDock.App.Services;
 using FrisoDock.Core.Abstractions;
-using FrisoDock.Core.Models;
 using FrisoDock.Core.Services;
 
 namespace FrisoDock.App.ViewModels;
@@ -72,9 +71,7 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
     {
-        // The edge comes in with it: it decides whether the time appears horizontal or stacked, and the
-        // clock is a single one — it survives the dock rebuild that switching edge causes.
-        if (!e.ClockChanged && !e.EdgeChanged)
+        if (!e.ClockChanged)
         {
             return;
         }
@@ -108,12 +105,7 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
     {
         DateTimeOffset now = _clock.Now;
 
-        bool seconds = _settings.Current.ShowClockSeconds;
-
-        Time = _settings.Current.Edge.IsVertical()
-            ? _formatter.FormatTimeStacked(now, seconds)
-            : _formatter.FormatTime(now, seconds);
-
+        Time = _formatter.FormatTime(now, _settings.Current.ShowClockSeconds);
         Date = _formatter.FormatDate(now);
         Tooltip = _formatter.FormatTooltip(now);
     }
