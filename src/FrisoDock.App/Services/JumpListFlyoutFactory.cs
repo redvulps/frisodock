@@ -22,7 +22,6 @@ public sealed class JumpListFlyoutFactory
     private const int EntryIconSize = 32;
 
     private readonly IJumpListProvider _jumpLists;
-    private readonly IIconExtractor _iconExtractor;
     private readonly IAppLauncher _launcher;
     private readonly IWindowActivator _activator;
     private readonly IPinnedAppsEditor _pinnedApps;
@@ -30,14 +29,12 @@ public sealed class JumpListFlyoutFactory
 
     public JumpListFlyoutFactory(
         IJumpListProvider jumpLists,
-        IIconExtractor iconExtractor,
         IAppLauncher launcher,
         IWindowActivator activator,
         IPinnedAppsEditor pinnedApps,
         IconImageProvider iconImages)
     {
         _jumpLists = jumpLists;
-        _iconExtractor = iconExtractor;
         _launcher = launcher;
         _activator = activator;
         _pinnedApps = pinnedApps;
@@ -61,12 +58,29 @@ public sealed class JumpListFlyoutFactory
         return new JumpListFlyoutViewModel(item.DisplayName, sections);
     }
 
+    /// <summary>
+    /// Reads the jump list and extracts the entry icons without building any view model, so that
+    /// the next open finds everything cached.
+    ///
+    /// It can be called off the UI thread: both caches behind it are concurrent and the images
+    /// are frozen. Scheduling belongs to <see cref="JumpListWarmer"/>.
+    /// </summary>
+    public void Preload(DockItem item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+
+        foreach (JumpListCategory category in ReadJumpList(item).VisibleCategories)
+        {
+            foreach (JumpListEntry entry in category.Entries)
+            {
+                LoadEntryIcon(entry);
+            }
+        }
+    }
+
     private JumpList ReadJumpList(DockItem item)
     {
-        // The jump list belongs to the executable. An item pinned by shortcut keeps the exe in MatchExecutablePath.
-        string? executable = item.Pinned?.MatchExecutablePath
-            ?? item.Windows.FirstOrDefault()?.ExecutablePath
-            ?? item.IconSource;
+        string? executable = item.JumpListExecutable;
 
         if (string.IsNullOrWhiteSpace(executable))
         {
@@ -149,12 +163,6 @@ public sealed class JumpListFlyoutFactory
 
     private ImageSource? LoadEntryIcon(JumpListEntry entry)
     {
-        if (string.IsNullOrWhiteSpace(entry.IconPath))
-        {
-            return null;
-        }
-
-        using IconHandle? handle = _iconExtractor.FromFile(entry.IconPath, EntryIconSize, entry.IconIndex);
-        return IconImageProvider.ToImageSource(handle);
+        return _iconImages.GetIcon(entry.IconPath, entry.IconIndex, EntryIconSize);
     }
 }

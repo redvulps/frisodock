@@ -35,6 +35,7 @@ public partial class DockWindow : Window
     private readonly IAppBarService _appBar;
     private readonly ITaskbarController _taskbarController;
     private readonly JumpListFlyoutFactory _flyoutFactory;
+    private readonly JumpListWarmer _jumpListWarmer;
     private readonly TrayFlyoutFactory _trayFlyoutFactory;
     private readonly QuickSettingsFlyoutFactory _quickSettingsFactory;
     private readonly DockSettingsService _settings;
@@ -69,6 +70,7 @@ public partial class DockWindow : Window
         IAppBarService appBar,
         ITaskbarController taskbarController,
         JumpListFlyoutFactory flyoutFactory,
+        JumpListWarmer jumpListWarmer,
         TrayFlyoutFactory trayFlyoutFactory,
         QuickSettingsFlyoutFactory quickSettingsFactory,
         DockSettingsService settings,
@@ -91,6 +93,7 @@ public partial class DockWindow : Window
         _appBar = appBar;
         _taskbarController = taskbarController;
         _flyoutFactory = flyoutFactory;
+        _jumpListWarmer = jumpListWarmer;
         _trayFlyoutFactory = trayFlyoutFactory;
         _quickSettingsFactory = quickSettingsFactory;
         _settings = settings;
@@ -545,6 +548,10 @@ public partial class DockWindow : Window
         {
             return;
         }
+
+        // Before the thumbnails on purpose: the jump list exists for every item, including one that is
+        // only pinned, and the right click always comes after the cursor has rested here.
+        _jumpListWarmer.Warm(item.Model);
 
         if (!_settings.Current.EnableWindowPreviews || !item.Model.IsRunning)
         {

@@ -73,6 +73,55 @@ public sealed class JumpListTests
             third => Assert.Equal("Tarefas", third.DisplayTitle));
     }
 
+    [Fact]
+    public void ItemPinnedByShortcut_TakesTheJumpListFromTheMatchExecutable()
+    {
+        // The launch target is the .lnk, which has no jump list at all: the exe is the one that has it.
+        var pinned = new PinnedApp("Brave", @"C:\atalhos\Brave.lnk", MatchExecutablePath: @"C:\brave\brave.exe");
+        var item = new DockItem(pinned.Key, "Brave", pinned.IconSource, pinned, []);
+
+        Assert.Equal(@"C:\brave\brave.exe", item.JumpListExecutable);
+    }
+
+    [Fact]
+    public void RunningOnlyItem_TakesTheJumpListFromTheWindowsExecutable()
+    {
+        var window = new WindowInfo(1, "Documento", 100, @"C:\code\Code.exe", false, false);
+        var item = new DockItem(window.Key, "Code", null, null, [window]);
+
+        Assert.Equal(@"C:\code\Code.exe", item.JumpListExecutable);
+    }
+
+    [Fact]
+    public void PinnedWithNoMatchExecutable_FallsBackToTheIconFile()
+    {
+        var pinned = new PinnedApp("Bloco de notas", @"C:\Windows\notepad.exe");
+        var item = new DockItem(pinned.Key, "Bloco de notas", pinned.IconSource, pinned, []);
+
+        Assert.Equal(@"C:\Windows\notepad.exe", item.JumpListExecutable);
+    }
+
+    [Fact]
+    public void BlankMatchExecutable_DoesNotBlockThePathFromTheWindow()
+    {
+        // The "??" would stop at the first non-null value, and blank is non-null: the item would end up with
+        // no jump list while having an open window that knows the path.
+        var pinned = new PinnedApp("App", @"shell:AppsFolder\algo", MatchExecutablePath: "   ");
+        var window = new WindowInfo(1, "Janela", 100, @"C:\app\app.exe", false, false);
+        var item = new DockItem(window.Key, "App", null, pinned, [window]);
+
+        Assert.Equal(@"C:\app\app.exe", item.JumpListExecutable);
+    }
+
+    [Fact]
+    public void ItemWithNoKnownExecutable_HasNoJumpList()
+    {
+        var window = new WindowInfo(1, "Janela", 100, null, false, false);
+        var item = new DockItem(window.Key, "Desconhecido", null, null, [window]);
+
+        Assert.Null(item.JumpListExecutable);
+    }
+
     private static JumpListEntry CreateEntry(string title)
     {
         return new JumpListEntry(title, @"C:\app.exe", "--flag", @"C:\app.exe", 0);

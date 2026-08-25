@@ -26,4 +26,31 @@ public sealed record DockItem(
 
     /// <summary>Window used as icon source when no icon file is known.</summary>
     public nint IconWindowHandle => Windows.Count > 0 ? Windows[0].Handle : 0;
+
+    /// <summary>
+    /// Executable this item's jump list comes from.
+    ///
+    /// It lives in the model because two places need the same answer: whoever builds the flyout and
+    /// whoever warms it in the background. An item pinned by shortcut keeps the executable in
+    /// <see cref="PinnedApp.MatchExecutablePath"/> — <see cref="IconSource"/> would point at the
+    /// .lnk itself, which has no jump list at all.
+    /// </summary>
+    public string? JumpListExecutable
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Pinned?.MatchExecutablePath))
+            {
+                return Pinned.MatchExecutablePath;
+            }
+
+            string? fromWindow = Windows.Count > 0 ? Windows[0].ExecutablePath : null;
+            if (!string.IsNullOrWhiteSpace(fromWindow))
+            {
+                return fromWindow;
+            }
+
+            return string.IsNullOrWhiteSpace(IconSource) ? null : IconSource;
+        }
+    }
 }

@@ -227,6 +227,7 @@ public partial class App : Application
         services.AddSingleton<WindowSwitcherRunner>();
         services.AddSingleton<DockHost>();
         services.AddSingleton<JumpListFlyoutFactory>();
+        services.AddSingleton<JumpListWarmer>();
         services.AddSingleton<TrayFlyoutFactory>();
         services.AddSingleton<QuickSettingsFlyoutFactory>();
         services.AddSingleton<SettingsWindowFactory>();

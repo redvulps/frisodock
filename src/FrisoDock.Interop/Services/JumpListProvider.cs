@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
@@ -15,16 +16,24 @@ namespace FrisoDock.Interop.Services;
 /// text reproduces its file name).
 ///
 /// So instead of computing the name, we search the content: the executable path appears
-/// inside the file, written by the shortcuts themselves. Sweeping the whole folder costs ~50 ms and the
-/// result is cached.
+/// inside the file, written by the shortcuts themselves. Sweeping the whole folder costs tens of
+/// milliseconds and the result is cached.
+///
+/// The cache is watched: without that it would freeze on the first read and a new recent entry would
+/// only appear after restarting the dock.
 /// </summary>
-public sealed class JumpListProvider : IJumpListProvider
+public sealed class JumpListProvider : IJumpListProvider, IDisposable
 {
     private readonly CustomDestinationsParser _parser;
     private readonly AutomaticDestinationsParser _automaticParser;
     private readonly string _directory;
     private readonly string _automaticDirectory;
-    private readonly Dictionary<string, JumpList> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, JumpList> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<FileSystemWatcher> _watchers = [];
+    private readonly object _watcherGate = new();
+
+    private bool _watching;
+    private bool _disposed;
 
     public JumpListProvider(CustomDestinationsParser parser, AutomaticDestinationsParser automaticParser)
         : this(parser, automaticParser, GetDefaultDirectory(), GetDefaultAutomaticDirectory())
@@ -50,6 +59,8 @@ public sealed class JumpListProvider : IJumpListProvider
             return JumpList.Empty;
         }
 
+        EnsureWatching();
+
         if (_cache.TryGetValue(executablePath, out JumpList? cached))
         {
             return cached;
@@ -62,6 +73,99 @@ public sealed class JumpListProvider : IJumpListProvider
     }
 
     public void Invalidate()
+    {
+        _cache.Clear();
+    }
+
+    public void Dispose()
+    {
+        lock (_watcherGate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            foreach (FileSystemWatcher watcher in _watchers)
+            {
+                watcher.EnableRaisingEvents = false;
+                watcher.Dispose();
+            }
+
+            _watchers.Clear();
+        }
+    }
+
+    /// <summary>
+    /// It starts watching both folders on the first query, and not at construction: whoever never opens
+    /// a jump list does not pay for two watchers.
+    /// </summary>
+    private void EnsureWatching()
+    {
+        lock (_watcherGate)
+        {
+            if (_watching || _disposed)
+            {
+                return;
+            }
+
+            _watching = true;
+
+            Watch(_directory, "*.customDestinations-ms");
+            Watch(_automaticDirectory, "*.automaticDestinations-ms");
+        }
+    }
+
+    private void Watch(string directory, string filter)
+    {
+        // The folder only exists after some app publishes the first jump list.
+        if (!Directory.Exists(directory))
+        {
+            return;
+        }
+
+        try
+        {
+            var watcher = new FileSystemWatcher(directory, filter)
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+            };
+
+            watcher.Changed += OnFileChanged;
+            watcher.Created += OnFileChanged;
+            watcher.Deleted += OnFileChanged;
+            watcher.Renamed += OnFileChanged;
+
+            // A watcher buffer overflow means a lost event: the cache is no longer trustworthy.
+            watcher.Error += OnWatcherError;
+
+            watcher.EnableRaisingEvents = true;
+            _watchers.Add(watcher);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            // With no watcher, the cache goes back to what it was: correct until the file changes.
+        }
+    }
+
+    /// <summary>
+    /// Drops the whole cache, and not just the entry of the file that changed.
+    ///
+    /// The file name is a hash of the AppUserModelID, and tracing the path back to the
+    /// executable is exactly what this class cannot do — it is the reason it searches
+    /// by content. Besides, a newly created file may start matching an executable
+    /// whose previous query found nothing, and that empty entry has to fall too.
+    ///
+    /// The price is one reread on each app's next open, which the hover warming covers.
+    /// </summary>
+    private void OnFileChanged(object sender, FileSystemEventArgs e)
+    {
+        _cache.Clear();
+    }
+
+    private void OnWatcherError(object sender, ErrorEventArgs e)
     {
         _cache.Clear();
     }

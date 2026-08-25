@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -13,12 +14,15 @@ namespace FrisoDock.App.Services;
 ///
 /// The cache exists because the dock list is rebuilt on every window change; without it,
 /// every burst of events would trigger dozens of icon extractions.
+///
+/// The dictionary is concurrent because the jump list is warmed off the UI thread. The images
+/// cross threads because they are frozen in <see cref="ToImageSource"/>.
 /// </summary>
 public sealed class IconImageProvider
 {
     private readonly IIconExtractor _extractor;
     private readonly DockSettingsService _settings;
-    private readonly Dictionary<string, ImageSource?> _cache = [];
+    private readonly ConcurrentDictionary<string, ImageSource?> _cache = new();
 
     public IconImageProvider(IIconExtractor extractor, DockSettingsService settings)
     {
@@ -42,6 +46,37 @@ public sealed class IconImageProvider
         }
 
         ImageSource? image = Resolve(item);
+        _cache[cacheKey] = image;
+
+        return image;
+    }
+
+    /// <summary>
+    /// Icon of a standalone file — the entries of a jump list.
+    ///
+    /// It goes through the same cache as the dock icons because the cost is the same and it repeats:
+    /// the flyout is rebuilt from scratch on every open, and within a single list the same icon shows
+    /// up several times (measured: ten of VS Code's nineteen entries point at explorer.exe).
+    ///
+    /// Size and index go into the key: the same file serves the dock's large icon and the jump
+    /// list's small one, and an icon .dll holds several at the same path.
+    /// </summary>
+    public ImageSource? GetIcon(string? path, int iconIndex, int size)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        string cacheKey = $"{path}|{iconIndex}|{size}";
+
+        if (_cache.TryGetValue(cacheKey, out ImageSource? cached))
+        {
+            return cached;
+        }
+
+        using IconHandle? handle = _extractor.FromFile(path, size, iconIndex);
+        ImageSource? image = ToImageSource(handle);
         _cache[cacheKey] = image;
 
         return image;
