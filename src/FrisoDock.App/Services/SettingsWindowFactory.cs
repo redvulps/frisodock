@@ -5,24 +5,63 @@ using FrisoDock.Core.Abstractions;
 namespace FrisoDock.App.Services;
 
 /// <summary>
-/// Creates the settings screen. That is all (SRP).
+/// Opens the settings screen, and keeps it a single window. That is all (SRP).
 ///
 /// It exists so the dock can open the screen without knowing its dependencies: the window is
 /// created and destroyed on every open, so it cannot come from the container as a singleton.
+///
+/// The single window is tracked here, and not in the dock that opened it, because several
+/// options rebuild the whole dock set from inside this very screen — the edge, the monitors,
+/// the language. The dock that opened the screen is closed by that rebuild, and the one that
+/// takes its place would know nothing about the window still standing in front of the user.
 /// </summary>
 public sealed class SettingsWindowFactory
 {
     private readonly DockSettingsService _settings;
     private readonly IWindowBackdrop _backdrop;
+    private readonly IWindowActivator _activator;
 
-    public SettingsWindowFactory(DockSettingsService settings, IWindowBackdrop backdrop)
+    private SettingsWindow? _window;
+
+    public SettingsWindowFactory(
+        DockSettingsService settings,
+        IWindowBackdrop backdrop,
+        IWindowActivator activator)
     {
         _settings = settings;
         _backdrop = backdrop;
+        _activator = activator;
     }
 
-    public SettingsWindow Create()
+    /// <summary>
+    /// Shows the screen, or brings the open one forward instead of stacking copies that edit the
+    /// same settings.
+    /// </summary>
+    public void Show()
     {
-        return new SettingsWindow(new SettingsViewModel(_settings), _backdrop);
+        if (_window is not null)
+        {
+            _activator.Activate(_window.Handle);
+            return;
+        }
+
+        _window = new SettingsWindow(new SettingsViewModel(_settings), _backdrop);
+        _window.Closed += OnClosed;
+        _window.Show();
+
+        // The focus comes from the activator, and not from Window.Activate: the dock carries
+        // WS_EX_NOACTIVATE and never becomes the foreground, and Windows refuses a focus change to
+        // whoever is not in the foreground. Without this the screen opens behind the windows that
+        // are already on the desktop.
+        _activator.Activate(_window.Handle);
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        if (_window is not null)
+        {
+            _window.Closed -= OnClosed;
+            _window = null;
+        }
     }
 }
