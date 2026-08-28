@@ -99,6 +99,8 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
     {
         public DockEdge Edge { get; init; } = DockEdge.Bottom;
 
+        public AppLanguage Language { get; init; } = AppLanguage.System;
+
         public bool HideNativeTaskbar { get; init; } = true;
 
         public bool ReserveScreenSpace { get; init; } = true;
@@ -126,6 +128,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
             return new PersistedSettings
             {
                 Edge = settings.Edge,
+                Language = settings.Language,
                 HideNativeTaskbar = settings.HideNativeTaskbar,
                 ReserveScreenSpace = settings.ReserveScreenSpace,
                 HideMode = settings.HideMode,
@@ -145,6 +148,7 @@ public sealed class JsonDockSettingsStore : IDockSettingsStore
             return new DockSettings
             {
                 Edge = Edge,
+                Language = Language,
                 HideNativeTaskbar = HideNativeTaskbar,
                 ReserveScreenSpace = ReserveScreenSpace,
                 HideMode = HideMode,

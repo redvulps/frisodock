@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppAlreadyRunning" xml:space="preserve">
+    <value>O FrisoDock já está em execução.</value>
+  </data>
+  <data name="MenuDockPosition" xml:space="preserve">
+    <value>Posição do dock</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Configurações…</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Sair do FrisoDock</value>
+  </data>
+  <data name="EdgeBottom" xml:space="preserve">
+    <value>Inferior</value>
+  </data>
+  <data name="EdgeTop" xml:space="preserve">
+    <value>Superior</value>
+  </data>
+  <data name="EdgeLeft" xml:space="preserve">
+    <value>Esquerda</value>
+  </data>
+  <data name="EdgeRight" xml:space="preserve">
+    <value>Direita</value>
+  </data>
+  <data name="DockStart" xml:space="preserve">
+    <value>Iniciar</value>
+  </data>
+  <data name="DockTrayIcons" xml:space="preserve">
+    <value>Ícones da bandeja</value>
+  </data>
+  <data name="TrayEmpty" xml:space="preserve">
+    <value>Nenhum ícone na bandeja</value>
+  </data>
+  <data name="CalendarPreviousMonth" xml:space="preserve">
+    <value>Mês anterior</value>
+  </data>
+  <data name="CalendarNextMonth" xml:space="preserve">
+    <value>Próximo mês</value>
+  </data>
+  <data name="QuickTitle" xml:space="preserve">
+    <value>Configurações rápidas</value>
+  </data>
+  <data name="QuickNoConnection" xml:space="preserve">
+    <value>Sem conexão</value>
+  </data>
+  <data name="QuickMuted" xml:space="preserve">
+    <value>Mudo</value>
+  </data>
+  <data name="QuickVolumeFormat" xml:space="preserve">
+    <value>Volume {0}%</value>
+  </data>
+  <data name="QuickBatteryFormat" xml:space="preserve">
+    <value>Bateria {0}%</value>
+  </data>
+  <data name="QuickMute" xml:space="preserve">
+    <value>Mudo</value>
+  </data>
+  <data name="QuickSoundDevices" xml:space="preserve">
+    <value>Dispositivos de som</value>
+  </data>
+  <data name="QuickPowerAndBattery" xml:space="preserve">
+    <value>Energia e bateria</value>
+  </data>
+  <data name="QuickWindowsSettings" xml:space="preserve">
+    <value>Configurações do Windows</value>
+  </data>
+  <data name="QuickWifi" xml:space="preserve">
+    <value>Wi-Fi</value>
+  </data>
+  <data name="QuickBluetooth" xml:space="preserve">
+    <value>Bluetooth</value>
+  </data>
+  <data name="QuickAirplaneMode" xml:space="preserve">
+    <value>Modo avião</value>
+  </data>
+  <data name="QuickAccessibility" xml:space="preserve">
+    <value>Acessibilidade</value>
+  </data>
+  <data name="QuickVpn" xml:space="preserve">
+    <value>VPN</value>
+  </data>
+  <data name="QuickBatterySaver" xml:space="preserve">
+    <value>Economia de energia</value>
+  </data>
+  <data name="JumpListTasks" xml:space="preserve">
+    <value>Tarefas</value>
+  </data>
+  <data name="JumpListPinned" xml:space="preserve">
+    <value>Fixados</value>
+  </data>
+  <data name="JumpListRecent" xml:space="preserve">
+    <value>Recentes</value>
+  </data>
+  <data name="JumpListPin" xml:space="preserve">
+    <value>Fixar na barra de tarefas</value>
+  </data>
+  <data name="JumpListUnpin" xml:space="preserve">
+    <value>Desafixar da barra de tarefas</value>
+  </data>
+  <data name="JumpListCloseWindow" xml:space="preserve">
+    <value>Fechar janela</value>
+  </data>
+  <data name="JumpListCloseAllWindows" xml:space="preserve">
+    <value>Fechar todas as janelas</value>
+  </data>
+  <data name="SwitcherWindowCountFormat" xml:space="preserve">
+    <value>{0}  ·  {1} janelas</value>
+  </data>
+  <data name="SettingsWindowTitle" xml:space="preserve">
+    <value>Configurações do FrisoDock</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="SettingsSubtitle" xml:space="preserve">
+    <value>As mudanças valem na hora e ficam guardadas.</value>
+  </data>
+  <data name="SettingsClose" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="SettingsTabAppearance" xml:space="preserve">
+    <value>Aparência</value>
+  </data>
+  <data name="SettingsTabPosition" xml:space="preserve">
+    <value>Posição</value>
+  </data>
+  <data name="SettingsTabHiding" xml:space="preserve">
+    <value>Esconder o dock</value>
+  </data>
+  <data name="SettingsTabSwitcher" xml:space="preserve">
+    <value>Alternar janelas</value>
+  </data>
+  <data name="SettingsTabMonitors" xml:space="preserve">
+    <value>Monitores</value>
+  </data>
+  <data name="SettingsTabDesktop" xml:space="preserve">
+    <value>Área de trabalho</value>
+  </data>
+  <data name="SettingsTabLanguage" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="SettingsMagnificationTitle" xml:space="preserve">
+    <value>Ampliar o ícone sob o cursor</value>
+  </data>
+  <data name="SettingsMagnificationDetail" xml:space="preserve">
+    <value>O ícone cresce por cima da barra, e os vizinhos acompanham.</value>
+  </data>
+  <data name="SettingsMagnificationScaleTitle" xml:space="preserve">
+    <value>Intensidade da ampliação</value>
+  </data>
+  <data name="SettingsPreviewsTitle" xml:space="preserve">
+    <value>Miniaturas das janelas</value>
+  </data>
+  <data name="SettingsPreviewsDetail" xml:space="preserve">
+    <value>Ao pousar o mouse num app aberto, mostra o que há em cada janela.</value>
+  </data>
+  <data name="SettingsClockSecondsTitle" xml:space="preserve">
+    <value>Exibir os segundos</value>
+  </data>
+  <data name="SettingsClockSecondsDetail" xml:space="preserve">
+    <value>O relógio passa a contar de segundo em segundo, e a barra alarga para caber.</value>
+  </data>
+  <data name="SettingsEdgeBottomDetail" xml:space="preserve">
+    <value>O padrão: o dock fica na borda de baixo, onde a barra de tarefas ficava.</value>
+  </data>
+  <data name="SettingsEdgeTopDetail" xml:space="preserve">
+    <value>O dock fica na borda de cima, e os menus abrem para baixo.</value>
+  </data>
+  <data name="SettingsEdgeLeftDetail" xml:space="preserve">
+    <value>Dock vertical na borda esquerda, como no GNOME.</value>
+  </data>
+  <data name="SettingsEdgeRightDetail" xml:space="preserve">
+    <value>Dock vertical na borda direita.</value>
+  </data>
+  <data name="SettingsHideNeverTitle" xml:space="preserve">
+    <value>Nunca</value>
+  </data>
+  <data name="SettingsHideNeverDetail" xml:space="preserve">
+    <value>O dock fica na borda o tempo todo.</value>
+  </data>
+  <data name="SettingsHideOverlapTitle" xml:space="preserve">
+    <value>Quando uma janela ocupa o lugar dele</value>
+  </data>
+  <data name="SettingsHideOverlapDetail" xml:space="preserve">
+    <value>Com a área livre o dock continua à vista; some quando alguma janela chega ali.</value>
+  </data>
+  <data name="SettingsHideAlwaysTitle" xml:space="preserve">
+    <value>Sempre</value>
+  </data>
+  <data name="SettingsHideAlwaysDetail" xml:space="preserve">
+    <value>O dock só aparece quando o cursor encosta na borda da tela.</value>
+  </data>
+  <data name="SettingsGroupedSwitcherTitle" xml:space="preserve">
+    <value>Usar ALT+Tab agrupado por aplicativo</value>
+  </data>
+  <data name="SettingsGroupedSwitcherDetail" xml:space="preserve">
+    <value>Um item por app em vez de um por janela; ao chegar num app, entra pela janela que estava em uso. Desligado, vale o ALT+Tab do Windows.</value>
+  </data>
+  <data name="SettingsSameAppSwitcherTitle" xml:space="preserve">
+    <value>Alternar entre janelas do mesmo app (ALT+')</value>
+  </data>
+  <data name="SettingsSameAppSwitcherDetail" xml:space="preserve">
+    <value>Com ALT segurado, a tecla ' percorre as janelas do app em foco, ao estilo do macOS.</value>
+  </data>
+  <data name="SettingsAllMonitorsTitle" xml:space="preserve">
+    <value>Exibir em todos os monitores</value>
+  </data>
+  <data name="SettingsAllMonitorsDetail" xml:space="preserve">
+    <value>Um dock em cada tela. Desligado, o dock fica só no monitor principal.</value>
+  </data>
+  <data name="SettingsIsolateAppsTitle" xml:space="preserve">
+    <value>Exibir somente apps presentes no monitor</value>
+  </data>
+  <data name="SettingsIsolateAppsDetail" xml:space="preserve">
+    <value>Cada dock mostra só as janelas da sua tela. Os apps fixados continuam em todos.</value>
+  </data>
+  <data name="SettingsHideTaskbarTitle" xml:space="preserve">
+    <value>Esconder a barra de tarefas do Windows</value>
+  </data>
+  <data name="SettingsHideTaskbarDetail" xml:space="preserve">
+    <value>Desligar traz a barra nativa de volta sem fechar o dock.</value>
+  </data>
+  <data name="SettingsReserveSpaceTitle" xml:space="preserve">
+    <value>Reservar espaço na tela</value>
+  </data>
+  <data name="SettingsReserveSpaceDetail" xml:space="preserve">
+    <value>Impede que janelas maximizadas fiquem por baixo do dock. Só vale com o dock sempre à vista.</value>
+  </data>
+  <data name="SettingsLanguageSystemTitle" xml:space="preserve">
+    <value>Usar a linguagem do sistema</value>
+  </data>
+  <data name="SettingsLanguageSystemDetail" xml:space="preserve">
+    <value>O dock segue a linguagem de exibição do Windows, e cai no inglês quando ela não é nenhuma das de baixo.</value>
+  </data>
+  <data name="SettingsLanguagePortugueseBrazil" xml:space="preserve">
+    <value>Português (Brasil)</value>
+  </data>
+  <data name="SettingsLanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="SettingsLanguageSpanish" xml:space="preserve">
+    <value>Español</value>
+  </data>
+</root>

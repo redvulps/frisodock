@@ -30,6 +30,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     private DockEdge _edge;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LanguageSystem))]
+    [NotifyPropertyChangedFor(nameof(LanguagePortugueseBrazil))]
+    [NotifyPropertyChangedFor(nameof(LanguageEnglish))]
+    [NotifyPropertyChangedFor(nameof(LanguageSpanish))]
+    private AppLanguage _language;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanReserveScreenSpace))]
     [NotifyPropertyChangedFor(nameof(HideNever))]
     [NotifyPropertyChangedFor(nameof(HideAlways))]
@@ -103,6 +110,35 @@ public sealed partial class SettingsViewModel : ObservableObject
         set => SelectEdge(DockEdge.Right, value);
     }
 
+    /// <summary>
+    /// The four languages as exclusive switches, in the same pattern as the edges and the hide
+    /// modes: only the true value chooses, because the false one arrives when another button
+    /// is checked.
+    /// </summary>
+    public bool LanguageSystem
+    {
+        get => Language == AppLanguage.System;
+        set => SelectLanguage(AppLanguage.System, value);
+    }
+
+    public bool LanguagePortugueseBrazil
+    {
+        get => Language == AppLanguage.PortugueseBrazil;
+        set => SelectLanguage(AppLanguage.PortugueseBrazil, value);
+    }
+
+    public bool LanguageEnglish
+    {
+        get => Language == AppLanguage.English;
+        set => SelectLanguage(AppLanguage.English, value);
+    }
+
+    public bool LanguageSpanish
+    {
+        get => Language == AppLanguage.Spanish;
+        set => SelectLanguage(AppLanguage.Spanish, value);
+    }
+
     public bool HideNever
     {
         get => HideMode == DockHideMode.Never;
@@ -140,6 +176,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     public double MaximumMagnification => 2.0;
 
     partial void OnEdgeChanged(DockEdge value) => Apply();
+
+    partial void OnLanguageChanged(AppLanguage value) => Apply();
 
     partial void OnHideModeChanged(DockHideMode value) => Apply();
 
@@ -179,6 +217,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    private void SelectLanguage(AppLanguage language, bool selected)
+    {
+        if (selected)
+        {
+            Language = language;
+        }
+    }
+
     private void Load(DockSettings settings)
     {
         _applying = true;
@@ -187,6 +233,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             HideNativeTaskbar = settings.HideNativeTaskbar;
             Edge = settings.Edge;
+            Language = settings.Language;
             HideMode = settings.HideMode;
             ReserveScreenSpace = settings.ReserveScreenSpace;
             EnableMagnification = settings.EnableMagnification;
@@ -215,6 +262,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             HideNativeTaskbar = HideNativeTaskbar,
             Edge = Edge,
+            Language = Language,
             HideMode = HideMode,
             ReserveScreenSpace = ReserveScreenSpace,
             EnableMagnification = EnableMagnification,

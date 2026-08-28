@@ -67,7 +67,6 @@ public partial class DockWindow : Window
     /// arrived alone 60 ms later.
     /// </summary>
     private bool _clockPressDismissesCalendar;
-    private SettingsWindow? _settingsWindow;
     private WindowPreviewWindow? _preview;
     private DockItemViewModel? _previewCandidate;
     private FrameworkElement? _previewAnchor;
@@ -236,32 +235,7 @@ public partial class DockWindow : Window
 
     private void OnSettingsMenuClick(object sender, RoutedEventArgs e)
     {
-        // A single window: clicking again with the screen open brings the existing one forward, instead
-        // of stacking copies that edit the same settings.
-        if (_settingsWindow is not null)
-        {
-            _activator.Activate(_settingsWindow.Handle);
-            return;
-        }
-
-        _settingsWindow = _settingsWindows.Create();
-        _settingsWindow.Closed += OnSettingsWindowClosed;
-        _settingsWindow.Show();
-
-        // The focus comes from the activator, and not from Window.Activate: the dock carries
-        // WS_EX_NOACTIVATE and never becomes the foreground, and Windows refuses a focus change to
-        // whoever is not in the foreground. Without this the screen opens behind the windows that
-        // are already on the desktop.
-        _activator.Activate(_settingsWindow.Handle);
-    }
-
-    private void OnSettingsWindowClosed(object? sender, EventArgs e)
-    {
-        if (_settingsWindow is not null)
-        {
-            _settingsWindow.Closed -= OnSettingsWindowClosed;
-            _settingsWindow = null;
-        }
+        _settingsWindows.Show();
     }
 
     private void OnEdgeBottomMenuClick(object sender, RoutedEventArgs e)

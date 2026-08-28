@@ -77,6 +77,13 @@ public sealed class DockSettingsChangedEventArgs : EventArgs
     /// </summary>
     public bool EdgeChanged => Previous.Edge != Current.Edge;
 
+    /// <summary>
+    /// True if the dock changed language. Like the edge, it rebuilds the dock set: the strings
+    /// bound in XAML follow on their own, but the ones a view model built once — the quick
+    /// settings tooltip, the switcher captions — were already composed in the old language.
+    /// </summary>
+    public bool LanguageChanged => Previous.Language != Current.Language;
+
     /// <summary>True if the dock hide mode changed.</summary>
     public bool HideModeChanged => Previous.HideMode != Current.HideMode;
 

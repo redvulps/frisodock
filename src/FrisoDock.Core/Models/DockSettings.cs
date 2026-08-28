@@ -14,6 +14,12 @@ public sealed record DockSettings
     /// <summary>Screen edge the dock is anchored to.</summary>
     public DockEdge Edge { get; init; } = DockEdge.Bottom;
 
+    /// <summary>
+    /// Language the dock shows its own text in. It ships following the system: a dock that
+    /// arrives in a language the user did not ask for is the wrong first impression.
+    /// </summary>
+    public AppLanguage Language { get; init; } = AppLanguage.System;
+
     /// <summary>Icon, spacing and margin metrics.</summary>
     public DockMetrics Metrics { get; init; } = DockMetrics.Default;
 

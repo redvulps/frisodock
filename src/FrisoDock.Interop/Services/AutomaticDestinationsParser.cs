@@ -122,12 +122,12 @@ public sealed class AutomaticDestinationsParser
 
         if (pinned.Count > 0)
         {
-            categories.Add(new JumpListCategory(JumpListCategoryKind.Custom, "Fixados", pinned));
+            categories.Add(new JumpListCategory(JumpListCategoryKind.Pinned, Name: null, pinned));
         }
 
         if (recent.Count > 0)
         {
-            categories.Add(new JumpListCategory(JumpListCategoryKind.Custom, "Recentes", recent));
+            categories.Add(new JumpListCategory(JumpListCategoryKind.Recent, Name: null, recent));
         }
 
         return new JumpList(categories);

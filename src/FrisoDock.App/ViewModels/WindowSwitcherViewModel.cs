@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 
 namespace FrisoDock.App.ViewModels;
 
@@ -28,7 +30,7 @@ public sealed partial class WindowSwitcherEntryViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(item);
 
         string caption = item.Windows.Count > 1
-            ? $"{item.DisplayName}  ·  {item.Windows.Count} janelas"
+            ? string.Format(CultureInfo.CurrentCulture, Strings.SwitcherWindowCountFormat, item.DisplayName, item.Windows.Count)
             : item.DisplayName;
 
         return new WindowSwitcherEntryViewModel(item.Windows[0], image, caption);

@@ -2,6 +2,7 @@ using System.Windows.Media;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 
 namespace FrisoDock.App.Services;
 
@@ -117,7 +118,7 @@ public sealed class JumpListFlyoutFactory
 
         bool isPinned = _pinnedApps.IsPinned(item.Key);
         items.Add(new JumpListItemViewModel(
-            isPinned ? "Desafixar da barra de tarefas" : "Fixar na barra de tarefas",
+            isPinned ? Strings.JumpListUnpin : Strings.JumpListPin,
             icon: null,
             isPinned ? UnpinGlyph : PinGlyph,
             () => _pinnedApps.TogglePin(item)));
@@ -125,7 +126,7 @@ public sealed class JumpListFlyoutFactory
         if (item.IsRunning)
         {
             items.Add(new JumpListItemViewModel(
-                item.HasMultipleWindows ? "Fechar todas as janelas" : "Fechar janela",
+                item.HasMultipleWindows ? Strings.JumpListCloseAllWindows : Strings.JumpListCloseWindow,
                 icon: null,
                 CloseGlyph,
                 () => CloseWindows(item),

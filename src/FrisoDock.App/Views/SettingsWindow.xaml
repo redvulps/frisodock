@@ -1,12 +1,13 @@
 ﻿<Window x:Class="FrisoDock.App.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FrisoDock.App.Localization"
         xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
         mc:Ignorable="d"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
-        Title="Configurações do FrisoDock"
+        Title="{loc:Tr SettingsWindowTitle}"
         WindowStyle="None"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -318,11 +319,11 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0">
-                <TextBlock Text="Configurações"
+                <TextBlock Text="{loc:Tr SettingsTitle}"
                            Foreground="{StaticResource TextBrush}"
                            FontSize="18"
                            Margin="14,6,14,2" />
-                <TextBlock Text="As mudanças valem na hora e ficam guardadas."
+                <TextBlock Text="{loc:Tr SettingsSubtitle}"
                            Style="{StaticResource SettingHintStyle}"
                            Margin="14,0,14,8" />
 
@@ -331,7 +332,7 @@
 
             <TabControl Grid.Row="1" Style="{StaticResource SettingsTabsStyle}">
 
-                <TabItem Header="Aparência" Tag="&#xE771;" Style="{StaticResource NavItemStyle}">
+                <TabItem Header="{loc:Tr SettingsTabAppearance}" Tag="&#xE771;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <Border Style="{StaticResource SettingRowStyle}">
@@ -342,9 +343,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Ampliar o ícone sob o cursor"
+                                    <TextBlock Text="{loc:Tr SettingsMagnificationTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="O ícone cresce por cima da barra, e os vizinhos acompanham."
+                                    <TextBlock Text="{loc:Tr SettingsMagnificationDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -364,7 +365,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0"
-                                               Text="Intensidade da ampliação"
+                                               Text="{loc:Tr SettingsMagnificationScaleTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
 
                                     <TextBlock Grid.Column="1"
@@ -392,9 +393,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Miniaturas das janelas"
+                                    <TextBlock Text="{loc:Tr SettingsPreviewsTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Ao pousar o mouse num app aberto, mostra o que há em cada janela."
+                                    <TextBlock Text="{loc:Tr SettingsPreviewsDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -412,9 +413,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Exibir os segundos"
+                                    <TextBlock Text="{loc:Tr SettingsClockSecondsTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="O relógio passa a contar de segundo em segundo, e a barra alarga para caber."
+                                    <TextBlock Text="{loc:Tr SettingsClockSecondsDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -427,15 +428,15 @@
                     </StackPanel>
                 </TabItem>
 
-                <TabItem Header="Posição" Tag="&#xE90E;" Style="{StaticResource NavItemStyle}">
+                <TabItem Header="{loc:Tr SettingsTabPosition}" Tag="&#xE90E;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <RadioButton GroupName="Edge"
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding EdgeBottom}">
                             <StackPanel>
-                                <TextBlock Text="Inferior" Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="O padrão: o dock fica na borda de baixo, onde a barra de tarefas ficava."
+                                <TextBlock Text="{loc:Tr EdgeBottom}" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsEdgeBottomDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -444,8 +445,8 @@
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding EdgeTop}">
                             <StackPanel>
-                                <TextBlock Text="Superior" Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="O dock fica na borda de cima, e os menus abrem para baixo."
+                                <TextBlock Text="{loc:Tr EdgeTop}" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsEdgeTopDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -454,8 +455,8 @@
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding EdgeLeft}">
                             <StackPanel>
-                                <TextBlock Text="Esquerda" Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="Dock vertical na borda esquerda, como no GNOME."
+                                <TextBlock Text="{loc:Tr EdgeLeft}" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsEdgeLeftDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -464,8 +465,8 @@
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding EdgeRight}">
                             <StackPanel>
-                                <TextBlock Text="Direita" Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="Dock vertical na borda direita."
+                                <TextBlock Text="{loc:Tr EdgeRight}" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsEdgeRightDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -473,15 +474,15 @@
                     </StackPanel>
                 </TabItem>
 
-                <TabItem Header="Esconder o dock" Tag="&#xE890;" Style="{StaticResource NavItemStyle}">
+                <TabItem Header="{loc:Tr SettingsTabHiding}" Tag="&#xE890;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <RadioButton GroupName="HideMode"
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding HideNever}">
                             <StackPanel>
-                                <TextBlock Text="Nunca" Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="O dock fica na borda o tempo todo."
+                                <TextBlock Text="{loc:Tr SettingsHideNeverTitle}" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsHideNeverDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -490,9 +491,9 @@
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding HideWhenWindowOverlaps}">
                             <StackPanel>
-                                <TextBlock Text="Quando uma janela ocupa o lugar dele"
+                                <TextBlock Text="{loc:Tr SettingsHideOverlapTitle}"
                                            Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="Com a área livre o dock continua à vista; some quando alguma janela chega ali."
+                                <TextBlock Text="{loc:Tr SettingsHideOverlapDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -501,8 +502,8 @@
                                      Style="{StaticResource RadioRowStyle}"
                                      IsChecked="{Binding HideAlways}">
                             <StackPanel>
-                                <TextBlock Text="Sempre" Style="{StaticResource SettingTitleStyle}" />
-                                <TextBlock Text="O dock só aparece quando o cursor encosta na borda da tela."
+                                <TextBlock Text="{loc:Tr SettingsHideAlwaysTitle}" Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsHideAlwaysDetail}"
                                            Style="{StaticResource SettingHintStyle}" />
                             </StackPanel>
                         </RadioButton>
@@ -510,7 +511,7 @@
                     </StackPanel>
                 </TabItem>
 
-                <TabItem Header="Alternar janelas" Tag="&#xE7C4;" Style="{StaticResource NavItemStyle}">
+                <TabItem Header="{loc:Tr SettingsTabSwitcher}" Tag="&#xE7C4;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <Border Style="{StaticResource SettingRowStyle}">
@@ -521,9 +522,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Usar ALT+Tab agrupado por aplicativo"
+                                    <TextBlock Text="{loc:Tr SettingsGroupedSwitcherTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Um item por app em vez de um por janela; ao chegar num app, entra pela janela que estava em uso. Desligado, vale o ALT+Tab do Windows."
+                                    <TextBlock Text="{loc:Tr SettingsGroupedSwitcherDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -541,9 +542,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Alternar entre janelas do mesmo app (ALT+&#x27;)"
+                                    <TextBlock Text="{loc:Tr SettingsSameAppSwitcherTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Com ALT segurado, a tecla ' percorre as janelas do app em foco, ao estilo do macOS."
+                                    <TextBlock Text="{loc:Tr SettingsSameAppSwitcherDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -556,7 +557,7 @@
                     </StackPanel>
                 </TabItem>
 
-                <TabItem Header="Monitores" Tag="&#xE7F4;" Style="{StaticResource NavItemStyle}">
+                <TabItem Header="{loc:Tr SettingsTabMonitors}" Tag="&#xE7F4;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <Border Style="{StaticResource SettingRowStyle}">
@@ -567,9 +568,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Exibir em todos os monitores"
+                                    <TextBlock Text="{loc:Tr SettingsAllMonitorsTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Um dock em cada tela. Desligado, o dock fica só no monitor principal."
+                                    <TextBlock Text="{loc:Tr SettingsAllMonitorsDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -588,9 +589,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Exibir somente apps presentes no monitor"
+                                    <TextBlock Text="{loc:Tr SettingsIsolateAppsTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Cada dock mostra só as janelas da sua tela. Os apps fixados continuam em todos."
+                                    <TextBlock Text="{loc:Tr SettingsIsolateAppsDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -603,7 +604,7 @@
                     </StackPanel>
                 </TabItem>
 
-                <TabItem Header="Área de trabalho" Tag="&#xE7F8;" Style="{StaticResource NavItemStyle}">
+                <TabItem Header="{loc:Tr SettingsTabDesktop}" Tag="&#xE7F8;" Style="{StaticResource NavItemStyle}">
                     <StackPanel>
 
                         <Border Style="{StaticResource SettingRowStyle}">
@@ -614,9 +615,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Esconder a barra de tarefas do Windows"
+                                    <TextBlock Text="{loc:Tr SettingsHideTaskbarTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Desligar traz a barra nativa de volta sem fechar o dock."
+                                    <TextBlock Text="{loc:Tr SettingsHideTaskbarDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -635,9 +636,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Reservar espaço na tela"
+                                    <TextBlock Text="{loc:Tr SettingsReserveSpaceTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
-                                    <TextBlock Text="Impede que janelas maximizadas fiquem por baixo do dock. Só vale com o dock sempre à vista."
+                                    <TextBlock Text="{loc:Tr SettingsReserveSpaceDetail}"
                                                Style="{StaticResource SettingHintStyle}" />
                                 </StackPanel>
 
@@ -650,10 +651,53 @@
                     </StackPanel>
                 </TabItem>
 
+                <TabItem Header="{loc:Tr SettingsTabLanguage}" Tag="&#xF2B7;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
+
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguageSystem}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr SettingsLanguageSystemTitle}"
+                                           Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsLanguageSystemDetail}"
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!--
+                            Os nomes das linguagens ficam no idioma delas, e por isso valem igual nos
+                            tres arquivos: e como o Windows lista os idiomas dele, e e o que deixa o
+                            usuario reconhecer o proprio idioma numa tela que ele nao consegue ler.
+                        -->
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguagePortugueseBrazil}">
+                            <TextBlock Text="{loc:Tr SettingsLanguagePortugueseBrazil}"
+                                       Style="{StaticResource SettingTitleStyle}" />
+                        </RadioButton>
+
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguageEnglish}">
+                            <TextBlock Text="{loc:Tr SettingsLanguageEnglish}"
+                                       Style="{StaticResource SettingTitleStyle}" />
+                        </RadioButton>
+
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguageSpanish}">
+                            <TextBlock Text="{loc:Tr SettingsLanguageSpanish}"
+                                       Style="{StaticResource SettingTitleStyle}" />
+                        </RadioButton>
+
+                    </StackPanel>
+                </TabItem>
+
             </TabControl>
 
             <Button Grid.Row="2"
-                    Content="Fechar"
+                    Content="{loc:Tr SettingsClose}"
                     Click="OnCloseClick"
                     HorizontalAlignment="Right"
                     Margin="14,10,14,6"

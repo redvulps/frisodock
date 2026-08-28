@@ -1,4 +1,5 @@
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 using Xunit;
 
 namespace FrisoDock.Tests;
@@ -7,15 +8,35 @@ namespace FrisoDock.Tests;
 /// Jump list display rules. Reading the file is Win32 and lives in Interop; what can be
 /// tested without Windows is how the categories become menu sections.
 /// </summary>
+[Collection(CultureCollection.Name)]
 public sealed class JumpListTests
 {
     [Fact]
-    public void TasksCategory_UsesTheWindowsLabel()
+    public void CategoriesNamedByTheShell_TakeTheirLabelFromTheCatalogue()
     {
-        // The file stores no name for this category: what writes "Tasks" is the shell.
-        var category = new JumpListCategory(JumpListCategoryKind.Tasks, null, [CreateEntry("Nova janela")]);
+        // The file stores no name for these: the shell is what names them, and so does the dock.
+        // The culture is pinned because the assertion is on translated text.
+        using var culture = new CultureScope("en-US");
 
-        Assert.Equal("Tarefas", category.DisplayTitle);
+        Assert.Equal("Tasks", Category(JumpListCategoryKind.Tasks).DisplayTitle);
+        Assert.Equal("Pinned", Category(JumpListCategoryKind.Pinned).DisplayTitle);
+        Assert.Equal("Recent", Category(JumpListCategoryKind.Recent).DisplayTitle);
+    }
+
+    [Fact]
+    public void CategoriesNamedByTheShell_FollowTheLanguage()
+    {
+        // The label is resolved on display, and not when the category is built: that is what
+        // keeps it out of the jump list cache when the user changes language.
+        var category = new JumpListCategory(JumpListCategoryKind.Recent, null, [CreateEntry("a")]);
+
+        using (var portuguese = new CultureScope("pt-BR"))
+        {
+            Assert.Equal("Recentes", category.DisplayTitle);
+        }
+
+        using var spanish = new CultureScope("es-ES");
+        Assert.Equal("Recientes", category.DisplayTitle);
     }
 
     [Fact]
@@ -70,7 +91,7 @@ public sealed class JumpListTests
             jumpList.VisibleCategories,
             first => Assert.Equal("Mais visitados", first.DisplayTitle),
             second => Assert.Equal("Fechadas recentemente", second.DisplayTitle),
-            third => Assert.Equal("Tarefas", third.DisplayTitle));
+            third => Assert.Equal(Strings.JumpListTasks, third.DisplayTitle));
     }
 
     [Fact]
@@ -120,6 +141,11 @@ public sealed class JumpListTests
         var item = new DockItem(window.Key, "Desconhecido", null, null, [window]);
 
         Assert.Null(item.JumpListExecutable);
+    }
+
+    private static JumpListCategory Category(JumpListCategoryKind kind)
+    {
+        return new JumpListCategory(kind, null, [CreateEntry("a")]);
     }
 
     private static JumpListEntry CreateEntry(string title)

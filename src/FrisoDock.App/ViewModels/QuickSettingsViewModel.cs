@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 
 namespace FrisoDock.App.ViewModels;
 
@@ -84,17 +85,17 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
         _network = network;
         _launcher = launcher;
 
-        _wifiTile = new QuickTileViewModel("", "Wi-Fi", ToggleWifiAsync, () => Open(WifiPage));
-        _bluetoothTile = new QuickTileViewModel("", "Bluetooth", ToggleBluetoothAsync, () => Open(BluetoothPage));
-        _batterySaverTile = new QuickTileViewModel("", "Economia de energia", null, () => Open(PowerPage));
+        _wifiTile = new QuickTileViewModel("", Strings.QuickWifi, ToggleWifiAsync, () => Open(WifiPage));
+        _bluetoothTile = new QuickTileViewModel("", Strings.QuickBluetooth, ToggleBluetoothAsync, () => Open(BluetoothPage));
+        _batterySaverTile = new QuickTileViewModel("", Strings.QuickBatterySaver, null, () => Open(PowerPage));
 
         Tiles =
         [
             _wifiTile,
             _bluetoothTile,
-            new QuickTileViewModel("", "Modo avião", null, () => Open(AirplanePage)),
-            new QuickTileViewModel("", "Acessibilidade", null, () => Open(AccessibilityPage)),
-            new QuickTileViewModel("", "VPN", null, () => Open(VpnPage)),
+            new QuickTileViewModel("", Strings.QuickAirplaneMode, null, () => Open(AirplanePage)),
+            new QuickTileViewModel("", Strings.QuickAccessibility, null, () => Open(AccessibilityPage)),
+            new QuickTileViewModel("", Strings.QuickVpn, null, () => Open(VpnPage)),
             _batterySaverTile,
         ];
 
