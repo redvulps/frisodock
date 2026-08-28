@@ -86,6 +86,11 @@ public partial class App : Application
             _taskbarController.Restore();
         }
 
+        // Before any window: the accent brushes have to be in the application dictionary
+        // by the time the first XAML is loaded, otherwise the first paint comes out with the
+        // App.xaml seed and would only correct itself on the next color change.
+        _services.GetRequiredService<AccentTheme>().Start();
+
         _trayHost = _services.GetRequiredService<TrayHostRunner>();
         _trayHost.Start();
 
@@ -225,6 +230,7 @@ public partial class App : Application
         services.AddSingleton<IBatteryProvider, BatteryProvider>();
         services.AddSingleton<INetworkProvider, NetworkProvider>();
         services.AddSingleton<ISettingsPageLauncher, SettingsPageLauncher>();
+        services.AddSingleton<IAccentColorProvider, SystemAccentColorProvider>();
 
         // Host infrastructure
         services.AddSingleton<IApplicationLifetime, WpfApplicationLifetime>();
@@ -239,6 +245,7 @@ public partial class App : Application
         services.AddSingleton<TrayFlyoutFactory>();
         services.AddSingleton<QuickSettingsFlyoutFactory>();
         services.AddSingleton<SettingsWindowFactory>();
+        services.AddSingleton<AccentTheme>();
 
         // The pinned list is a single one, shared by every dock.
         services.AddSingleton<IPinnedAppsEditor>(provider => provider.GetRequiredService<PinnedAppsService>());

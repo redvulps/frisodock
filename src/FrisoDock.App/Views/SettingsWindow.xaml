@@ -30,7 +30,6 @@
 
         <SolidColorBrush x:Key="TextBrush" Color="#F3F3F3" />
         <SolidColorBrush x:Key="MutedBrush" Color="#A0A0A0" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#4CC2FF" />
         <SolidColorBrush x:Key="TrackBrush" Color="#3D3D3D" />
         <SolidColorBrush x:Key="ThumbBrush" Color="#F3F3F3" />
         <SolidColorBrush x:Key="SeparatorBrush" Color="#1FFFFFFF" />
@@ -63,10 +62,10 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="Track"
                                         Property="Background"
-                                        Value="{StaticResource AccentBrush}" />
+                                        Value="{DynamicResource AccentBrush}" />
                                 <Setter TargetName="Track"
                                         Property="BorderBrush"
-                                        Value="{StaticResource AccentBrush}" />
+                                        Value="{DynamicResource AccentBrush}" />
                                 <Setter TargetName="Thumb"
                                         Property="HorizontalAlignment"
                                         Value="Right" />
@@ -130,8 +129,8 @@
                                 <Setter TargetName="Root" Property="Background" Value="{StaticResource HoverBrush}" />
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Ring" Property="Fill" Value="{StaticResource AccentBrush}" />
-                                <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="Ring" Property="Fill" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource AccentBrush}" />
                                 <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -239,7 +238,7 @@
                                            RadiusX="1.5"
                                            RadiusY="1.5"
                                            HorizontalAlignment="Left"
-                                           Fill="{StaticResource AccentBrush}"
+                                           Fill="{DynamicResource AccentBrush}"
                                            Visibility="Collapsed" />
 
                                 <StackPanel Orientation="Horizontal" Margin="13,0,0,0">
@@ -381,7 +380,7 @@
                                         TickFrequency="0.1"
                                         IsSnapToTickEnabled="True"
                                         Margin="0,8,0,0"
-                                        Foreground="{StaticResource AccentBrush}" />
+                                        Foreground="{DynamicResource AccentBrush}" />
                             </StackPanel>
                         </Border>
 

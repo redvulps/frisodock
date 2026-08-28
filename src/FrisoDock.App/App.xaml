@@ -10,5 +10,16 @@
         opção de exibir em todos — fecha todas as janelas antes de recriá-las. No modo padrão,
         o instante sem janela nenhuma encerraria o processo, e o dock sumiria de vez.
     -->
-    <Application.Resources />
+    <Application.Resources>
+        <!--
+            Cor de destaque do Windows, publicada como pincel para todas as janelas.
+
+            O que está aqui é só a semente — o azul padrão do Windows 11 na variante clara. O
+            AccentTheme substitui as duas entradas no arranque pela cor real do usuário, e de
+            novo quando ele a troca. Por isso quem consome lê por DynamicResource: com
+            StaticResource a troca não chegaria à tela.
+        -->
+        <SolidColorBrush x:Key="AccentBrush" Color="#4CC2FF" />
+        <SolidColorBrush x:Key="AccentTextBrush" Color="#08131A" />
+    </Application.Resources>
 </Application>
