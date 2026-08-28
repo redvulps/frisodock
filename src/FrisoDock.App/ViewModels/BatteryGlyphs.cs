@@ -5,30 +5,52 @@ namespace FrisoDock.App.ViewModels;
 /// <summary>
 /// Picks the battery icon in Segoe Fluent Icons. A pure function, therefore testable.
 ///
-/// The font carries three series of eleven icons each — discharging, charging and battery
-/// saver —, one for each tenth of charge. Picking the icon is finding the right tenth in the right
-/// series, and that is all that lives here.
+/// The font carries three series — discharging, charging and battery saver —, each one
+/// going from empty to full. Picking the icon is finding the right step in the right series, and
+/// that is all that lives here.
+///
+/// **The series are not the same size, and they are not the ones the documentation describes.**
+/// The public Segoe MDL2 table says eleven icons per series (Battery0..Battery10 in E850..E85A),
+/// and in this font it is not so. Rendered and measured glyph by glyph: the ink box changes from
+/// 26.0x14.0 to 28.8x17.7 already at E85A, which is the bolt series, and again to 30.0x16.0 at
+/// E863, which is the leaf one. From E86C on they are already signal bars.
+///
+/// Following the documentation cost the worst possible error: at 97% charge the step gave 10, and
+/// E850+10 = E85A, which is the **empty battery with the bolt**. The icon said the opposite of the state.
 /// </summary>
 public static class BatteryGlyphs
 {
-    private const int Discharging = 0xE850;
-    private const int Charging = 0xE85B;
-    private const int Saver = 0xE866;
+    /// <summary>First glyph of a series and how many steps it has, from empty to full.</summary>
+    private readonly record struct Series(int First, int Levels);
 
-    /// <summary>Each series covers 0 to 10 tenths, that is, eleven icons.</summary>
-    private const int StepsPerSeries = 10;
+    private static readonly Series Discharging = new(0xE850, 10);
+    private static readonly Series Charging = new(0xE85A, 9);
+    private static readonly Series Saver = new(0xE863, 9);
 
     public static string For(BatteryStatus battery)
     {
-        int series = battery switch
+        Series series = battery switch
         {
             { IsCharging: true } => Charging,
             { IsSaverOn: true } => Saver,
             _ => Discharging,
         };
 
-        int step = Math.Clamp((int)Math.Round(battery.Percent / 10.0), 0, StepsPerSeries);
+        return char.ConvertFromUtf32(series.First + StepFor(battery.Percent, series));
+    }
 
-        return char.ConvertFromUtf32(series + step);
+    /// <summary>
+    /// Step within the series. The calculation is over the number of steps in the series, and not over
+    /// tenths: the series have different sizes, and a fixed tenth would run past the end of the smaller ones.
+    ///
+    /// Rounding is away from zero, and not the .NET default, which ties to even —
+    /// with that, 50% of a ten-step series would land on step 4, and not on 5.
+    /// </summary>
+    private static int StepFor(int percent, Series series)
+    {
+        int last = series.Levels - 1;
+        var step = (int)Math.Round(percent / 100.0 * last, MidpointRounding.AwayFromZero);
+
+        return Math.Clamp(step, 0, last);
     }
 }

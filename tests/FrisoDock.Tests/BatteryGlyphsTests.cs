@@ -5,28 +5,57 @@ using Xunit;
 namespace FrisoDock.Tests;
 
 /// <summary>
-/// Choice of the battery icon. The font carries three series of eleven icons — discharging,
-/// charging and saver —, and what is tested here is landing on the right series and tenth.
+/// Choice of the battery icon.
+///
+/// The ranges below were measured in the installed font, rendering glyph by glyph, and not taken
+/// from the public table — which describes eleven icons per series and gets it wrong: at E85A the
+/// bolt series already begins.
 /// </summary>
 public sealed class BatteryGlyphsTests
 {
-    [Theory]
-    [InlineData(0, 0xE850)]
-    [InlineData(50, 0xE855)]
-    [InlineData(100, 0xE85A)]
-    public void Discharging_UsesTheBaseSeries(int percent, int expected)
-    {
-        var battery = new BatteryStatus(HasBattery: true, percent, IsCharging: false, IsSaverOn: false);
+    private const int DischargingFirst = 0xE850;
+    private const int DischargingLast = 0xE859;
+    private const int ChargingFirst = 0xE85A;
+    private const int ChargingLast = 0xE862;
+    private const int SaverFirst = 0xE863;
+    private const int SaverLast = 0xE86B;
 
-        Assert.Equal(char.ConvertFromUtf32(expected), BatteryGlyphs.For(battery));
+    private static BatteryStatus Battery(int percent, bool charging = false, bool saver = false)
+    {
+        return new BatteryStatus(HasBattery: true, percent, charging, saver);
+    }
+
+    private static int Code(BatteryStatus battery)
+    {
+        return char.ConvertToUtf32(BatteryGlyphs.For(battery), 0);
+    }
+
+    [Theory]
+    [InlineData(0, DischargingFirst)]
+    [InlineData(50, 0xE855)]
+    [InlineData(100, DischargingLast)]
+    public void Discharging_GoesFromEmptyToFull(int percent, int expected)
+    {
+        Assert.Equal(expected, Code(Battery(percent)));
+    }
+
+    /// <summary>
+    /// The error that prompted the fix: at nearly full charge the icon ran past the end of the series and
+    /// landed on the empty battery of the bolt series, saying the opposite of the real state.
+    /// </summary>
+    [Theory]
+    [InlineData(95)]
+    [InlineData(97)]
+    [InlineData(100)]
+    public void NearlyFullCharge_DoesNotLeakIntoTheNextSeries(int percent)
+    {
+        Assert.Equal(DischargingLast, Code(Battery(percent)));
     }
 
     [Fact]
     public void Charging_HasItsOwnSeries()
     {
-        var battery = new BatteryStatus(HasBattery: true, Percent: 50, IsCharging: true, IsSaverOn: false);
-
-        Assert.Equal(char.ConvertFromUtf32(0xE860), BatteryGlyphs.For(battery));
+        Assert.Equal(0xE85E, Code(Battery(50, charging: true)));
     }
 
     [Fact]
@@ -34,37 +63,58 @@ public sealed class BatteryGlyphsTests
     {
         // Plugged in, what matters is that it is charging; the saver stays on but the
         // icon that says the most is the charging one.
-        var battery = new BatteryStatus(HasBattery: true, Percent: 50, IsCharging: true, IsSaverOn: true);
-
-        Assert.Equal(char.ConvertFromUtf32(0xE860), BatteryGlyphs.For(battery));
+        Assert.Equal(0xE85E, Code(Battery(50, charging: true, saver: true)));
     }
 
     [Fact]
     public void Saver_HasItsOwnSeries()
     {
-        var battery = new BatteryStatus(HasBattery: true, Percent: 50, IsCharging: false, IsSaverOn: true);
-
-        Assert.Equal(char.ConvertFromUtf32(0xE86B), BatteryGlyphs.For(battery));
+        Assert.Equal(0xE867, Code(Battery(50, saver: true)));
     }
 
+    /// <summary>
+    /// The guarantee that was missing: any charge, in any state, has to land inside the matching
+    /// series. It is what keeps the icon from turning into another series'.
+    /// </summary>
     [Theory]
-    [InlineData(-20)]
-    [InlineData(250)]
-    public void PercentageOutOfRange_DoesNotLeaveTheSeries(int percent)
+    [InlineData(false, false, DischargingFirst, DischargingLast)]
+    [InlineData(true, false, ChargingFirst, ChargingLast)]
+    [InlineData(false, true, SaverFirst, SaverLast)]
+    public void AnyCharge_StaysInsideTheSeries(bool charging, bool saver, int first, int last)
     {
-        var battery = new BatteryStatus(HasBattery: true, percent, IsCharging: false, IsSaverOn: false);
-
-        string glyph = BatteryGlyphs.For(battery);
-        int code = char.ConvertToUtf32(glyph, 0);
-
-        Assert.InRange(code, 0xE850, 0xE85A);
+        for (var percent = -20; percent <= 220; percent++)
+        {
+            Assert.InRange(Code(Battery(percent, charging, saver)), first, last);
+        }
     }
 
-    [Fact]
-    public void RoundsToTheNearestTenth()
+    /// <summary>The ends of the range are the ends of the series, and not points in the middle of it.</summary>
+    [Theory]
+    [InlineData(false, false, DischargingFirst, DischargingLast)]
+    [InlineData(true, false, ChargingFirst, ChargingLast)]
+    [InlineData(false, true, SaverFirst, SaverLast)]
+    public void EmptyAndFull_LandOnTheEndsOfTheSeries(bool charging, bool saver, int first, int last)
     {
-        var battery = new BatteryStatus(HasBattery: true, Percent: 46, IsCharging: false, IsSaverOn: false);
+        Assert.Equal(first, Code(Battery(0, charging, saver)));
+        Assert.Equal(last, Code(Battery(100, charging, saver)));
+    }
 
-        Assert.Equal(char.ConvertFromUtf32(0xE855), BatteryGlyphs.For(battery));
+    /// <summary>The charge rises, the icon never falls — and it covers the whole series, with no dead step.</summary>
+    [Fact]
+    public void RisingCharge_NeverGoesBackAndCoversTheWholeSeries()
+    {
+        var seen = new HashSet<int>();
+        int previous = int.MinValue;
+
+        for (var percent = 0; percent <= 100; percent++)
+        {
+            int code = Code(Battery(percent));
+
+            Assert.True(code >= previous);
+            previous = code;
+            seen.Add(code);
+        }
+
+        Assert.Equal(DischargingLast - DischargingFirst + 1, seen.Count);
     }
 }
