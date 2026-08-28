@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
@@ -24,6 +25,9 @@ public partial class SettingsWindow : Window
 
         DataContext = viewModel;
     }
+
+    /// <summary>Handle of this window, for whoever needs to bring it to the foreground through Win32.</summary>
+    public nint Handle => new WindowInteropHelper(this).Handle;
 
     protected override void OnSourceInitialized(EventArgs e)
     {

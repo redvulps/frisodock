@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -240,13 +240,19 @@ public partial class DockWindow : Window
         // of stacking copies that edit the same settings.
         if (_settingsWindow is not null)
         {
-            _settingsWindow.Activate();
+            _activator.Activate(_settingsWindow.Handle);
             return;
         }
 
         _settingsWindow = _settingsWindows.Create();
         _settingsWindow.Closed += OnSettingsWindowClosed;
         _settingsWindow.Show();
+
+        // The focus comes from the activator, and not from Window.Activate: the dock carries
+        // WS_EX_NOACTIVATE and never becomes the foreground, and Windows refuses a focus change to
+        // whoever is not in the foreground. Without this the screen opens behind the windows that
+        // are already on the desktop.
+        _activator.Activate(_settingsWindow.Handle);
     }
 
     private void OnSettingsWindowClosed(object? sender, EventArgs e)
