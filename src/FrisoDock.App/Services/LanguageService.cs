@@ -15,6 +15,22 @@ namespace FrisoDock.App.Services;
 /// </summary>
 public sealed class LanguageService : IDisposable
 {
+    /// <summary>
+    /// The UI culture the process was born with, which is the user's Windows display language.
+    ///
+    /// It is captured once, and not read on demand, because <see cref="Apply" /> overwrites the
+    /// current UI culture: after the first change, "the system language" would be whatever the
+    /// dock last applied. The static initializer runs on the first touch of this class, which is
+    /// the call in App.OnStartup, before anything here has written a culture.
+    ///
+    /// <see cref="CultureInfo.InstalledUICulture" /> is not the answer either, and that is the
+    /// part that is easy to get wrong: it is the language Windows was *installed* with, so a
+    /// machine installed in English and later switched to Portuguese would go back to English
+    /// every time the user chose to follow the system. On a machine where the two agree the
+    /// mistake is invisible.
+    /// </summary>
+    public static CultureInfo SystemUiCulture { get; } = CultureInfo.CurrentUICulture;
+
     private readonly DockSettingsService _settings;
 
     private bool _disposed;
@@ -59,7 +75,7 @@ public sealed class LanguageService : IDisposable
 
         if (name is null)
         {
-            return CultureInfo.InstalledUICulture;
+            return SystemUiCulture;
         }
 
         try
@@ -70,7 +86,7 @@ public sealed class LanguageService : IDisposable
         {
             // A culture Windows does not carry is not a reason to bring the dock down: the
             // resources fall back to the neutral English on their own.
-            return CultureInfo.InstalledUICulture;
+            return SystemUiCulture;
         }
     }
 
