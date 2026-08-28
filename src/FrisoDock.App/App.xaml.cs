@@ -29,6 +29,7 @@ public partial class App : Application
     private DockHost? _dockHost;
     private WindowSwitcherRunner? _windowSwitcher;
     private TrayHostRunner? _trayHost;
+    private RegionalFormatService? _regionalFormats;
     private Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -108,6 +109,9 @@ public partial class App : Application
         _windowSwitcher = _services.GetRequiredService<WindowSwitcherRunner>();
         _windowSwitcher.Start();
 
+        _regionalFormats = _services.GetRequiredService<RegionalFormatService>();
+        _regionalFormats.Start();
+
         MainWindow = _dockHost.PrimaryWindow;
     }
 
@@ -120,6 +124,7 @@ public partial class App : Application
         // The keyboard hook goes before the windows: while it exists, every Alt+Tab in the
         // system passes through here, and an already torn down dock would have nothing to show.
         _windowSwitcher?.Dispose();
+        _regionalFormats?.Dispose();
         _dockHost?.Dispose();
 
         // Before the restore: the watcher exists to undo reshows, and restoring is
@@ -209,6 +214,7 @@ public partial class App : Application
         services.AddSingleton<WindowMonitorMatcher>();
         services.AddSingleton<PinnedAppsReorder>();
         services.AddSingleton<ClockFormatter>();
+        services.AddSingleton<CalendarMonthBuilder>();
         services.AddSingleton<MagnificationCurve>();
         services.AddSingleton<DockVisibilityPolicy>();
         services.AddSingleton<WindowSwitchList>();
@@ -231,6 +237,7 @@ public partial class App : Application
         services.AddSingleton<IWindowActivationPolicy, WindowActivationPolicy>();
         services.AddSingleton<IWindowSwitcherGesture, WindowSwitcherGesture>();
         services.AddSingleton<IShellRestartWatcher, ShellRestartWatcher>();
+        services.AddSingleton<IRegionalFormatWatcher, RegionalFormatWatcher>();
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IWindowBackdrop, DwmWindowBackdrop>();
         services.AddSingleton<ShellLinkReader>();
@@ -262,8 +269,10 @@ public partial class App : Application
         services.AddSingleton<JumpListWarmer>();
         services.AddSingleton<TrayFlyoutFactory>();
         services.AddSingleton<QuickSettingsFlyoutFactory>();
+        services.AddSingleton<CalendarFlyoutFactory>();
         services.AddSingleton<SettingsWindowFactory>();
         services.AddSingleton<AccentTheme>();
+        services.AddSingleton<RegionalFormatService>();
 
         // The pinned list is a single one, shared by every dock.
         services.AddSingleton<IPinnedAppsEditor>(provider => provider.GetRequiredService<PinnedAppsService>());

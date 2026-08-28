@@ -16,4 +16,17 @@ public sealed class CursorProvider : ICursorProvider
 
         return new PixelPoint(point.X, point.Y);
     }
+
+    public bool IsPrimaryButtonPressed()
+    {
+        // The physical state (GetAsyncKeyState), not the thread-synchronized one (GetKeyState,
+        // which is what WPF's Mouse class reads): the press this exists for was eaten before
+        // reaching any of our windows, so the synchronized state never learned about it. The
+        // same trap, and the same cure, as the Shift key in the window switcher hook.
+        int button = NativeMethods.GetSystemMetrics(NativeConstants.SM_SWAPBUTTON) != 0
+            ? NativeConstants.VK_RBUTTON
+            : NativeConstants.VK_LBUTTON;
+
+        return (NativeMethods.GetAsyncKeyState(button) & 0x8000) != 0;
+    }
 }

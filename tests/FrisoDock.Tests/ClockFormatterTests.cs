@@ -128,4 +128,26 @@ public sealed class ClockFormatterTests
             Assert.True(formatter.TimeUntilNextTick(instant) > TimeSpan.Zero);
         }
     }
+
+    [Fact]
+    public void DefaultConstructor_FollowsTheCultureOfTheMoment()
+    {
+        // The region can change with the dock running (RegionalFormatService): the culture is
+        // read per call, not captured at construction.
+        CultureInfo original = CultureInfo.CurrentCulture;
+        try
+        {
+            var formatter = new ClockFormatter();
+
+            CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
+            Assert.Equal("21:05", formatter.FormatTime(Instant));
+
+            CultureInfo.CurrentCulture = new CultureInfo("en-US");
+            Assert.Equal("9:05 PM", formatter.FormatTime(Instant));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+    }
 }

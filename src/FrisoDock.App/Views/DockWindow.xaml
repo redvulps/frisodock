@@ -455,11 +455,30 @@
                 </StackPanel>
             </Button>
 
-            <Border Width="{Binding Appearance.ClockBlockWidth}"
+            <!--
+                The clock is the calendar button. The Background moves from the attribute into
+                the style: a local value beats the trigger, and the hover highlight would
+                never show.
+            -->
+            <Border x:Name="ClockBlock"
+                    Width="{Binding Appearance.ClockBlockWidth}"
                     Height="{Binding Appearance.ClockBlockHeight}"
                     Margin="{Binding Appearance.ClockBlockMargin}"
-                    Background="Transparent"
+                    CornerRadius="{Binding Appearance.ItemCornerRadius}"
+                    Cursor="Hand"
+                    MouseLeftButtonDown="OnClockPress"
+                    MouseLeftButtonUp="OnClockClick"
                     ToolTip="{Binding Clock.Tooltip}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <!--
                     Grade, e não pilha: no dock vertical a data vem em cima e a hora embaixo, e a
                     ordem troca pela linha de cada uma em vez de por dois blocos alternativos.

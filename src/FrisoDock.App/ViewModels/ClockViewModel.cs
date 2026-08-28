@@ -71,7 +71,9 @@ public sealed partial class ClockViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnSettingsChanged(object? sender, DockSettingsChangedEventArgs e)
     {
-        if (!e.ClockChanged)
+        // Metrics change when the regional format changes (RegionalFormatService re-measures
+        // the clock): the text has to be re-rendered in the new culture, not only resized.
+        if (!e.ClockChanged && !e.MetricsChanged)
         {
             return;
         }

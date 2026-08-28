@@ -31,6 +31,7 @@ public partial class DockWindow : Window
     private readonly DockViewModel _viewModel;
     private readonly DockPlacementService _placement;
     private readonly IShellRestartWatcher _shellRestartWatcher;
+    private readonly IRegionalFormatWatcher _regionalFormatWatcher;
     private readonly IDisplayWatcher _displayWatcher;
     private readonly IAppBarService _appBar;
     private readonly ITaskbarController _taskbarController;
@@ -38,6 +39,7 @@ public partial class DockWindow : Window
     private readonly JumpListWarmer _jumpListWarmer;
     private readonly TrayFlyoutFactory _trayFlyoutFactory;
     private readonly QuickSettingsFlyoutFactory _quickSettingsFactory;
+    private readonly CalendarFlyoutFactory _calendarFactory;
     private readonly DockSettingsService _settings;
     private readonly SettingsWindowFactory _settingsWindows;
     private readonly IWindowThumbnailService _thumbnails;
@@ -48,11 +50,23 @@ public partial class DockWindow : Window
     private readonly IWindowSwitcherExclusion _switcherExclusion;
     private readonly IWindowActivationPolicy _activationPolicy;
     private readonly IScreenProvider _screens;
+    private readonly ICursorProvider _cursor;
     private readonly DockAutoHide _autoHide;
 
     private JumpListWindow? _jumpList;
     private TrayFlyoutWindow? _trayFlyout;
     private QuickSettingsWindow? _quickSettings;
+    private CalendarFlyoutWindow? _calendar;
+
+    /// <summary>
+    /// Armed when the calendar dismissed itself because the clock was pressed. The release is
+    /// the only half of that click the dock ever sees — the declined activation
+    /// (WS_EX_NOACTIVATE) eats the button-down — and without this mark the release would
+    /// reopen the flyout the press just closed. Measured in the field: press at the clock gave
+    /// "flyout deactivated" and "closed" with no button-down delivered, then the release
+    /// arrived alone 60 ms later.
+    /// </summary>
+    private bool _clockPressDismissesCalendar;
     private SettingsWindow? _settingsWindow;
     private WindowPreviewWindow? _preview;
     private DockItemViewModel? _previewCandidate;
@@ -66,6 +80,7 @@ public partial class DockWindow : Window
         DockViewModel viewModel,
         DockPlacementService placement,
         IShellRestartWatcher shellRestartWatcher,
+        IRegionalFormatWatcher regionalFormatWatcher,
         IDisplayWatcher displayWatcher,
         IAppBarService appBar,
         ITaskbarController taskbarController,
@@ -73,6 +88,7 @@ public partial class DockWindow : Window
         JumpListWarmer jumpListWarmer,
         TrayFlyoutFactory trayFlyoutFactory,
         QuickSettingsFlyoutFactory quickSettingsFactory,
+        CalendarFlyoutFactory calendarFactory,
         DockSettingsService settings,
         SettingsWindowFactory settingsWindows,
         IWindowThumbnailService thumbnails,
@@ -89,6 +105,7 @@ public partial class DockWindow : Window
         _viewModel = viewModel;
         _placement = placement;
         _shellRestartWatcher = shellRestartWatcher;
+        _regionalFormatWatcher = regionalFormatWatcher;
         _displayWatcher = displayWatcher;
         _appBar = appBar;
         _taskbarController = taskbarController;
@@ -96,6 +113,7 @@ public partial class DockWindow : Window
         _jumpListWarmer = jumpListWarmer;
         _trayFlyoutFactory = trayFlyoutFactory;
         _quickSettingsFactory = quickSettingsFactory;
+        _calendarFactory = calendarFactory;
         _settings = settings;
         _settingsWindows = settingsWindows;
         _thumbnails = thumbnails;
@@ -105,6 +123,7 @@ public partial class DockWindow : Window
         _switcherExclusion = switcherExclusion;
         _activationPolicy = activationPolicy;
         _screens = screens;
+        _cursor = cursor;
 
         _autoHide = new DockAutoHide(placement, windowEnumerator, settings, visibilityPolicy, cursor, HasOpenFlyout);
 
@@ -148,6 +167,7 @@ public partial class DockWindow : Window
         CloseJumpList();
         CloseTrayFlyout();
         CloseQuickSettings();
+        CloseCalendar();
         ClosePreview();
 
         _viewModel.LayoutChanged -= OnLayoutChanged;
@@ -204,7 +224,7 @@ public partial class DockWindow : Window
     /// </summary>
     private bool HasOpenPanel()
     {
-        if (_jumpList is not null || _trayFlyout is not null || _quickSettings is not null)
+        if (_jumpList is not null || _trayFlyout is not null || _quickSettings is not null || _calendar is not null)
         {
             return true;
         }
@@ -715,6 +735,7 @@ public partial class DockWindow : Window
 
         CloseJumpList();
         CloseTrayFlyout();
+        CloseCalendar();
         CancelPreview();
 
         if (_quickSettings is not null)
@@ -757,6 +778,97 @@ public partial class DockWindow : Window
     }
 
     /// <summary>
+    /// A delivered press means no flyout was open — when the calendar is open, the declined
+    /// activation eats the button-down and this never runs. Clearing the mark here is what
+    /// keeps it from going stale: a press on the clock that was released elsewhere would
+    /// otherwise swallow the next legitimate click.
+    /// </summary>
+    private void OnClockPress(object sender, MouseButtonEventArgs e)
+    {
+        _clockPressDismissesCalendar = false;
+    }
+
+    /// <summary>
+    /// Opens the calendar where Windows opens its own: over the clock. A second click closes it.
+    /// </summary>
+    private void OnClockClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement anchor)
+        {
+            return;
+        }
+
+        CloseJumpList();
+        CloseTrayFlyout();
+        CloseQuickSettings();
+        CancelPreview();
+
+        if (_calendar is not null)
+        {
+            CloseCalendar();
+            return;
+        }
+
+        if (_clockPressDismissesCalendar)
+        {
+            _clockPressDismissesCalendar = false;
+            return;
+        }
+
+        _calendar = new CalendarFlyoutWindow(
+            _calendarFactory.Create(),
+            FlyoutChrome.GetScreenRect(anchor),
+            _settings.Current.Edge,
+            _backdrop,
+            _positioner,
+            _switcherExclusion,
+            _screens);
+
+        _calendar.Closed += OnCalendarClosed;
+        _calendar.Show();
+        _calendar.Activate();
+    }
+
+    private void OnCalendarClosed(object? sender, EventArgs e)
+    {
+        _calendar = null;
+
+        // The flyout dismissed itself. With the primary button physically down over the clock,
+        // the dismissal came from the clock press whose release is still on its way — mark it so
+        // the release does not reopen what the press just closed. The button state comes from
+        // the cursor provider, not from WPF: the press was eaten by the declined activation and
+        // never reached this thread, so WPF's Mouse still says "released". The button check
+        // keeps an Escape or an Alt+Tab from arming the mark by mere hover.
+        if (_cursor.IsPrimaryButtonPressed() && IsCursorOverClock())
+        {
+            _clockPressDismissesCalendar = true;
+        }
+    }
+
+    /// <summary>In screen pixels, deliberately: the WPF input state is blind to eaten clicks.</summary>
+    private bool IsCursorOverClock()
+    {
+        Core.Models.PixelPoint position = _cursor.GetPosition();
+        Core.Models.PixelRect clock = FlyoutChrome.GetScreenRect(ClockBlock);
+
+        return position.X >= clock.Left && position.X < clock.Right
+            && position.Y >= clock.Top && position.Y < clock.Bottom;
+    }
+
+
+    private void CloseCalendar()
+    {
+        if (_calendar is null)
+        {
+            return;
+        }
+
+        _calendar.Closed -= OnCalendarClosed;
+        _calendar.Close();
+        _calendar = null;
+    }
+
+    /// <summary>
     /// Opens the flyout with the tray icons the dock is hosting.
     /// </summary>
     private void OnTrayButtonClick(object sender, RoutedEventArgs e)
@@ -767,6 +879,7 @@ public partial class DockWindow : Window
         }
 
         CloseJumpList();
+        CloseCalendar();
         CancelPreview();
 
         try
@@ -810,6 +923,7 @@ public partial class DockWindow : Window
     {
         CloseJumpList();
         CloseTrayFlyout();
+        CloseCalendar();
         CancelPreview();
 
         // The jump list is an accessory: an app with a malformed file, a corrupt icon or a
@@ -888,6 +1002,11 @@ public partial class DockWindow : Window
             handled = true;
             return 0;
         }
+
+        // Regional format changed: the reaction belongs to RegionalFormatService, which listens
+        // to the watcher. Deliberately not marked handled — WPF also reads WM_SETTINGCHANGE for
+        // its own system metrics, and swallowing it here would starve them.
+        _regionalFormatWatcher.TryHandle(windowMessage, lParam);
 
         // Resolution or monitor changed: rebuilding the docks belongs to DockHost, which listens to the
         // watcher. The window only forwards the message, because it is the one that receives it.

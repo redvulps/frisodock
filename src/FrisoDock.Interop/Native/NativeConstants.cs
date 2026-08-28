@@ -67,6 +67,13 @@ internal static class NativeConstants
     // --- Icons ---
     internal const uint WM_GETICON = 0x007F;
     internal const uint WM_DISPLAYCHANGE = 0x007E;
+    internal const uint WM_SETTINGCHANGE = 0x001A;
+
+    internal const int VK_LBUTTON = 0x01;
+    internal const int VK_RBUTTON = 0x02;
+
+    /// <summary>Nonzero when the user swapped the mouse buttons in the control panel.</summary>
+    internal const int SM_SWAPBUTTON = 23;
 
     /// <summary>Read, denying writes to others: it is how the shell keeps the file open.</summary>
     internal const uint STGM_READ_SHARE_DENY_WRITE = 0x00000020;

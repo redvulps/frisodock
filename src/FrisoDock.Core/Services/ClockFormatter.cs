@@ -11,10 +11,11 @@ namespace FrisoDock.Core.Services;
 /// </summary>
 public sealed class ClockFormatter
 {
-    private readonly CultureInfo _culture;
+    /// <summary>Fixed culture, for tests; null follows the OS.</summary>
+    private readonly CultureInfo? _culture;
 
+    /// <summary>Follows the user's culture of the moment.</summary>
     public ClockFormatter()
-        : this(CultureInfo.CurrentCulture)
     {
     }
 
@@ -22,6 +23,13 @@ public sealed class ClockFormatter
     {
         _culture = culture;
     }
+
+    /// <summary>
+    /// Read on every call, not captured at construction: it is what lets a regional format
+    /// change apply with the dock running, once the .NET culture cache is cleared
+    /// (RegionalFormatService). A captured culture would survive the cache clear.
+    /// </summary>
+    private CultureInfo Culture => _culture ?? CultureInfo.CurrentCulture;
 
     /// <summary>
     /// Time, with or without the seconds.
@@ -32,22 +40,22 @@ public sealed class ClockFormatter
     public string FormatTime(DateTimeOffset instant, bool includeSeconds = false)
     {
         string pattern = includeSeconds
-            ? _culture.DateTimeFormat.LongTimePattern
-            : _culture.DateTimeFormat.ShortTimePattern;
+            ? Culture.DateTimeFormat.LongTimePattern
+            : Culture.DateTimeFormat.ShortTimePattern;
 
-        return instant.ToString(pattern, _culture);
+        return instant.ToString(pattern, Culture);
     }
 
     /// <summary>Short date.</summary>
     public string FormatDate(DateTimeOffset instant)
     {
-        return instant.ToString(_culture.DateTimeFormat.ShortDatePattern, _culture);
+        return instant.ToString(Culture.DateTimeFormat.ShortDatePattern, Culture);
     }
 
     /// <summary>Long date, for the tooltip that appears on hover.</summary>
     public string FormatTooltip(DateTimeOffset instant)
     {
-        return instant.ToString(_culture.DateTimeFormat.LongDatePattern, _culture);
+        return instant.ToString(Culture.DateTimeFormat.LongDatePattern, Culture);
     }
 
     /// <summary>

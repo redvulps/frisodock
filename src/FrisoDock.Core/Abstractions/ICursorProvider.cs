@@ -12,4 +12,13 @@ namespace FrisoDock.Core.Abstractions;
 public interface ICursorProvider
 {
     PixelPoint GetPosition();
+
+    /// <summary>
+    /// Whether the primary mouse button is physically down right now.
+    ///
+    /// It exists because the window input state is not enough: a press that dismisses a flyout
+    /// through the declined activation never enters the message queue, so the thread-synchronized
+    /// state keeps saying "released" while the finger is still on the button.
+    /// </summary>
+    bool IsPrimaryButtonPressed();
 }
