@@ -4,6 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!--
+      The neutral Strings.resx is English, so a lookup in English does not go looking for a
+      satellite assembly that will never exist. The translations ship as satellites, in
+      pt/ and es/ next to the executable.
+    -->
+    <NeutralResourcesLanguage>en</NeutralResourcesLanguage>
   </PropertyGroup>
 
 </Project>
