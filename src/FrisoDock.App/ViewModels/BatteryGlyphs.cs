@@ -29,9 +29,11 @@ public static class BatteryGlyphs
 
     public static string For(BatteryStatus battery)
     {
+        // The bolt stands for "plugged in", and not for "charging right now" — it is what the native
+        // panel does, and it is what BatteryStatus carries.
         Series series = battery switch
         {
-            { IsCharging: true } => Charging,
+            { IsPluggedIn: true } => Charging,
             { IsSaverOn: true } => Saver,
             _ => Discharging,
         };

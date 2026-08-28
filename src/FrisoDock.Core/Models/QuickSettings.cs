@@ -23,9 +23,13 @@ public readonly record struct RadioStatus(RadioDeviceKind Kind, bool IsOn, bool 
 /// </summary>
 /// <param name="HasBattery">False on desktops, where the tile must not appear.</param>
 /// <param name="Percent">Remaining charge, from 0 to 100.</param>
-/// <param name="IsCharging">Whether it is charging right now.</param>
+/// <param name="IsPluggedIn">
+/// Whether it is plugged in — and not whether it is charging right now. They are different things:
+/// near the end of the charge Windows stops charging and stays on AC power, and that is when the
+/// charging flag would say "no" with the cable in. The native panel shows the bolt for AC, not charge.
+/// </param>
 /// <param name="IsSaverOn">Whether battery saver is on.</param>
-public readonly record struct BatteryStatus(bool HasBattery, int Percent, bool IsCharging, bool IsSaverOn)
+public readonly record struct BatteryStatus(bool HasBattery, int Percent, bool IsPluggedIn, bool IsSaverOn)
 {
     public static BatteryStatus None => new(false, 0, false, false);
 }

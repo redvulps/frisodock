@@ -89,6 +89,10 @@ internal static class NativeConstants
     /// <summary>Unknown percentage in SYSTEM_POWER_STATUS.BatteryLifePercent.</summary>
     internal const byte BATTERY_PERCENT_UNKNOWN = 255;
 
+    // --- GetSystemPowerStatus: ACLineStatus ---
+    internal const byte AC_LINE_STATUS_ONLINE = 1;
+    internal const byte AC_LINE_STATUS_UNKNOWN = 255;
+
     /// <summary>The "stream" element type in a compound file's enumerator.</summary>
     internal const uint STGTY_STREAM = 2;
     internal const nint ICON_SMALL = 0;

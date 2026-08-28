@@ -20,9 +20,9 @@ public sealed class BatteryGlyphsTests
     private const int SaverFirst = 0xE863;
     private const int SaverLast = 0xE86B;
 
-    private static BatteryStatus Battery(int percent, bool charging = false, bool saver = false)
+    private static BatteryStatus Battery(int percent, bool pluggedIn = false, bool saver = false)
     {
-        return new BatteryStatus(HasBattery: true, percent, charging, saver);
+        return new BatteryStatus(HasBattery: true, percent, pluggedIn, saver);
     }
 
     private static int Code(BatteryStatus battery)
@@ -53,17 +53,17 @@ public sealed class BatteryGlyphsTests
     }
 
     [Fact]
-    public void Charging_HasItsOwnSeries()
+    public void PluggedIn_HasItsOwnSeries()
     {
-        Assert.Equal(0xE85E, Code(Battery(50, charging: true)));
+        Assert.Equal(0xE85E, Code(Battery(50, pluggedIn: true)));
     }
 
     [Fact]
-    public void Charging_BeatsTheSaver()
+    public void PluggedIn_BeatsTheSaver()
     {
-        // Plugged in, what matters is that it is charging; the saver stays on but the
-        // icon that says the most is the charging one.
-        Assert.Equal(0xE85E, Code(Battery(50, charging: true, saver: true)));
+        // Plugged in, what matters is the socket; the saver stays on, but the icon that
+        // says the most is the bolt one.
+        Assert.Equal(0xE85E, Code(Battery(50, pluggedIn: true, saver: true)));
     }
 
     [Fact]
@@ -80,11 +80,11 @@ public sealed class BatteryGlyphsTests
     [InlineData(false, false, DischargingFirst, DischargingLast)]
     [InlineData(true, false, ChargingFirst, ChargingLast)]
     [InlineData(false, true, SaverFirst, SaverLast)]
-    public void AnyCharge_StaysInsideTheSeries(bool charging, bool saver, int first, int last)
+    public void AnyCharge_StaysInsideTheSeries(bool pluggedIn, bool saver, int first, int last)
     {
         for (var percent = -20; percent <= 220; percent++)
         {
-            Assert.InRange(Code(Battery(percent, charging, saver)), first, last);
+            Assert.InRange(Code(Battery(percent, pluggedIn, saver)), first, last);
         }
     }
 
@@ -93,10 +93,10 @@ public sealed class BatteryGlyphsTests
     [InlineData(false, false, DischargingFirst, DischargingLast)]
     [InlineData(true, false, ChargingFirst, ChargingLast)]
     [InlineData(false, true, SaverFirst, SaverLast)]
-    public void EmptyAndFull_LandOnTheEndsOfTheSeries(bool charging, bool saver, int first, int last)
+    public void EmptyAndFull_LandOnTheEndsOfTheSeries(bool pluggedIn, bool saver, int first, int last)
     {
-        Assert.Equal(first, Code(Battery(0, charging, saver)));
-        Assert.Equal(last, Code(Battery(100, charging, saver)));
+        Assert.Equal(first, Code(Battery(0, pluggedIn, saver)));
+        Assert.Equal(last, Code(Battery(100, pluggedIn, saver)));
     }
 
     /// <summary>The charge rises, the icon never falls — and it covers the whole series, with no dead step.</summary>
