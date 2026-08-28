@@ -386,9 +386,17 @@
                             Visibility="{Binding HasBattery, Converter={StaticResource BooleanToVisibility}}"
                             ToolTip="Energia e bateria">
                         <StackPanel Orientation="Horizontal">
+                            <!--
+                                Maior que os outros glifos do painel, e não por capricho: a
+                                bateria é um retângulo deitado, então no mesmo corpo de fonte
+                                ela ocupa quase metade da altura de um ícone quadrado. Medida a
+                                tinta no painel nativo, o ícone dele tem 20x13 px; no corpo 17
+                                o nosso tinha 13,8x7,4. Em 24 a série do raio dá 21,6x13,3 e a
+                                comum 19,5x10,5 — as duas encostam no nativo.
+                            -->
                             <TextBlock Text="{Binding BatteryGlyph}"
                                        Style="{StaticResource TileGlyphStyle}"
-                                       FontSize="17" />
+                                       FontSize="24" />
                             <TextBlock Text="{Binding BatteryText}"
                                        Foreground="{StaticResource TextBrush}"
                                        FontSize="12"
