@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 
 namespace FrisoDock.App.ViewModels;
 
@@ -73,7 +74,7 @@ public sealed class TrayFlyoutViewModel
     public bool IsEmpty => Icons.Count == 0;
 
     /// <summary>Text shown when no app has registered an icon.</summary>
-    public string EmptyMessage => "Nenhum ícone na bandeja";
+    public string EmptyMessage => Strings.TrayEmpty;
 
     public Visibility EmptyMessageVisibility => IsEmpty ? Visibility.Visible : Visibility.Collapsed;
 

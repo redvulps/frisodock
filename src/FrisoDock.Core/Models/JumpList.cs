@@ -1,3 +1,5 @@
+using FrisoDock.Core.Resources;
+
 namespace FrisoDock.Core.Models;
 
 /// <summary>Nature of a jump list category, as written by the app.</summary>
@@ -73,7 +75,7 @@ public sealed record JumpListCategory(
     /// </summary>
     public string DisplayTitle => Kind switch
     {
-        JumpListCategoryKind.Tasks => "Tarefas",
+        JumpListCategoryKind.Tasks => Strings.JumpListTasks,
         _ => Name ?? string.Empty,
     };
 

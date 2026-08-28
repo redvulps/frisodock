@@ -1,6 +1,7 @@
 ﻿<Window x:Class="FrisoDock.App.Views.DockWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:FrisoDock.App.Localization"
         xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
         mc:Ignorable="d"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -279,29 +280,29 @@
         -->
         <Border.ContextMenu>
             <ContextMenu Style="{StaticResource DockContextMenuStyle}">
-                <MenuItem Header="Posição do dock"
+                <MenuItem Header="{loc:Tr MenuDockPosition}"
                           Style="{StaticResource DockSubmenuHeaderStyle}">
-                    <MenuItem Header="Inferior"
+                    <MenuItem Header="{loc:Tr EdgeBottom}"
                               Style="{StaticResource DockRadioMenuItemStyle}"
                               IsChecked="{Binding IsEdgeBottom, Mode=OneTime}"
                               Click="OnEdgeBottomMenuClick" />
-                    <MenuItem Header="Superior"
+                    <MenuItem Header="{loc:Tr EdgeTop}"
                               Style="{StaticResource DockRadioMenuItemStyle}"
                               IsChecked="{Binding IsEdgeTop, Mode=OneTime}"
                               Click="OnEdgeTopMenuClick" />
-                    <MenuItem Header="Esquerda"
+                    <MenuItem Header="{loc:Tr EdgeLeft}"
                               Style="{StaticResource DockRadioMenuItemStyle}"
                               IsChecked="{Binding IsEdgeLeft, Mode=OneTime}"
                               Click="OnEdgeLeftMenuClick" />
-                    <MenuItem Header="Direita"
+                    <MenuItem Header="{loc:Tr EdgeRight}"
                               Style="{StaticResource DockRadioMenuItemStyle}"
                               IsChecked="{Binding IsEdgeRight, Mode=OneTime}"
                               Click="OnEdgeRightMenuClick" />
                 </MenuItem>
-                <MenuItem Header="Configurações…"
+                <MenuItem Header="{loc:Tr MenuSettings}"
                           Style="{StaticResource DockMenuItemStyle}"
                           Click="OnSettingsMenuClick" />
-                <MenuItem Header="Sair do FrisoDock"
+                <MenuItem Header="{loc:Tr MenuExit}"
                           Style="{StaticResource DockMenuItemStyle}"
                           Command="{Binding ExitCommand}" />
             </ContextMenu>
@@ -322,7 +323,7 @@
             <Button x:Name="StartButton"
                     Style="{StaticResource DockButtonStyle}"
                     PreviewMouseLeftButtonDown="OnStartButtonMouseDown"
-                    ToolTip="Iniciar">
+                    ToolTip="{loc:Tr DockStart}">
                 <Path Width="{Binding Appearance.IconImageSize}"
                       Height="{Binding Appearance.IconImageSize}"
                       Stretch="Uniform"
@@ -414,7 +415,7 @@
             <Button x:Name="TrayButton"
                     Style="{StaticResource DockButtonStyle}"
                     Click="OnTrayButtonClick"
-                    ToolTip="Ícones da bandeja">
+                    ToolTip="{loc:Tr DockTrayIcons}">
                 <TextBlock Text="&#xE70E;"
                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                            FontSize="13"

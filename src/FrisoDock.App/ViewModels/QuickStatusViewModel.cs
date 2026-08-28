@@ -1,7 +1,9 @@
+using System.Globalization;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 
 namespace FrisoDock.App.ViewModels;
 
@@ -43,7 +45,7 @@ public sealed partial class QuickStatusViewModel : ObservableObject, IDisposable
     private bool _hasBattery;
 
     [ObservableProperty]
-    private string _tooltip = "Configurações rápidas";
+    private string _tooltip = Strings.QuickTitle;
 
     public QuickStatusViewModel(IVolumeController volume, IBatteryProvider battery, INetworkProvider network)
     {
@@ -104,16 +106,18 @@ public sealed partial class QuickStatusViewModel : ObservableObject, IDisposable
 
     private static string BuildTooltip(NetworkStatus network, VolumeStatus volume, BatteryStatus battery)
     {
-        var parts = new List<string> { network.Name ?? "Sem conexão" };
+        var parts = new List<string> { network.Name ?? Strings.QuickNoConnection };
 
         if (volume.IsAvailable)
         {
-            parts.Add(volume.IsMuted ? "Mudo" : $"Volume {volume.Level}%");
+            parts.Add(volume.IsMuted
+                ? Strings.QuickMuted
+                : string.Format(CultureInfo.CurrentCulture, Strings.QuickVolumeFormat, volume.Level));
         }
 
         if (battery.HasBattery)
         {
-            parts.Add($"Bateria {battery.Percent}%");
+            parts.Add(string.Format(CultureInfo.CurrentCulture, Strings.QuickBatteryFormat, battery.Percent));
         }
 
         return string.Join("  ·  ", parts);
