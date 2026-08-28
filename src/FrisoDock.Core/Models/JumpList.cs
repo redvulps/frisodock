@@ -2,7 +2,14 @@ using FrisoDock.Core.Resources;
 
 namespace FrisoDock.Core.Models;
 
-/// <summary>Nature of a jump list category, as written by the app.</summary>
+/// <summary>
+/// Nature of a jump list category.
+///
+/// The first three values are the ones written in the tasks file, and are read straight off it:
+/// they are the on-disk format, and cannot be renumbered. The ones after come from the recents
+/// file, which has no field for this — there the grouping is ours, and the value only has to be
+/// one the file never carries.
+/// </summary>
 public enum JumpListCategoryKind
 {
     /// <summary>Category named by the app itself (e.g. "Most visited").</summary>
@@ -13,6 +20,12 @@ public enum JumpListCategoryKind
 
     /// <summary>App tasks. Windows labels this section "Tasks".</summary>
     Tasks = 2,
+
+    /// <summary>What the user pinned to the app's jump list.</summary>
+    Pinned = 3,
+
+    /// <summary>What the user opened recently in the app.</summary>
+    Recent = 4,
 }
 
 /// <summary>
@@ -70,12 +83,18 @@ public sealed record JumpListCategory(
     IReadOnlyList<JumpListEntry> Entries)
 {
     /// <summary>
-    /// Label to display. Task categories carry no name in the file — Windows itself
-    /// writes "Tasks" there, and the dock does the same to match.
+    /// Label to display.
+    ///
+    /// The categories Windows names itself carry no name in the file, and the dock names them to
+    /// match. Resolving here, and not where the category is built, is what keeps them out of the
+    /// jump list cache: a label stored at parse time would stay in the previous language until
+    /// the destinations file changed. Only the name the app wrote is passed through.
     /// </summary>
     public string DisplayTitle => Kind switch
     {
         JumpListCategoryKind.Tasks => Strings.JumpListTasks,
+        JumpListCategoryKind.Pinned => Strings.JumpListPinned,
+        JumpListCategoryKind.Recent => Strings.JumpListRecent,
         _ => Name ?? string.Empty,
     };
 

@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using FrisoDock.Core.Models;
-using FrisoDock.Core.Resources;
 using FrisoDock.Core.Services;
 using FrisoDock.Interop.Native;
 
@@ -123,12 +122,12 @@ public sealed class AutomaticDestinationsParser
 
         if (pinned.Count > 0)
         {
-            categories.Add(new JumpListCategory(JumpListCategoryKind.Custom, Strings.JumpListPinned, pinned));
+            categories.Add(new JumpListCategory(JumpListCategoryKind.Pinned, Name: null, pinned));
         }
 
         if (recent.Count > 0)
         {
-            categories.Add(new JumpListCategory(JumpListCategoryKind.Custom, Strings.JumpListRecent, recent));
+            categories.Add(new JumpListCategory(JumpListCategoryKind.Recent, Name: null, recent));
         }
 
         return new JumpList(categories);
