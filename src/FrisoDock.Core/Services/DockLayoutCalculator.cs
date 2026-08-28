@@ -13,7 +13,11 @@ namespace FrisoDock.Core.Services;
 /// <param name="IconSize">Side of each item's button, the Start one included.</param>
 /// <param name="ItemSpacing">Space before each item.</param>
 /// <param name="Padding">Inner margin of the panel.</param>
-/// <param name="EdgeMargin">Distance between the panel and the screen edge.</param>
+/// <param name="EdgeMargin">
+/// Gap in the dock thickness, and it applies to both ends: between the panel and the screen edge,
+/// and between the panel and the work area left for the windows. A single measure because the two
+/// are the same thing seen from each side — the panel sits equally free.
+/// </param>
 /// <param name="BorderThickness">Thickness of the panel border.</param>
 /// <param name="SeparatorWidth">Thickness of the line that separates the blocks.</param>
 /// <param name="SeparatorSpacing">Space on each side of the separator.</param>
@@ -48,7 +52,7 @@ public sealed record DockMetrics(
     int IconSize = 44,
     int ItemSpacing = 8,
     int Padding = 8,
-    int EdgeMargin = 6,
+    int EdgeMargin = 1,
     int BorderThickness = 1,
     int SeparatorWidth = 1,
     int SeparatorSpacing = 6,
@@ -102,8 +106,13 @@ public sealed record DockMetrics(
     /// <summary>Thickness of the visible panel (height, when anchored at the bottom).</summary>
     public int PanelThickness => ContentThickness + (Padding * 2) + (BorderThickness * 2);
 
-    /// <summary>Thickness reserved on screen: the panel plus the gap to the edge.</summary>
-    public int ReservedThickness => PanelThickness + EdgeMargin;
+    /// <summary>
+    /// Thickness reserved on screen: the panel plus the gap at both ends.
+    ///
+    /// There are two, not one: the outer separates the panel from the screen edge, the inner keeps
+    /// a maximized window from touching it.
+    /// </summary>
+    public int ReservedThickness => PanelThickness + (EdgeMargin * 2);
 
     /// <summary>
     /// How far the dock has to move off screen to be hidden.

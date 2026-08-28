@@ -37,12 +37,16 @@ public sealed class DockMetricsTests
         Assert.Equal(40 + (10 * 2) + (1 * 2), metrics.PanelThickness);
     }
 
+    /// <summary>
+    /// The gap counts twice: once between the panel and the screen edge, once between the panel and the
+    /// work area, so a maximized window does not touch it.
+    /// </summary>
     [Fact]
-    public void ReservedThickness_IsThePanelPlusTheEdgeMargin()
+    public void ReservedThickness_IsThePanelPlusTheGapAtBothEnds()
     {
         var metrics = new DockMetrics(IconSize: 40, Padding: 10, EdgeMargin: 5, BorderThickness: 1);
 
-        Assert.Equal(metrics.PanelThickness + 5, metrics.ReservedThickness);
+        Assert.Equal(metrics.PanelThickness + (5 * 2), metrics.ReservedThickness);
     }
 
     [Fact]

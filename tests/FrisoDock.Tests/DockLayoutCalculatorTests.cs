@@ -173,15 +173,44 @@ public sealed class DockLayoutCalculatorTests
     }
 
     [Fact]
-    public void CalculateReservationRect_ReservesThePanelPlusTheEdgeMargin()
+    public void CalculateReservationRect_ReservesThePanelPlusTheGapAtBothEnds()
     {
         MonitorInfo monitor = CreateMonitor(1920, 1080);
 
         PixelRect reservation = _calculator.CalculateReservationRect(monitor, DockEdge.Bottom, Metrics);
 
-        Assert.Equal(PanelThickness + 5, Metrics.ReservedThickness);
-        Assert.Equal(PanelThickness + 5, reservation.Height);
+        Assert.Equal(PanelThickness + (5 * 2), Metrics.ReservedThickness);
+        Assert.Equal(PanelThickness + (5 * 2), reservation.Height);
         Assert.Equal(1080, reservation.Bottom);
+    }
+
+    /// <summary>
+    /// The panel sits equally free: the gap appears between it and the screen edge, and again
+    /// between it and the work area. Without the second, a maximized window would touch the dock.
+    /// </summary>
+    [Theory]
+    [InlineData(DockEdge.Bottom)]
+    [InlineData(DockEdge.Top)]
+    [InlineData(DockEdge.Left)]
+    [InlineData(DockEdge.Right)]
+    public void TheGapAppearsAtBothEndsOfTheThickness(DockEdge edge)
+    {
+        MonitorInfo monitor = CreateMonitor(1920, 1080);
+
+        PixelRect panel = _calculator.CalculatePanelRect(monitor, edge, itemCount: 3, Metrics);
+        PixelRect reservation = _calculator.CalculateReservationRect(monitor, edge, Metrics);
+        PixelRect screen = monitor.Bounds;
+
+        (int toScreenEdge, int toWorkArea) = edge switch
+        {
+            DockEdge.Bottom => (screen.Bottom - panel.Bottom, panel.Top - reservation.Top),
+            DockEdge.Top => (panel.Top - screen.Top, reservation.Bottom - panel.Bottom),
+            DockEdge.Left => (panel.Left - screen.Left, reservation.Right - panel.Right),
+            _ => (screen.Right - panel.Right, panel.Left - reservation.Left),
+        };
+
+        Assert.Equal(5, toScreenEdge);
+        Assert.Equal(5, toWorkArea);
     }
 
     [Fact]
