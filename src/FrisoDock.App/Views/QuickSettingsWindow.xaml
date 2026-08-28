@@ -30,18 +30,52 @@
 
         <SolidColorBrush x:Key="TextBrush" Color="#F3F3F3" />
         <SolidColorBrush x:Key="MutedBrush" Color="#A0A0A0" />
-        <SolidColorBrush x:Key="TileBrush" Color="#2E2E2E" />
+        <!--
+            As superfícies do painel são véus de branco, e não cores opacas. É assim que o
+            Windows 11 as define, e é o que faz o bloco continuar visível quando o acrílico
+            atrás dele muda: uma cor opaca igual à do painel some dentro dele, que foi
+            exatamente o que aconteceu quando o painel escureceu.
+
+            As porcentagens saíram da captura do painel nativo, medidas contra o fundo dele
+            (#292A30): bloco #36363C é branco a 6%, e o traço #45454B é branco a 13%.
+        -->
+        <SolidColorBrush x:Key="TileBrush" Color="#0FFFFFFF" />
+        <SolidColorBrush x:Key="TileStrokeBrush" Color="#21FFFFFF" />
         <SolidColorBrush x:Key="TileHoverBrush" Color="#3A3A3A" />
-        <SolidColorBrush x:Key="TrackBrush" Color="#4A4A4A" />
+        <SolidColorBrush x:Key="TrackBrush" Color="#22FFFFFF" />
         <SolidColorBrush x:Key="HoverBrush" Color="#1AFFFFFF" />
-        <SolidColorBrush x:Key="DividerBrush" Color="#26000000" />
+
+        <!--
+            Medidos na captura do painel nativo, contra o fundo #292A30 dele: a linha que separa
+            a grade dos controles é #3A3B40, ou seja branco a 8%; a faixa do rodapé é #212226,
+            que é o painel multiplicado por 0,80 — preto a 20%, e não uma cor própria.
+        -->
+        <SolidColorBrush x:Key="SeparatorBrush" Color="#15FFFFFF" />
+        <SolidColorBrush x:Key="FooterBrush" Color="#33000000" />
+
+        <!--
+            Véu sobre o acrílico. O material que o DWM oferece a janelas transitórias é o dos
+            menus, mais claro que o do painel de ações do Windows 11: medido, o nosso dava
+            #545454 e o nativo fica em #292A30.
+
+            O véu não é preto puro: o fundo nativo puxa para o azul (B > G > R), e preto puro
+            deixava o painel num cinza chapado. Com #16171F a 70% o painel cai em #292A2F, que
+            é o do Windows, e o desfoque do acrílico continua aparecendo por baixo.
+        -->
+        <SolidColorBrush x:Key="ScrimBrush" Color="#B316171F" />
 
         <!--
             Metade de um bloco. O fundo acende quando o recurso está ligado, que é o que o painel
             do Windows faz — a cor é a única coisa que diz se o Wi-Fi está no ar.
         -->
         <Style x:Key="TileHalfStyle" TargetType="Button">
-            <Setter Property="BorderThickness" Value="0" />
+            <!--
+                O traço de 1px em cada metade dá de graça o divisor do meio, que fica com 2px
+                porque as duas metades encostam — é a mesma proporção do painel nativo, medida
+                nele: 1px nas bordas de fora, 2px entre a metade do ícone e a da seta.
+            -->
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{StaticResource TileStrokeBrush}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
@@ -51,6 +85,8 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Root"
                                 Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="{Binding (views:ButtonCorner.Radius), RelativeSource={RelativeSource TemplatedParent}}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
@@ -78,6 +114,14 @@
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="FontSize" Value="17" />
             <Setter Property="Width" Value="28" />
+            <!--
+                HorizontalAlignment centraliza o elemento, não o texto dentro dele. Com a caixa
+                fixa em 28 e o avanço do glifo em 17, o texto ficava encostado à esquerda, e o
+                ícone do brilho saía 5 px à esquerda do ícone do mudo, que é centralizado pelo
+                botão que o envolve. Medido: centros da tinta em 12,5 e 17,5; com esta linha,
+                18,0 e 17,5 — a mesma diferença de meio pixel que o painel nativo tem.
+            -->
+            <Setter Property="TextAlignment" Value="Center" />
         </Style>
 
         <!-- Chromeless button, for mute and the gear. -->
@@ -115,6 +159,15 @@
 
         <!-- Slider in the Windows 11 shape: thin track, round thumb. -->
         <Style x:Key="QuickSliderStyle" TargetType="Slider">
+            <!--
+                A folga é do deslizante, e não dos botões ao lado. No extremo da faixa o polegar
+                encosta na borda do próprio Slider: com o volume em 100% ele grudava no botão de
+                dispositivos, e com o volume em 0 grudaria no do mudo. Pôr a margem nos botões
+                resolveria o encosto e quebraria o alinhamento — as colunas dos ícones são
+                compartilhadas entre as duas linhas, e engordar a do volume deslocaria o ícone
+                do brilho, que fica centralizado na coluna.
+            -->
+            <Setter Property="Margin" Value="8,0" />
             <Setter Property="Minimum" Value="0" />
             <Setter Property="Maximum" Value="100" />
             <Setter Property="IsMoveToPointEnabled" Value="True" />
@@ -171,168 +224,187 @@
 
     </Window.Resources>
 
-    <Border Padding="12" Width="360">
+    <!--
+        O raio acompanha o dos cantos que o DWM arredonda: o véu é pintado pelo WPF, e um
+        retângulo cheio quadraria as pontas do painel.
+    -->
+    <Border Width="360" Background="{StaticResource ScrimBrush}" CornerRadius="8">
         <StackPanel>
 
-            <!-- Tiles, three per row, as in the Windows panel. -->
-            <ItemsControl ItemsSource="{Binding Tiles}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="3" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
+            <!--
+                A folga é do conteúdo, e não do painel: a faixa do rodapé sangra até a borda,
+                como no painel nativo, e um Padding no Border a impediria de chegar lá.
+            -->
+            <StackPanel Margin="12,12,12,16" Grid.IsSharedSizeScope="True">
 
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:QuickTileViewModel}">
-                        <StackPanel Margin="4,4,4,10">
-                            <Grid Height="48" IsEnabled="{Binding IsAvailable}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                <!-- Tiles, three per row, as in the Windows panel. -->
+                <ItemsControl ItemsSource="{Binding Tiles}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
 
-                                <!--
-                                    O raio vai em cada metade, e não num Border em volta: só assim
-                                    o bloco partido fecha as pontas de fora e mantém reta a linha
-                                    do meio, que é a forma do painel do Windows.
-                                -->
-                                <Button x:Name="ToggleHalf"
-                                        Grid.Column="0"
-                                        views:ButtonCorner.Radius="6"
-                                        Style="{StaticResource TileHalfStyle}"
-                                        Command="{Binding ToggleCommand}">
-                                    <TextBlock Text="{Binding Glyph}" Style="{StaticResource TileGlyphStyle}" />
-                                </Button>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:QuickTileViewModel}">
+                            <StackPanel Margin="4,4,4,10">
+                                <Grid Height="48" IsEnabled="{Binding IsAvailable}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                <Button x:Name="ChevronHalf"
-                                        Grid.Column="1"
-                                        Width="28"
-                                        views:ButtonCorner.Radius="0,6,6,0"
-                                        Style="{StaticResource TileHalfStyle}"
-                                        Command="{Binding NavigateCommand}"
-                                        Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}">
-                                    <TextBlock Text="&#xE76C;" Style="{StaticResource TileGlyphStyle}" FontSize="12" />
-                                </Button>
+                                    <!--
+                                        O raio vai em cada metade, e não num Border em volta: só assim
+                                        o bloco partido fecha as pontas de fora e mantém reta a linha
+                                        do meio, que é a forma do painel do Windows.
+                                    -->
+                                    <Button x:Name="ToggleHalf"
+                                            Grid.Column="0"
+                                            views:ButtonCorner.Radius="6"
+                                            Style="{StaticResource TileHalfStyle}"
+                                            Command="{Binding ToggleCommand}">
+                                        <TextBlock Text="{Binding Glyph}" Style="{StaticResource TileGlyphStyle}" />
+                                    </Button>
 
-                                <Rectangle x:Name="Divider"
-                                           Grid.Column="1"
-                                           Width="1"
-                                           HorizontalAlignment="Left"
-                                           Fill="{StaticResource DividerBrush}"
-                                           Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}" />
-                            </Grid>
+                                    <Button x:Name="ChevronHalf"
+                                            Grid.Column="1"
+                                            Width="28"
+                                            views:ButtonCorner.Radius="0,6,6,0"
+                                            Style="{StaticResource TileHalfStyle}"
+                                            Command="{Binding NavigateCommand}"
+                                            Visibility="{Binding HasChevron, Converter={StaticResource BooleanToVisibility}}">
+                                        <TextBlock Text="&#xE76C;" Style="{StaticResource TileGlyphStyle}" FontSize="12" />
+                                    </Button>
 
-                            <TextBlock Text="{Binding DisplayLabel}"
-                                       Foreground="{StaticResource TextBrush}"
-                                       FontSize="12"
-                                       TextWrapping="Wrap"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxHeight="34"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center"
-                                       Margin="0,6,0,0" />
-                        </StackPanel>
+                                </Grid>
 
-                        <DataTemplate.Triggers>
-                            <!-- Split tile: the bottom half loses the right corners, which now belong to the chevron. -->
-                            <DataTrigger Binding="{Binding HasChevron}" Value="True">
-                                <Setter TargetName="ToggleHalf" Property="views:ButtonCorner.Radius" Value="6,0,0,6" />
-                            </DataTrigger>
+                                <TextBlock Text="{Binding DisplayLabel}"
+                                           Foreground="{StaticResource TextBrush}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxHeight="34"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           Margin="0,6,0,0" />
+                            </StackPanel>
 
-                            <DataTrigger Binding="{Binding IsOn}" Value="True">
-                                <Setter TargetName="ToggleHalf" Property="Background" Value="{DynamicResource AccentBrush}" />
-                                <Setter TargetName="ToggleHalf" Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
-                                <Setter TargetName="ChevronHalf" Property="Background" Value="{DynamicResource AccentBrush}" />
-                                <Setter TargetName="ChevronHalf" Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                            <DataTemplate.Triggers>
+                                <!-- Split tile: the bottom half loses the right corners, which now belong to the chevron. -->
+                                <DataTrigger Binding="{Binding HasChevron}" Value="True">
+                                    <Setter TargetName="ToggleHalf" Property="views:ButtonCorner.Radius" Value="6,0,0,6" />
+                                </DataTrigger>
 
-            <!-- Brilho -->
-            <Grid Margin="4,6,4,0" Visibility="{Binding IsBrightnessAvailable, Converter={StaticResource BooleanToVisibility}}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+                                <DataTrigger Binding="{Binding IsOn}" Value="True">
+                                    <Setter TargetName="ToggleHalf" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="ToggleHalf" Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+                                    <Setter TargetName="ChevronHalf" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="ChevronHalf" Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                <TextBlock Grid.Column="0" Text="&#xE706;" Style="{StaticResource SliderGlyphStyle}" />
-                <Slider Grid.Column="1"
-                        Style="{StaticResource QuickSliderStyle}"
-                        Value="{Binding BrightnessLevel, Mode=TwoWay}" />
-            </Grid>
+                <Rectangle Height="1" Fill="{StaticResource SeparatorBrush}" Margin="4,4,4,10" />
 
-            <!-- Volume -->
-            <Grid Margin="4,10,4,0" Visibility="{Binding IsVolumeAvailable, Converter={StaticResource BooleanToVisibility}}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                <!--
+                    Brilho. A coluna da direita nasce vazia e existe só para reservar a mesma
+                    largura que o botão de dispositivos ocupa na linha do volume: sem ela o
+                    trilho do brilho ficava 24 px mais comprido que o do volume. Quem iguala as
+                    duas é o SharedSizeGroup, e não um número repetido — a largura continua
+                    sendo a que o botão pedir.
+                -->
+                <Grid Margin="4,6,4,0" Visibility="{Binding IsBrightnessAvailable, Converter={StaticResource BooleanToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="SliderGlyph" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="SliderTrailing" />
+                    </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="28"
-                        Height="28"
-                        Command="{Binding ToggleMuteCommand}"
-                        ToolTip="Mudo">
-                    <TextBlock Text="{Binding IsMuted, Converter={StaticResource MuteGlyph}}"
-                               Style="{StaticResource TileGlyphStyle}"
-                               FontSize="17" />
-                </Button>
+                    <TextBlock Grid.Column="0" Text="&#xE706;" Style="{StaticResource SliderGlyphStyle}" />
+                    <Slider Grid.Column="1"
+                            Style="{StaticResource QuickSliderStyle}"
+                            Value="{Binding BrightnessLevel, Mode=TwoWay}" />
+                </Grid>
 
-                <Slider Grid.Column="1"
-                        Style="{StaticResource QuickSliderStyle}"
-                        Value="{Binding VolumeLevel, Mode=TwoWay}" />
+                <!-- Volume -->
+                <Grid Margin="4,10,4,0" Visibility="{Binding IsVolumeAvailable, Converter={StaticResource BooleanToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="SliderGlyph" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="SliderTrailing" />
+                    </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="2"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="24"
-                        Height="28"
-                        Command="{Binding OpenSoundCommand}"
-                        ToolTip="Dispositivos de som">
-                    <TextBlock Text="&#xE76C;" Style="{StaticResource TileGlyphStyle}" FontSize="12" />
-                </Button>
-            </Grid>
-
-            <Rectangle Height="1" Fill="#1FFFFFFF" Margin="4,12,4,0" />
-
-            <!-- Footer: battery on one side, settings on the other. -->
-            <Grid Margin="4,10,4,2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <Button Grid.Column="0"
-                        HorizontalAlignment="Left"
-                        Style="{StaticResource IconButtonStyle}"
-                        Width="Auto"
-                        Height="28"
-                        Padding="6,0"
-                        Command="{Binding OpenPowerCommand}"
-                        Visibility="{Binding HasBattery, Converter={StaticResource BooleanToVisibility}}"
-                        ToolTip="Energia e bateria">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding BatteryGlyph}"
+                    <Button Grid.Column="0"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="28"
+                            Height="28"
+                            Command="{Binding ToggleMuteCommand}"
+                            ToolTip="Mudo">
+                        <TextBlock Text="{Binding IsMuted, Converter={StaticResource MuteGlyph}}"
                                    Style="{StaticResource TileGlyphStyle}"
                                    FontSize="17" />
-                        <TextBlock Text="{Binding BatteryText}"
-                                   Foreground="{StaticResource TextBrush}"
-                                   FontSize="12"
-                                   VerticalAlignment="Center"
-                                   Margin="6,0,0,0" />
-                    </StackPanel>
-                </Button>
+                    </Button>
 
-                <Button Grid.Column="1"
-                        Style="{StaticResource IconButtonStyle}"
-                        Command="{Binding OpenSettingsCommand}"
-                        ToolTip="Configurações do Windows">
-                    <TextBlock Text="&#xE713;" Style="{StaticResource TileGlyphStyle}" FontSize="16" />
-                </Button>
-            </Grid>
+                    <Slider Grid.Column="1"
+                            Style="{StaticResource QuickSliderStyle}"
+                            Value="{Binding VolumeLevel, Mode=TwoWay}" />
+
+                    <Button Grid.Column="2"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="24"
+                            Height="28"
+                            Command="{Binding OpenSoundCommand}"
+                            ToolTip="Dispositivos de som">
+                        <TextBlock Text="&#xE76C;" Style="{StaticResource TileGlyphStyle}" FontSize="12" />
+                    </Button>
+                </Grid>
+
+            </StackPanel>
+
+            <!--
+                Rodapé: bateria de um lado, configurações do outro, sobre a faixa mais escura.
+                Não há linha separando — no painel nativo a troca de cor da faixa é que separa.
+                O raio fecha só as pontas de baixo, que são as que encostam no canto do painel.
+            -->
+            <Border Background="{StaticResource FooterBrush}" CornerRadius="0,0,8,8" Padding="12,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="Auto"
+                            Height="28"
+                            Padding="6,0"
+                            Command="{Binding OpenPowerCommand}"
+                            Visibility="{Binding HasBattery, Converter={StaticResource BooleanToVisibility}}"
+                            ToolTip="Energia e bateria">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding BatteryGlyph}"
+                                       Style="{StaticResource TileGlyphStyle}"
+                                       FontSize="17" />
+                            <TextBlock Text="{Binding BatteryText}"
+                                       Foreground="{StaticResource TextBrush}"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,0,0" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource IconButtonStyle}"
+                            Command="{Binding OpenSettingsCommand}"
+                            ToolTip="Configurações do Windows">
+                        <TextBlock Text="&#xE713;" Style="{StaticResource TileGlyphStyle}" FontSize="16" />
+                    </Button>
+                </Grid>
+            </Border>
 
         </StackPanel>
     </Border>

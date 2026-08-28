@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
+using FrisoDock.Core.Models;
 
 namespace FrisoDock.App.Views;
 
@@ -27,7 +28,10 @@ public partial class SettingsWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        FlyoutChrome.ApplyAppearance(this, _backdrop);
+        // Mica, and not the flyouts' acrylic: this is the dock's app window, and it is the material
+        // the Windows Settings screen uses — the background pulls the wallpaper color
+        // instead of sitting in a neutral gray.
+        FlyoutChrome.ApplyAppearance(this, _backdrop, WindowBackdropMaterial.MainWindow);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

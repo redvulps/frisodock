@@ -59,7 +59,7 @@ public partial class WindowSwitcherWindow : Window
     {
         base.OnSourceInitialized(e);
 
-        FlyoutChrome.ApplyAppearance(this, _backdrop);
+        FlyoutChrome.ApplyAppearance(this, _backdrop, WindowBackdropMaterial.Flyout);
 
         // The switcher is not a switching destination. Without this it would show up in the native
         // Alt+Tab list itself, which stays active for anyone who turns the option off.

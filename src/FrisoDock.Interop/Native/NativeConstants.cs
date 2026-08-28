@@ -51,6 +51,9 @@ internal static class NativeConstants
 
     internal const int DWMWCP_ROUND = 2;
 
+    /// <summary>Mica: the material of Windows 11 app windows, Settings included.</summary>
+    internal const int DWMSBT_MAINWINDOW = 2;
+
     /// <summary>Transient window acrylic: the material Windows uses in menus and flyouts.</summary>
     internal const int DWMSBT_TRANSIENTWINDOW = 3;
 

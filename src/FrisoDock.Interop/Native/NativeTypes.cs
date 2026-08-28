@@ -22,6 +22,19 @@ internal static class NativeTypes
     internal delegate nint LowLevelKeyboardProc(int code, nint wParam, nint lParam);
 }
 
+/// <summary>
+/// How far the DWM frame advances over the client area. Every field at -1 is the "sheet of
+/// glass": the frame takes the whole window.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct MARGINS
+{
+    public int Left;
+    public int Right;
+    public int Top;
+    public int Bottom;
+}
+
 /// <summary>Payload of each key seen by the low-level hook.</summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct KBDLLHOOKSTRUCT

@@ -163,6 +163,9 @@ internal static class NativeMethods
     internal static extern int DwmSetWindowAttribute(nint windowHandle, int attribute, ref int value, int size);
 
     [DllImport(Dwmapi)]
+    internal static extern int DwmExtendFrameIntoClientArea(nint windowHandle, ref MARGINS margins);
+
+    [DllImport(Dwmapi)]
     internal static extern int DwmRegisterThumbnail(nint destination, nint source, out nint thumbnail);
 
     [DllImport(Dwmapi)]

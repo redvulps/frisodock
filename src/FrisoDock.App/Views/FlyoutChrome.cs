@@ -63,7 +63,7 @@ public sealed class FlyoutChrome
     /// <summary>Asks the DWM for the flyout finish and clears the background so the material shows.</summary>
     public void ApplyAppearance()
     {
-        ApplyAppearance(_window, _backdrop);
+        ApplyAppearance(_window, _backdrop, WindowBackdropMaterial.Flyout);
 
         // A flyout is not an Alt+Tab destination. The settings screen, which uses only the static
         // overload above, stays in the switcher: it is a window worth coming back to.
@@ -72,9 +72,10 @@ public sealed class FlyoutChrome
 
     /// <summary>
     /// The same finish, for windows that are not anchored flyouts — the settings screen,
-    /// for instance, which appears centred but uses the same system material.
+    /// for instance, which appears centred. The material comes from outside because it is not the same
+    /// in all of them: a flyout is acrylic, an app window is mica.
     /// </summary>
-    public static void ApplyAppearance(Window window, IWindowBackdrop backdrop)
+    public static void ApplyAppearance(Window window, IWindowBackdrop backdrop, WindowBackdropMaterial material)
     {
         // The order here is not style, it is a requirement: clear the background first, request the
         // material afterwards. Without this WPF paints an opaque background over the DWM material — and,
@@ -86,7 +87,7 @@ public sealed class FlyoutChrome
         }
 
         nint handle = new WindowInteropHelper(window).Handle;
-        backdrop.ApplyFlyoutAppearance(handle, darkMode: true);
+        backdrop.Apply(handle, material, darkMode: true);
     }
 
     /// <summary>
