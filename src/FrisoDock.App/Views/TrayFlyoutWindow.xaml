@@ -25,6 +25,14 @@
 
     <Window.Resources>
 
+        <!--
+            A veil over the acrylic, as on the jump list and for the same reason: the material
+            the DWM gives transient windows is too light, raw #545454 against the #2D2D2D of
+            the native flyouts. #101010 at 57% takes 84 to 45, which is the exact #2D.
+        -->
+        <SolidColorBrush x:Key="ScrimBrush" Color="#92101010" />
+
+
         <SolidColorBrush x:Key="TextBrush" Color="#F3F3F3" />
         <SolidColorBrush x:Key="MutedBrush" Color="#A0A0A0" />
         <SolidColorBrush x:Key="HoverBrush" Color="#1AFFFFFF" />
@@ -63,7 +71,7 @@
 
     </Window.Resources>
 
-    <Border Padding="8">
+    <Border Padding="8" Background="{StaticResource ScrimBrush}" CornerRadius="8">
         <StackPanel>
 
             <TextBlock Text="{Binding EmptyMessage}"

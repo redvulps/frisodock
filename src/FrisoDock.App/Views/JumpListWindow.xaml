@@ -27,6 +27,16 @@
 
     <Window.Resources>
 
+        <!--
+            A veil over the acrylic, as on the quick settings panel and for the same reason: the
+            material the DWM gives transient windows is too light. Measured on the captures, the
+            native jump list sits at #2D2D2D, neutral, without the action panel blue tint, while
+            ours gave the raw #545454 of the acrylic. #101010 at 57% takes 84 to 45, which is
+            the exact #2D.
+        -->
+        <SolidColorBrush x:Key="ScrimBrush" Color="#92101010" />
+
+
         <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
 
         <SolidColorBrush x:Key="TextBrush" Color="#F3F3F3" />
@@ -104,7 +114,7 @@
 
     </Window.Resources>
 
-    <Border Padding="4" Background="Transparent">
+    <Border Padding="4" Background="{StaticResource ScrimBrush}" CornerRadius="8">
         <ItemsControl ItemsSource="{Binding Sections}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type vm:JumpListSectionViewModel}">
