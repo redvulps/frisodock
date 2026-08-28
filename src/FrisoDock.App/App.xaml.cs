@@ -5,6 +5,7 @@ using FrisoDock.App.ViewModels;
 using FrisoDock.App.Views;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Resources;
 using FrisoDock.Core.Services;
 using FrisoDock.Interop.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,7 @@ public partial class App : Application
     private WindowSwitcherRunner? _windowSwitcher;
     private TrayHostRunner? _trayHost;
     private RegionalFormatService? _regionalFormats;
+    private LanguageService? _languages;
     private Mutex? _singleInstanceMutex;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -46,11 +48,19 @@ public partial class App : Application
             return;
         }
 
+        // Configuration comes from disk; the command line flags are overrides for this session.
+        var settingsStore = new JsonDockSettingsStore();
+        DockSettings settings = options.ApplyTo(settingsStore.Load());
+
+        // Before anything the user can read, the message below included: the language is a
+        // setting of theirs, and a dialog in the wrong language would be the dock's first word.
+        LanguageService.Apply(settings.Language);
+
         if (!TryAcquireSingleInstanceLock())
         {
             // Two instances hiding and showing the taskbar would fight each other.
             MessageBox.Show(
-                "O FrisoDock já está em execução.",
+                Strings.AppAlreadyRunning,
                 "FrisoDock",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -60,10 +70,6 @@ public partial class App : Application
         }
 
         RegisterFailSafeHandlers();
-
-        // Configuration comes from disk; the command line flags are overrides for this session.
-        var settingsStore = new JsonDockSettingsStore();
-        DockSettings settings = options.ApplyTo(settingsStore.Load());
 
         // The clock widths depend on the culture and the system font, which are only known
         // here. Without this measurement, the dock reserves space by a constant that fits one
@@ -87,6 +93,11 @@ public partial class App : Application
             // fixes that at no cost — on an already visible taskbar it does nothing.
             _taskbarController.Restore();
         }
+
+        // Before any window, like the accent brushes: a screen born in the wrong language would
+        // only correct itself on the next change.
+        _languages = _services.GetRequiredService<LanguageService>();
+        _languages.Start();
 
         // Before any window: the accent brushes have to be in the application dictionary
         // by the time the first XAML is loaded, otherwise the first paint comes out with the
@@ -125,6 +136,7 @@ public partial class App : Application
         // system passes through here, and an already torn down dock would have nothing to show.
         _windowSwitcher?.Dispose();
         _regionalFormats?.Dispose();
+        _languages?.Dispose();
         _dockHost?.Dispose();
 
         // Before the restore: the watcher exists to undo reshows, and restoring is
@@ -273,6 +285,7 @@ public partial class App : Application
         services.AddSingleton<SettingsWindowFactory>();
         services.AddSingleton<AccentTheme>();
         services.AddSingleton<RegionalFormatService>();
+        services.AddSingleton<LanguageService>();
 
         // The pinned list is a single one, shared by every dock.
         services.AddSingleton<IPinnedAppsEditor>(provider => provider.GetRequiredService<PinnedAppsService>());

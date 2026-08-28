@@ -77,7 +77,9 @@ public sealed class DockHost : IDisposable
     {
         // Switching edge rebuilds the docks like switching monitor: geometry, panel
         // orientation and appbar edge change together, and the new windows are born correct.
-        if (e.MonitorLayoutChanged || e.EdgeChanged)
+        // The language goes the same way: what the XAML binds follows on its own, but a caption
+        // a view model composed once was already built in the previous language.
+        if (e.MonitorLayoutChanged || e.EdgeChanged || e.LanguageChanged)
         {
             Rebuild();
         }
