@@ -15,6 +15,7 @@ namespace FrisoDock.Tests;
 /// in one language and not in another, or a XAML label pointing at a key nobody wrote. Both come
 /// out as a missing or marked string in front of the user, and both are cheap to catch here.
 /// </summary>
+[Collection(CultureCollection.Name)]
 public sealed class LocalizationTests
 {
     private static readonly string[] TranslatedCultures = ["pt", "es"];
@@ -52,25 +53,17 @@ public sealed class LocalizationTests
     {
         // The region variants are in the list on purpose: the catalogue is filed under the
         // neutral cultures, and it is resource fallback that has to carry pt-PT and es-AR.
-        CultureInfo previous = CultureInfo.CurrentUICulture;
-        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
+        using var culture = new CultureScope(cultureName);
 
-        try
+        foreach (string key in Strings.Keys)
         {
-            foreach (string key in Strings.Keys)
-            {
-                string value = Strings.Get(key);
+            string value = Strings.Get(key);
 
-                Assert.False(string.IsNullOrWhiteSpace(value), key);
+            Assert.False(string.IsNullOrWhiteSpace(value), key);
 
-                // The marker Get uses for a key it did not find. Seeing it here means the
-                // catalogue and the accessor drifted apart.
-                Assert.DoesNotContain('!', value);
-            }
-        }
-        finally
-        {
-            CultureInfo.CurrentUICulture = previous;
+            // The marker Get uses for a key it did not find. Seeing it here means the
+            // catalogue and the accessor drifted apart.
+            Assert.DoesNotContain('!', value);
         }
     }
 
@@ -107,10 +100,37 @@ public sealed class LocalizationTests
     }
 
     [Fact]
-    public void FollowingTheSystemResolvesToTheInstalledLanguage()
+    public void FollowingTheSystemResolvesToTheDisplayLanguage()
     {
-        Assert.Equal(CultureInfo.InstalledUICulture, LanguageService.Resolve(AppLanguage.System));
+        Assert.Equal(LanguageService.SystemUiCulture, LanguageService.Resolve(AppLanguage.System));
         Assert.Equal("pt-BR", LanguageService.Resolve(AppLanguage.PortugueseBrazil).Name);
+    }
+
+    [Fact]
+    public void TheSystemLanguageIsTheOneTheProcessStartedIn()
+    {
+        // Not what the current UI culture happens to be: Apply overwrites it, so reading it back
+        // would make "the system language" mean "whatever the dock applied last". And not the
+        // installed language either, which stays behind on a machine whose display language was
+        // changed after setup.
+        CultureInfo system = LanguageService.SystemUiCulture;
+        CultureInfo previousUi = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            LanguageService.Apply(AppLanguage.Spanish);
+
+            Assert.Equal(system, LanguageService.Resolve(AppLanguage.System));
+
+            LanguageService.Apply(AppLanguage.System);
+
+            Assert.Equal(system, CultureInfo.CurrentUICulture);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousUi;
+            CultureInfo.DefaultThreadCurrentUICulture = null;
+        }
     }
 
     [Fact]
