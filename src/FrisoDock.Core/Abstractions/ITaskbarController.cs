@@ -22,6 +22,16 @@ public interface ITaskbarController
     void Hide(DockEdge dockEdge);
 
     /// <summary>
+    /// Re-hides the taskbar windows, without touching the band it reserves. It does nothing when
+    /// the taskbar is not hidden by us.
+    ///
+    /// It exists because hiding is not a state the shell respects: with the taskbar in autohide,
+    /// it reshows the window on its own and parks it off screen — and brings it back
+    /// whole when the Start menu opens or the cursor touches its edge.
+    /// </summary>
+    void ReapplyHidden();
+
+    /// <summary>
     /// Restores the taskbar's visibility. Idempotent and safe to call even if
     /// <see cref="Hide"/> never ran in this session.
     /// </summary>

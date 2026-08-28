@@ -25,6 +25,7 @@ public partial class App : Application
 
     private ServiceProvider? _services;
     private ITaskbarController? _taskbarController;
+    private ITaskbarRevealWatcher? _taskbarRevealWatcher;
     private DockHost? _dockHost;
     private WindowSwitcherRunner? _windowSwitcher;
     private TrayHostRunner? _trayHost;
@@ -91,6 +92,13 @@ public partial class App : Application
         // App.xaml seed and would only correct itself on the next color change.
         _services.GetRequiredService<AccentTheme>().Start();
 
+        // Hiding the taskbar is not a state the shell respects: in autohide it brings it
+        // back when Start opens or the cursor touches its edge. The watcher puts the hiding
+        // back, and since there is only one reshow at a time, it does not turn into a fight.
+        _taskbarRevealWatcher = _services.GetRequiredService<ITaskbarRevealWatcher>();
+        _taskbarRevealWatcher.TaskbarRevealed += OnTaskbarRevealed;
+        _taskbarRevealWatcher.Start();
+
         _trayHost = _services.GetRequiredService<TrayHostRunner>();
         _trayHost.Start();
 
@@ -114,6 +122,10 @@ public partial class App : Application
         _windowSwitcher?.Dispose();
         _dockHost?.Dispose();
 
+        // Before the restore: the watcher exists to undo reshows, and restoring is
+        // exactly one of them.
+        _taskbarRevealWatcher?.Dispose();
+
         RestoreTaskbar();
 
         _services?.Dispose();
@@ -133,6 +145,11 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         SessionEnding += OnSessionEnding;
+    }
+
+    private void OnTaskbarRevealed(object? sender, EventArgs e)
+    {
+        _taskbarController?.ReapplyHidden();
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -200,6 +217,7 @@ public partial class App : Application
         // Win32 (Interop layer)
         services.AddSingleton<ITaskbarStateStore, FileTaskbarStateStore>();
         services.AddSingleton<ITaskbarController, TaskbarController>();
+        services.AddSingleton<ITaskbarRevealWatcher, TaskbarRevealWatcher>();
         services.AddSingleton<IWindowEnumerator, WindowEnumerator>();
         services.AddSingleton<IWindowActivator, WindowActivator>();
         services.AddSingleton<IStartMenuInvoker, StartMenuInvoker>();

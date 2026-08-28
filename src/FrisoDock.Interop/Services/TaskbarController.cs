@@ -54,6 +54,18 @@ public sealed class TaskbarController : ITaskbarController
         IsHidden = true;
     }
 
+    public void ReapplyHidden()
+    {
+        if (!IsHidden)
+        {
+            return;
+        }
+
+        using IDisposable priority = _trayPriority.Yield();
+
+        ApplyVisibility(NativeConstants.SW_HIDE);
+    }
+
     public void Restore()
     {
         using IDisposable priority = _trayPriority.Yield();
