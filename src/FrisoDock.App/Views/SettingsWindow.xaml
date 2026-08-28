@@ -651,6 +651,49 @@
                     </StackPanel>
                 </TabItem>
 
+                <TabItem Header="{loc:Tr SettingsTabLanguage}" Tag="&#xF2B7;" Style="{StaticResource NavItemStyle}">
+                    <StackPanel>
+
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguageSystem}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Tr SettingsLanguageSystemTitle}"
+                                           Style="{StaticResource SettingTitleStyle}" />
+                                <TextBlock Text="{loc:Tr SettingsLanguageSystemDetail}"
+                                           Style="{StaticResource SettingHintStyle}" />
+                            </StackPanel>
+                        </RadioButton>
+
+                        <!--
+                            Os nomes das linguagens ficam no idioma delas, e por isso valem igual nos
+                            tres arquivos: e como o Windows lista os idiomas dele, e e o que deixa o
+                            usuario reconhecer o proprio idioma numa tela que ele nao consegue ler.
+                        -->
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguagePortugueseBrazil}">
+                            <TextBlock Text="{loc:Tr SettingsLanguagePortugueseBrazil}"
+                                       Style="{StaticResource SettingTitleStyle}" />
+                        </RadioButton>
+
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguageEnglish}">
+                            <TextBlock Text="{loc:Tr SettingsLanguageEnglish}"
+                                       Style="{StaticResource SettingTitleStyle}" />
+                        </RadioButton>
+
+                        <RadioButton GroupName="Language"
+                                     Style="{StaticResource RadioRowStyle}"
+                                     IsChecked="{Binding LanguageSpanish}">
+                            <TextBlock Text="{loc:Tr SettingsLanguageSpanish}"
+                                       Style="{StaticResource SettingTitleStyle}" />
+                        </RadioButton>
+
+                    </StackPanel>
+                </TabItem>
+
             </TabControl>
 
             <Button Grid.Row="2"
