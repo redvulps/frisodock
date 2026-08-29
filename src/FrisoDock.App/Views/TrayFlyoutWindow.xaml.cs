@@ -18,6 +18,14 @@ public partial class TrayFlyoutWindow : Window
 
     private bool _closing;
 
+    /// <summary>Icon whose app was last handed an interaction, and may be showing a menu now.</summary>
+    private TrayIconViewModel? _forwardedTo;
+
+    /// <summary>Click count of the press being handled, read on the release.</summary>
+    private int _pressClickCount;
+
+    private DispatcherTimer? _foregroundWatch;
+
     public TrayFlyoutWindow(
         TrayFlyoutViewModel viewModel,
         PixelRect anchor,
@@ -49,9 +57,25 @@ public partial class TrayFlyoutWindow : Window
         _chrome.PositionByAnchor();
     }
 
+    /// <summary>
+    /// Losing the focus is not one event but two, and only one of them means the user is done.
+    /// The app coming forward to show the menu it was just asked for is the other, and closing on
+    /// it took the flyout away from under the user in the middle of the gesture.
+    ///
+    /// Which of the two it is cannot be told here: the foreground changes in steps, and asking
+    /// who owns it at this instant can catch the moment before the app has it. So a pending
+    /// interaction hands the decision to the watch, which asks again a moment later.
+    /// </summary>
     protected override void OnDeactivated(EventArgs e)
     {
         base.OnDeactivated(e);
+
+        if (_forwardedTo is not null)
+        {
+            StartForegroundWatch();
+            return;
+        }
+
         CloseFlyout();
     }
 
@@ -67,6 +91,7 @@ public partial class TrayFlyoutWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        StopForegroundWatch();
         _viewModel.UnsubscribeFromInvocations(OnIconInvoked);
         base.OnClosed(e);
     }
@@ -80,6 +105,9 @@ public partial class TrayFlyoutWindow : Window
     /// </summary>
     private void OnIconPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
+        // The count belongs to the press: WPF counts the clicks as they arrive, and by the
+        // release there is nothing left to ask.
+        _pressClickCount = e.ClickCount;
         e.Handled = true;
     }
 
@@ -98,6 +126,10 @@ public partial class TrayFlyoutWindow : Window
 
         switch (e.ChangedButton)
         {
+            case MouseButton.Left when _pressClickCount >= 2:
+                icon.ActivateTwiceCommand.Execute(null);
+                break;
+
             case MouseButton.Left:
                 icon.ActivateCommand.Execute(null);
                 break;
@@ -106,21 +138,85 @@ public partial class TrayFlyoutWindow : Window
                 icon.OpenContextMenuCommand.Execute(null);
                 break;
 
+            case MouseButton.Middle:
+                icon.ActivateMiddleCommand.Execute(null);
+                break;
+
             default:
                 break;
         }
     }
 
     /// <summary>
-    /// The menu the app opens belongs to it, not to us: we close the flyout to get out of the way,
-    /// otherwise the menu would appear behind this window, which is topmost.
+    /// The flyout stays. The app was handed an interaction and may be about to show a menu, and
+    /// closing here is what made the tray vanish from under the user, one icon per opening.
     ///
-    /// Closing is deferred until WPF finishes processing the current input. Closing in the middle of the
-    /// click would hand the rest of the mouse sequence to the window below.
+    /// What replaces the close is the watch below: the flyout goes away when the foreground stops
+    /// being ours and stops being that app's.
     /// </summary>
     private void OnIconInvoked(object? sender, EventArgs e)
     {
-        Dispatcher.BeginInvoke(DispatcherPriority.Input, CloseFlyout);
+        _forwardedTo = sender as TrayIconViewModel;
+        StartForegroundWatch();
+    }
+
+    /// <summary>
+    /// True while the app we just poked owns the foreground, which is the menu the user asked for
+    /// and not a reason to go away.
+    /// </summary>
+    private bool IsAppShowingItself()
+    {
+        return _forwardedTo?.IsOwnerInForeground == true;
+    }
+
+    /// <summary>
+    /// Sampling, because there is no second deactivation to wait for: the window is already
+    /// inactive while the app menu is up, so nothing else would tell us the user moved on.
+    /// The same reason the dock samples the cursor instead of listening for it.
+    /// </summary>
+    private void StartForegroundWatch()
+    {
+        if (_foregroundWatch is not null)
+        {
+            return;
+        }
+
+        _foregroundWatch = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(250),
+        };
+
+        _foregroundWatch.Tick += OnForegroundWatchTick;
+        _foregroundWatch.Start();
+    }
+
+    private void StopForegroundWatch()
+    {
+        if (_foregroundWatch is null)
+        {
+            return;
+        }
+
+        _foregroundWatch.Stop();
+        _foregroundWatch.Tick -= OnForegroundWatchTick;
+        _foregroundWatch = null;
+    }
+
+    private void OnForegroundWatchTick(object? sender, EventArgs e)
+    {
+        if (IsActive)
+        {
+            // The user came back to the flyout; the watch has nothing left to answer.
+            StopForegroundWatch();
+            return;
+        }
+
+        if (IsAppShowingItself())
+        {
+            return;
+        }
+
+        CloseFlyout();
     }
 
     private void CloseFlyout()

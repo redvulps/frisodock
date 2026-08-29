@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -30,9 +30,15 @@ public sealed partial class TrayIconViewModel : ObservableObject
 
     public string DisplayName => _icon.DisplayName;
 
+    /// <summary>
+    /// True while the app that owns this icon holds the foreground. The flyout reads it to tell
+    /// the menu it just asked for apart from the user walking away.
+    /// </summary>
+    public bool IsOwnerInForeground => _host.IsAppInForeground(_icon);
+
     public ImageSource? Image { get; }
 
-    /// <summary>Raised after forwarding an interaction, so the flyout can close.</summary>
+    /// <summary>Raised after forwarding an interaction, so the flyout can react to it.</summary>
     public event EventHandler? Invoked;
 
     /// <summary>
@@ -44,11 +50,28 @@ public sealed partial class TrayIconViewModel : ObservableObject
         Forward(TrayMouseEvent.LeftClick);
     }
 
+    /// <summary>
+    /// Double click: the gesture that opens the main window in most apps, and the one they
+    /// answer when a single click does nothing at all.
+    /// </summary>
+    [RelayCommand]
+    private void ActivateTwice()
+    {
+        Forward(TrayMouseEvent.LeftDoubleClick);
+    }
+
     /// <summary>Right click: opens the app's own context menu.</summary>
     [RelayCommand]
     private void OpenContextMenu()
     {
         Forward(TrayMouseEvent.RightClick);
+    }
+
+    /// <summary>Middle click, forwarded like the others: what it does is the app's business.</summary>
+    [RelayCommand]
+    private void ActivateMiddle()
+    {
+        Forward(TrayMouseEvent.MiddleClick);
     }
 
     private void Forward(TrayMouseEvent mouseEvent)
