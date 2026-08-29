@@ -268,6 +268,7 @@ public partial class App : Application
         services.AddSingleton<INetworkProvider, NetworkProvider>();
         services.AddSingleton<ISettingsPageLauncher, SettingsPageLauncher>();
         services.AddSingleton<IAccentColorProvider, SystemAccentColorProvider>();
+        services.AddSingleton<IStartupRegistration, StartupRegistration>();
 
         // Host infrastructure
         services.AddSingleton<IApplicationLifetime, WpfApplicationLifetime>();

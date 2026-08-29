@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -285,6 +285,12 @@
   </data>
   <data name="SettingsReserveSpaceDetail" xml:space="preserve">
     <value>Impide que las ventanas maximizadas queden debajo del dock. Solo vale con el dock siempre a la vista.</value>
+  </data>
+  <data name="SettingsStartWithWindowsTitle" xml:space="preserve">
+    <value>Iniciar con Windows</value>
+  </data>
+  <data name="SettingsStartWithWindowsDetail" xml:space="preserve">
+    <value>Abre el dock al iniciar sesión. Windows puede desactivarlo en su pantalla de Aplicaciones de inicio.</value>
   </data>
   <data name="SettingsLanguageSystemTitle" xml:space="preserve">
     <value>Usar el idioma del sistema</value>

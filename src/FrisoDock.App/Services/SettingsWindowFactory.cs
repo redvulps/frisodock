@@ -1,4 +1,4 @@
-using FrisoDock.App.ViewModels;
+﻿using FrisoDock.App.ViewModels;
 using FrisoDock.App.Views;
 using FrisoDock.Core.Abstractions;
 
@@ -20,17 +20,20 @@ public sealed class SettingsWindowFactory
     private readonly DockSettingsService _settings;
     private readonly IWindowBackdrop _backdrop;
     private readonly IWindowActivator _activator;
+    private readonly IStartupRegistration _startup;
 
     private SettingsWindow? _window;
 
     public SettingsWindowFactory(
         DockSettingsService settings,
         IWindowBackdrop backdrop,
-        IWindowActivator activator)
+        IWindowActivator activator,
+        IStartupRegistration startup)
     {
         _settings = settings;
         _backdrop = backdrop;
         _activator = activator;
+        _startup = startup;
     }
 
     /// <summary>
@@ -45,7 +48,7 @@ public sealed class SettingsWindowFactory
             return;
         }
 
-        _window = new SettingsWindow(new SettingsViewModel(_settings), _backdrop);
+        _window = new SettingsWindow(new SettingsViewModel(_settings, _startup), _backdrop);
         _window.Closed += OnClosed;
         _window.Show();
 
