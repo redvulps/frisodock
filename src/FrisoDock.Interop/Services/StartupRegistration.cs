@@ -1,4 +1,4 @@
-using System.Security;
+﻿using System.Security;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Services;
 using Microsoft.Win32;
@@ -16,7 +16,8 @@ namespace FrisoDock.Interop.Services;
 /// Reading is not the same as writing here. Turning the option on writes two values, because the
 /// Windows "Startup apps" screen keeps its own state next to the entry (see
 /// <see cref="StartupApproval" />); turning it off deletes both, so nothing is left pointing at a
-/// dock that no longer starts.
+/// dock that no longer starts. And an entry alone does not mean this dock starts: it also has to
+/// point at this executable (see <see cref="StartupCommand" />).
 /// </summary>
 public sealed class StartupRegistration : IStartupRegistration
 {
@@ -30,10 +31,16 @@ public sealed class StartupRegistration : IStartupRegistration
     {
         get
         {
+            string? executable = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(executable))
+            {
+                return false;
+            }
+
             try
             {
                 using RegistryKey? run = Registry.CurrentUser.OpenSubKey(RunKeyPath);
-                if (run?.GetValue(ValueName) is not string command || string.IsNullOrWhiteSpace(command))
+                if (!StartupCommand.PointsAt(run?.GetValue(ValueName) as string, executable))
                 {
                     return false;
                 }
@@ -63,8 +70,7 @@ public sealed class StartupRegistration : IStartupRegistration
         {
             using RegistryKey run = Registry.CurrentUser.CreateSubKey(RunKeyPath);
 
-            // Quoted: the path can carry spaces, and the shell splits the command line on them.
-            run.SetValue(ValueName, $"\"{executable}\"", RegistryValueKind.String);
+            run.SetValue(ValueName, StartupCommand.For(executable), RegistryValueKind.String);
 
             // An entry the user once disabled in the Windows screen stays disabled until this
             // value is rewritten, no matter what the Run key says.
