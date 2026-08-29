@@ -1,4 +1,4 @@
-using FrisoDock.Core.Models;
+﻿using FrisoDock.Core.Models;
 
 namespace FrisoDock.Core.Abstractions;
 
@@ -50,12 +50,28 @@ public interface ITrayHost
     /// <param name="mouseEvent">Interaction to forward.</param>
     /// <param name="screenPoint">Point on screen where the app menu should appear.</param>
     void ForwardMouseEvent(TrayIcon icon, TrayMouseEvent mouseEvent, PixelPoint screenPoint);
+
+    /// <summary>
+    /// True when the window in the foreground belongs to the app that owns the icon.
+    ///
+    /// The flyout asks this to tell apart the two reasons it loses the focus: the app coming
+    /// forward to show the menu the user just asked for, which is no reason to go away, and the
+    /// user moving on to something else, which is.
+    /// </summary>
+    bool IsAppInForeground(TrayIcon icon);
 }
 
 /// <summary>Interactions that can be forwarded to a tray icon.</summary>
 public enum TrayMouseEvent
 {
     LeftClick,
+
+    /// <summary>
+    /// Second click of a double. It exists because plenty of apps do nothing on a single click
+    /// and only open their window on this one, and the flyout was never sending it.
+    /// </summary>
+    LeftDoubleClick,
+
     RightClick,
     MiddleClick,
 }

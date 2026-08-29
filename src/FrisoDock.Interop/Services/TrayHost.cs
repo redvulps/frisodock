@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using FrisoDock.Interop.Native;
@@ -172,10 +172,34 @@ public sealed class TrayHost : ITrayHost, IShellTrayPriority, IDisposable
         NativeMethods.GetWindowThreadProcessId(owner, out uint processId);
         NativeMethods.AllowSetForegroundWindow(processId);
 
-        foreach (uint message in GetMouseMessages(icon, mouseEvent))
+        foreach (uint message in TrayMessageSequence.For(mouseEvent, icon.Version))
         {
             PostCallback(icon, message, screenPoint);
         }
+    }
+
+    public bool IsAppInForeground(TrayIcon icon)
+    {
+        ArgumentNullException.ThrowIfNull(icon);
+
+        nint owner = icon.Key.OwnerWindow;
+        if (owner == 0 || !NativeMethods.IsWindow(owner))
+        {
+            return false;
+        }
+
+        nint foreground = NativeMethods.GetForegroundWindow();
+        if (foreground == 0)
+        {
+            return false;
+        }
+
+        // The comparison is by process, not by window: the menu the app opens is a window of its
+        // own, and so is the settings dialog an icon may bring up.
+        NativeMethods.GetWindowThreadProcessId(owner, out uint ownerProcess);
+        NativeMethods.GetWindowThreadProcessId(foreground, out uint foregroundProcess);
+
+        return ownerProcess != 0 && ownerProcess == foregroundProcess;
     }
 
     public void Dispose()
@@ -578,51 +602,15 @@ public sealed class TrayHost : ITrayHost, IShellTrayPriority, IDisposable
     // ------------------------------------------------------------------ click forwarding
 
     /// <summary>
-    /// Messages the app expects for each interaction.
-    ///
-    /// Many apps only react to the "button up", but others expect the down/up pair —
-    /// sending both is what the tray itself does and covers both cases.
-    /// </summary>
-    private static IEnumerable<uint> GetMouseMessages(TrayIcon icon, TrayMouseEvent mouseEvent)
-    {
-        const uint Version4 = 4;
-
-        switch (mouseEvent)
-        {
-            case TrayMouseEvent.LeftClick:
-                yield return NativeConstants.WM_LBUTTONDOWN;
-                yield return icon.Version >= Version4
-                    ? NativeConstants.NIN_SELECT
-                    : NativeConstants.WM_LBUTTONUP;
-                break;
-
-            case TrayMouseEvent.RightClick:
-                yield return NativeConstants.WM_RBUTTONDOWN;
-                yield return NativeConstants.WM_RBUTTONUP;
-
-                // In version 4 it is WM_CONTEXTMENU that opens the app's menu.
-                if (icon.Version >= Version4)
-                {
-                    yield return NativeConstants.WM_CONTEXTMENU;
-                }
-
-                break;
-
-            case TrayMouseEvent.MiddleClick:
-                yield return NativeConstants.WM_MBUTTONUP;
-                break;
-
-            default:
-                yield break;
-        }
-    }
-
-    /// <summary>
     /// Packs the message in the format of the app's protocol version.
     ///
     /// Up to version 3: wParam is the icon id and lParam the mouse message. In version 4 it is
-    /// reversed — wParam carries the screen coordinates and lParam joins message and id — because the
-    /// app needs to know where to draw the menu.
+    /// reversed, wParam carries the screen coordinates and lParam joins message and id, because
+    /// the app needs to know where to draw the menu.
+    ///
+    /// This cut is version 4, and it is not the same one that decides which messages are sent
+    /// (see <see cref="TrayMessageSequence"/>): an app can ask for NIN_SELECT at version 3 and
+    /// still expect the old packing.
     /// </summary>
     private static void PostCallback(TrayIcon icon, uint message, PixelPoint screenPoint)
     {
@@ -647,7 +635,9 @@ public sealed class TrayHost : ITrayHost, IShellTrayPriority, IDisposable
             lParam = (nint)message;
         }
 
-        NativeMethods.PostMessage(icon.Key.OwnerWindow, icon.CallbackMessage, wParam, lParam);
+        // SendNotifyMessage, not PostMessage: it is what the shell uses, and an app that checks
+        // InSendMessage to tell a real interaction from a synthesized one sees the difference.
+        NativeMethods.SendNotifyMessage(icon.Key.OwnerWindow, icon.CallbackMessage, wParam, lParam);
     }
 
     private static nint MakeParam(uint low, uint high)

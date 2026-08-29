@@ -172,9 +172,10 @@ internal static class NativeConstants
     internal const uint WM_LBUTTONDBLCLK = 0x0203;
     internal const uint WM_RBUTTONDOWN = 0x0204;
     internal const uint WM_RBUTTONUP = 0x0205;
+    internal const uint WM_MBUTTONDOWN = 0x0207;
     internal const uint WM_MBUTTONUP = 0x0208;
 
-    /// <summary>Icon selection in version 4 of the protocol, in place of WM_LBUTTONUP.</summary>
+    /// <summary>Icon selection, sent after the button pair from version 3 of the protocol on.</summary>
     internal const uint NIN_SELECT = WM_USER + 0;
 
     internal static readonly nint HWND_BROADCAST = 0xFFFF;

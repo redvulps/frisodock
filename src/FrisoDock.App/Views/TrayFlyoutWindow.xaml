@@ -1,4 +1,4 @@
-<Window x:Class="FrisoDock.App.Views.TrayFlyoutWindow"
+﻿<Window x:Class="FrisoDock.App.Views.TrayFlyoutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:FrisoDock.App.ViewModels"
@@ -98,9 +98,19 @@
                                 PreviewMouseDown="OnIconPreviewMouseDown"
                                 PreviewMouseUp="OnIconPreviewMouseUp"
                                 ToolTip="{Binding DisplayName}">
+                            <!--
+                                16, and not the 20 that used to be here, because that is the size
+                                the app drew the icon at: the shell asks for SM_CXSMICON, measured
+                                at 16 on a 96 DPI screen, and a WPF unit is that same pixel. At 20
+                                every icon was resampled 1.25 times bigger than it was made, which
+                                is what made them blurry. It follows the DPI on its own, since the
+                                metric the app reads scales with it just like the unit here does.
+                                Uniform is for the app that hands in 32: scaling down is sharp.
+                            -->
                             <Image Source="{Binding Image}"
-                                   Width="20"
-                                   Height="20"
+                                   Width="16"
+                                   Height="16"
+                                   Stretch="Uniform"
                                    RenderOptions.BitmapScalingMode="HighQuality" />
                         </Button>
                     </DataTemplate>
