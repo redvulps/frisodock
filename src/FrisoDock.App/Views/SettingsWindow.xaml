@@ -615,6 +615,26 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="{loc:Tr SettingsStartWithWindowsTitle}"
+                                               Style="{StaticResource SettingTitleStyle}" />
+                                    <TextBlock Text="{loc:Tr SettingsStartWithWindowsDetail}"
+                                               Style="{StaticResource SettingHintStyle}" />
+                                </StackPanel>
+
+                                <CheckBox Grid.Column="1"
+                                          Style="{StaticResource ToggleSwitchStyle}"
+                                          IsChecked="{Binding StartWithWindows}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource SettingRowStyle}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
                                     <TextBlock Text="{loc:Tr SettingsHideTaskbarTitle}"
                                                Style="{StaticResource SettingTitleStyle}" />
                                     <TextBlock Text="{loc:Tr SettingsHideTaskbarDetail}"

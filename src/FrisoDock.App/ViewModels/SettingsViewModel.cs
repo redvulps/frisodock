@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FrisoDock.App.Services;
+using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 
 namespace FrisoDock.App.ViewModels;
@@ -14,6 +15,7 @@ namespace FrisoDock.App.ViewModels;
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly DockSettingsService _settings;
+    private readonly IStartupRegistration _startup;
 
     // While the values are being reloaded from the service, the setters must not fire
     // new writes — otherwise each reload would turn into a write to disk.
@@ -71,9 +73,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isolateMonitorApps;
 
-    public SettingsViewModel(DockSettingsService settings)
+    /// <summary>
+    /// Whether the dock starts with Windows. It rides alone here: it is the one option that does
+    /// not live in <see cref="DockSettings" />, because the registration itself is the state.
+    /// </summary>
+    [ObservableProperty]
+    private bool _startWithWindows;
+
+    public SettingsViewModel(DockSettingsService settings, IStartupRegistration startup)
     {
         _settings = settings;
+        _startup = startup;
         Load(_settings.Current);
     }
 
@@ -201,6 +211,8 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnIsolateMonitorAppsChanged(bool value) => Apply();
 
+    partial void OnStartWithWindowsChanged(bool value) => ApplyStartup(value);
+
     private void SelectMode(DockHideMode mode, bool selected)
     {
         if (selected)
@@ -244,6 +256,41 @@ public sealed partial class SettingsViewModel : ObservableObject
             UseSameAppWindowSwitcher = settings.UseSameAppWindowSwitcher;
             ShowOnAllMonitors = settings.ShowOnAllMonitors;
             IsolateMonitorApps = settings.IsolateMonitorApps;
+            StartWithWindows = _startup.IsEnabled;
+        }
+        finally
+        {
+            _applying = false;
+        }
+    }
+
+    /// <summary>
+    /// Writes the startup registration and reads it back. The read back is not ceremony: the
+    /// registry is the only state there is, and the user can also flip this from the Windows
+    /// Startup apps screen. A write that did not take has to leave the switch where it was
+    /// instead of showing a promise the next logon will break.
+    /// </summary>
+    private void ApplyStartup(bool value)
+    {
+        if (_applying)
+        {
+            return;
+        }
+
+        if (value)
+        {
+            _startup.Enable();
+        }
+        else
+        {
+            _startup.Disable();
+        }
+
+        _applying = true;
+
+        try
+        {
+            StartWithWindows = _startup.IsEnabled;
         }
         finally
         {
