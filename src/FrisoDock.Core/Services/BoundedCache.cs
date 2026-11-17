@@ -69,5 +69,23 @@ public sealed class BoundedCache<TKey, TValue> where TKey : notnull
         }
     }
 
+    /// <summary>Reads completed loads only; never waits for an in-flight factory.</summary>
+    public bool TryGetValue(TKey key, out TValue value)
+    {
+        lock (_gate)
+        {
+            if (_entries.TryGetValue(key, out LinkedListNode<Entry>? entry) && entry.Value.Value.IsValueCreated)
+            {
+                _order.Remove(entry);
+                _order.AddLast(entry);
+                value = entry.Value.Value.Value;
+                return true;
+            }
+        }
+
+        value = default!;
+        return false;
+    }
+
     private sealed record Entry(TKey Key, Lazy<TValue> Value);
 }

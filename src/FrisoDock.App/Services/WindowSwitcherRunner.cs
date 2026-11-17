@@ -78,6 +78,7 @@ public sealed class WindowSwitcherRunner : IDisposable
         _gesture.Committed += OnCommitted;
         _gesture.Cancelled += OnCancelled;
         _settings.Changed += OnSettingsChanged;
+        _icons.IconReady += OnIconReady;
 
         ApplyModes();
     }
@@ -93,6 +94,7 @@ public sealed class WindowSwitcherRunner : IDisposable
         _gesture.Committed -= OnCommitted;
         _gesture.Cancelled -= OnCancelled;
         _settings.Changed -= OnSettingsChanged;
+        _icons.IconReady -= OnIconReady;
 
         _gesture.Stop();
         CloseView();
@@ -106,6 +108,28 @@ public sealed class WindowSwitcherRunner : IDisposable
         {
             ApplyModes();
         }
+    }
+
+    private void OnIconReady(object? sender, EventArgs e)
+    {
+        _dispatcher.BeginInvoke(() =>
+        {
+            if (_disposed || _viewModel is null)
+            {
+                return;
+            }
+
+            foreach (WindowSwitcherEntryViewModel entry in _viewModel.Entries)
+            {
+                WindowInfo window = entry.Target;
+                var item = new DockItem(window.Key, window.DisplayName, window.IconSource, null, [window]);
+                ImageSource? image = _icons.GetIcon(item);
+                if (image is not null)
+                {
+                    entry.Image = image;
+                }
+            }
+        });
     }
 
     /// <summary>
@@ -237,7 +261,7 @@ public sealed class WindowSwitcherRunner : IDisposable
         }
 
         WindowInfo first = appWindows[0];
-        var appItem = new DockItem(first.Key, first.DisplayName, first.ExecutablePath, null, appWindows);
+        var appItem = new DockItem(first.Key, first.DisplayName, first.IconSource, null, appWindows);
         ImageSource? image = _icons.GetIcon(appItem);
 
         return appWindows

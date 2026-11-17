@@ -5,6 +5,33 @@ namespace FrisoDock.Tests;
 public sealed class BoundedCacheTests
 {
     [Fact]
+    public async Task NonblockingRead_DoesNotWaitForAnInFlightFactory()
+    {
+        var cache = new BoundedCache<string, string?>(1);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        Task<string?> load = Task.Run(() => cache.GetOrAdd("app", () =>
+        {
+            entered.SetResult();
+            Assert.True(release.Wait(TimeSpan.FromSeconds(5)));
+            return null;
+        }));
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(cache.TryGetValue("app", out _));
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        await load;
+        Assert.True(cache.TryGetValue("app", out string? result));
+        Assert.Null(result);
+    }
+
+    [Fact]
     public async Task Clear_DuringLoad_DoesNotRepublishTheOldValue()
     {
         var cache = new BoundedCache<string, string>(2);

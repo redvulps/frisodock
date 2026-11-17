@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Services;
 using FrisoDock.Interop.Native;
 
 namespace FrisoDock.Interop.Services;
@@ -25,8 +26,7 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
     private readonly NativeTypes.WinEventProc _winEventCallback;
     private readonly List<nint> _hooks = [];
     private readonly Dictionary<string, string?> _friendlyNames = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HostedWindowIdentityResolver _identities = new(
-        GetProcessId, GetExecutablePath, GetChildWindows, GetWindowClass);
+    private readonly BoundedCache<string, string?> _applicationNames = new(256, StringComparer.OrdinalIgnoreCase);
 
     private bool _disposed;
 
@@ -42,6 +42,21 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
         var windows = new List<WindowInfo>();
         nint shellWindow = NativeMethods.GetShellWindow();
         nint foreground = NativeMethods.GetForegroundWindow();
+        var processes = new Dictionary<uint, ProcessDetails>();
+        ProcessDetails GetProcess(uint id)
+        {
+            if (!processes.TryGetValue(id, out ProcessDetails? details))
+            {
+                details = ReadProcessDetails(id);
+                processes.Add(id, details);
+            }
+
+            return details;
+        }
+
+        // Keep PID reuse safe by sharing process queries only within this enumeration.
+        var identities = new HostedWindowIdentityResolver(
+            GetProcessId, id => GetProcess(id).ExecutablePath, GetChildWindows, GetWindowClass);
 
         NativeMethods.EnumWindows(
             (handle, _) =>
@@ -51,7 +66,7 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
                     return true;
                 }
 
-                windows.Add(CreateWindowInfo(handle, foreground));
+                windows.Add(CreateWindowInfo(handle, foreground, identities, GetProcess));
                 return true;
             },
             0);
@@ -215,20 +230,27 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
         return cloaked != 0;
     }
 
-    private WindowInfo CreateWindowInfo(nint handle, nint foreground)
+    private WindowInfo CreateWindowInfo(nint handle, nint foreground,
+        HostedWindowIdentityResolver identities, Func<uint, ProcessDetails> getProcess)
     {
         string title = GetWindowTitle(handle);
-        WindowProcessIdentity identity = _identities.Resolve(handle, title);
+        WindowProcessIdentity identity = identities.Resolve(handle, title);
+
+        string? applicationId = getProcess(identity.ProcessId).ApplicationUserModelId;
+        string? friendlyName = identity.DisplayName;
+        if (ApplicationShellPath.FromApplicationId(applicationId) is string shellPath)
+        {
+            string? displayName = _applicationNames.GetOrAdd(shellPath, () => ShellAppResources.GetDisplayName(shellPath));
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                friendlyName = displayName;
+            }
+        }
 
         return new WindowInfo(
-            handle,
-            title,
-            (int)identity.ProcessId,
-            identity.ExecutablePath,
-            NativeMethods.IsIconic(handle),
-            handle == foreground,
-            GetBounds(handle),
-            identity.DisplayName ?? GetFriendlyName(identity.ExecutablePath));
+            handle, title, (int)identity.ProcessId, identity.ExecutablePath,
+            NativeMethods.IsIconic(handle), handle == foreground, GetBounds(handle),
+            friendlyName ?? GetFriendlyName(identity.ExecutablePath), applicationId);
     }
 
     private static uint GetProcessId(nint handle)
@@ -338,7 +360,7 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
     /// processes. Protected processes fail — in those cases we return null and the window
     /// ends up discarded in the grouping, which is the desired behaviour.
     /// </summary>
-    private static string? GetExecutablePath(uint processId)
+    private static ProcessDetails ReadProcessDetails(uint processId)
     {
         nint processHandle = NativeMethods.OpenProcess(
             NativeConstants.PROCESS_QUERY_LIMITED_INFORMATION,
@@ -347,7 +369,7 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
 
         if (processHandle == 0)
         {
-            return null;
+            return new ProcessDetails(null, null);
         }
 
         try
@@ -355,16 +377,27 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
             var buffer = new StringBuilder(MaxPathLength);
             uint size = (uint)buffer.Capacity;
 
-            if (!NativeMethods.QueryFullProcessImageName(processHandle, 0, buffer, ref size))
+            string? path = NativeMethods.QueryFullProcessImageName(processHandle, 0, buffer, ref size)
+                ? buffer.ToString(0, (int)size) : null;
+            string? applicationId = null;
+            uint length = 0;
+            if (NativeMethods.GetApplicationUserModelId(processHandle, ref length, null)
+                == NativeConstants.ERROR_INSUFFICIENT_BUFFER && length > 0)
             {
-                return null;
+                var applicationBuffer = new StringBuilder(checked((int)length));
+                if (NativeMethods.GetApplicationUserModelId(processHandle, ref length, applicationBuffer) == 0)
+                {
+                    applicationId = applicationBuffer.ToString();
+                }
             }
 
-            return buffer.ToString(0, (int)size);
+            return new ProcessDetails(path, applicationId);
         }
         finally
         {
             NativeMethods.CloseHandle(processHandle);
         }
     }
+
+    private sealed record ProcessDetails(string? ExecutablePath, string? ApplicationUserModelId);
 }

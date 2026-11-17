@@ -17,6 +17,32 @@ internal static class NativeMethods
     private const string Shcore = "shcore.dll";
     private const string Shlwapi = "shlwapi.dll";
     private const string Ole32 = "ole32.dll";
+    private const string Gdi32 = "gdi32.dll";
+
+    [DllImport(Kernel32, CharSet = CharSet.Unicode)]
+    internal static extern int GetApplicationUserModelId(nint process, ref uint length, StringBuilder? applicationId);
+
+    [DllImport(Shell32, CharSet = CharSet.Unicode, PreserveSig = true)]
+    internal static extern int SHCreateItemFromParsingName(string path, nint bindContext, ref Guid interfaceId, out IShellItem item);
+
+    [DllImport(Ole32, PreserveSig = true)]
+    internal static extern int CoInitializeEx(nint reserved, uint apartment);
+
+    [DllImport(Ole32)]
+    internal static extern void CoUninitialize();
+
+    [DllImport(Gdi32, EntryPoint = "GetObjectW")]
+    internal static extern int GetBitmapObject(nint bitmap, int size, out BITMAP information);
+
+    [DllImport(Gdi32)]
+    internal static extern nint CreateBitmap(int width, int height, uint planes, uint bitsPerPixel, byte[] bits);
+
+    [DllImport(Gdi32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool DeleteObject(nint value);
+
+    [DllImport(User32)]
+    internal static extern nint CreateIconIndirect(ref ICONINFO information);
 
     // ------------------------------------------------------------------ windows
 

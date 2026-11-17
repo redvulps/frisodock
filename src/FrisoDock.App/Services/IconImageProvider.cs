@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -23,6 +24,9 @@ public sealed class IconImageProvider
     private readonly IIconExtractor _extractor;
     private readonly DockSettingsService _settings;
     private readonly BoundedCache<string, ImageSource?> _cache = new(512, StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, byte> _loading = new(StringComparer.OrdinalIgnoreCase);
+
+    public event EventHandler? IconReady;
 
     public IconImageProvider(IIconExtractor extractor, DockSettingsService settings)
     {
@@ -39,6 +43,36 @@ public sealed class IconImageProvider
         ArgumentNullException.ThrowIfNull(item);
 
         string cacheKey = item.IconSource ?? $"hwnd:{item.IconWindowHandle}";
+
+        if (ApplicationShellPath.IsApplication(item.IconSource))
+        {
+            if (_cache.TryGetValue(cacheKey, out ImageSource? cached))
+            {
+                return cached;
+            }
+
+            if (_loading.TryAdd(cacheKey, 0))
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        _cache.GetOrAdd(cacheKey, () => Resolve(item));
+                    }
+                    catch (Exception exception) when (exception is not OutOfMemoryException)
+                    {
+                        System.Diagnostics.Trace.TraceError("Application icon extraction failed: {0}", exception);
+                    }
+                    finally
+                    {
+                        _loading.TryRemove(cacheKey, out _);
+                        IconReady?.Invoke(this, EventArgs.Empty);
+                    }
+                });
+            }
+
+            return null;
+        }
 
         return _cache.GetOrAdd(cacheKey, () => Resolve(item));
     }

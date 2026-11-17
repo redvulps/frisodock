@@ -32,6 +32,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
     private readonly DockSettingsService _settings;
     private readonly DockMonitor _monitor;
     private readonly DispatcherTimer _refreshTimer;
+    private readonly Dispatcher _dispatcher;
 
     private bool _disposed;
 
@@ -70,6 +71,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         _lifetime = lifetime;
         _settings = settings;
         _monitor = monitor.Monitor;
+        _dispatcher = Dispatcher.CurrentDispatcher;
 
         _appearance = new DockAppearance(settings.Current.EffectiveMetrics, settings.Current.EffectiveMagnification, settings.Current.Edge);
         Clock = clock;
@@ -86,6 +88,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         _windowEnumerator.WindowsChanged += OnWindowsChanged;
         _settings.Changed += OnSettingsChanged;
         _pinnedApps.Changed += OnPinnedAppsChanged;
+        _iconProvider.IconReady += OnIconReady;
     }
 
     /// <summary>Raised when the item count changes and the dock has to be repositioned.</summary>
@@ -120,6 +123,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         _windowEnumerator.WindowsChanged -= OnWindowsChanged;
         _settings.Changed -= OnSettingsChanged;
         _pinnedApps.Changed -= OnPinnedAppsChanged;
+        _iconProvider.IconReady -= OnIconReady;
 
         _disposed = true;
     }
@@ -227,6 +231,11 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
         {
             _refreshTimer.Start();
         }
+    }
+
+    private void OnIconReady(object? sender, EventArgs e)
+    {
+        _dispatcher.BeginInvoke(() => OnWindowsChanged(sender, e));
     }
 
     private void OnRefreshTick(object? sender, EventArgs e)

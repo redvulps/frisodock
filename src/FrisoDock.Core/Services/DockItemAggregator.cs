@@ -43,7 +43,8 @@ public sealed class DockItemAggregator
             }
 
             IReadOnlyList<WindowInfo> appWindows = TakeWindows(windowsByKey, key);
-            items.Add(new DockItem(key, pinned.DisplayName, pinned.IconSource, pinned, appWindows));
+            string iconSource = pinned.IconPath ?? appWindows.FirstOrDefault()?.ShellLaunchTarget ?? pinned.IconSource;
+            items.Add(new DockItem(key, pinned.DisplayName, iconSource, pinned, appWindows));
         }
 
         var running = new List<DockItem>();
@@ -62,7 +63,7 @@ public sealed class DockItemAggregator
                 continue;
             }
 
-            running.Add(new DockItem(key, window.DisplayName, window.ExecutablePath, null, appWindows));
+            running.Add(new DockItem(key, window.DisplayName, window.IconSource, null, appWindows));
         }
 
         items.AddRange(SortByPreviousOrder(running, previousOrder));
