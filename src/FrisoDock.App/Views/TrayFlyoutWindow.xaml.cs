@@ -48,13 +48,15 @@ public partial class TrayFlyoutWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        _chrome.PrepareFirstFrame();
         _chrome.ApplyAppearance();
     }
 
-    protected override void OnContentRendered(EventArgs e)
+    protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
         _chrome.PositionByAnchor();
+        await _chrome.RevealFirstFrameAsync();
     }
 
     /// <summary>

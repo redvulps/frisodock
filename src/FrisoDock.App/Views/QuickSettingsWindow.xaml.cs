@@ -16,6 +16,7 @@ public partial class QuickSettingsWindow : Window
     private readonly FlyoutChrome _chrome;
 
     private bool _closing;
+    private bool _positioned;
 
     public QuickSettingsWindow(
         QuickSettingsViewModel viewModel,
@@ -37,22 +38,25 @@ public partial class QuickSettingsWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        _chrome.PrepareFirstFrame();
         _chrome.ApplyAppearance();
     }
 
-    protected override void OnContentRendered(EventArgs e)
+    protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
         _chrome.PositionByAnchor();
+        _positioned = true;
 
         // The panel timer only runs while it is open: outside that, nobody is looking.
         _viewModel.Start();
+        await _chrome.RevealFirstFrameAsync();
     }
 
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
         base.OnRenderSizeChanged(sizeInfo);
-        if (IsLoaded)
+        if (IsLoaded && _positioned)
         {
             _chrome.PositionByAnchor();
         }
