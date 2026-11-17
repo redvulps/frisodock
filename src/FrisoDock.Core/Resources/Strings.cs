@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Resources;
 
 namespace FrisoDock.Core.Resources;
@@ -249,6 +249,12 @@ public static class Strings
     /// <summary>Keeps maximized windows from sitting under the dock. Only applies with the dock always in view.</summary>
     public static string SettingsReserveSpaceDetail => Get(nameof(SettingsReserveSpaceDetail));
 
+    /// <summary>Start with Windows</summary>
+    public static string SettingsStartWithWindowsTitle => Get(nameof(SettingsStartWithWindowsTitle));
+
+    /// <summary>Opens the dock when you sign in. Windows can turn this off in its own Startup apps screen.</summary>
+    public static string SettingsStartWithWindowsDetail => Get(nameof(SettingsStartWithWindowsDetail));
+
     /// <summary>Use the system language</summary>
     public static string SettingsLanguageSystemTitle => Get(nameof(SettingsLanguageSystemTitle));
 
@@ -346,6 +352,8 @@ public static class Strings
         nameof(SettingsHideTaskbarDetail),
         nameof(SettingsReserveSpaceTitle),
         nameof(SettingsReserveSpaceDetail),
+        nameof(SettingsStartWithWindowsTitle),
+        nameof(SettingsStartWithWindowsDetail),
         nameof(SettingsLanguageSystemTitle),
         nameof(SettingsLanguageSystemDetail),
         nameof(SettingsLanguagePortugueseBrazil),
