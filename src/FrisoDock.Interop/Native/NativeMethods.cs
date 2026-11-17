@@ -25,6 +25,9 @@ internal static class NativeMethods
     [DllImport(Shell32, CharSet = CharSet.Unicode, PreserveSig = true)]
     internal static extern int SHCreateItemFromParsingName(string path, nint bindContext, ref Guid interfaceId, out IShellItem item);
 
+    [DllImport(Shell32, PreserveSig = true)]
+    internal static extern int SHGetPropertyStoreForWindow(nint window, ref Guid interfaceId, out IPropertyStore store);
+
     [DllImport(Ole32, PreserveSig = true)]
     internal static extern int CoInitializeEx(nint reserved, uint apartment);
 

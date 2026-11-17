@@ -6,6 +6,45 @@ namespace FrisoDock.Interop.Services;
 
 internal static class ShellAppResources
 {
+    public static string? GetWindowApplicationId(nint window)
+    {
+        int initialized = NativeMethods.CoInitializeEx(0, NativeConstants.COINIT_MULTITHREADED);
+        if (initialized < 0 && initialized != NativeConstants.RPC_E_CHANGED_MODE)
+        {
+            return null;
+        }
+
+        IPropertyStore? store = null;
+        try
+        {
+            Guid interfaceId = typeof(IPropertyStore).GUID;
+            if (NativeMethods.SHGetPropertyStoreForWindow(window, ref interfaceId, out store) < 0)
+            {
+                return null;
+            }
+
+            using var value = new PropVariant();
+            PROPERTYKEY key = PROPERTYKEY.AppUserModelId;
+            return store.GetValue(ref key, value) >= 0 ? value.AsString() : null;
+        }
+        catch (COMException)
+        {
+            return null;
+        }
+        finally
+        {
+            if (store is not null)
+            {
+                Marshal.ReleaseComObject(store);
+            }
+
+            if (initialized >= 0)
+            {
+                NativeMethods.CoUninitialize();
+            }
+        }
+    }
+
     public static string? GetDisplayName(string path) => ReadItem(path, item =>
     {
         nint text = 0;
