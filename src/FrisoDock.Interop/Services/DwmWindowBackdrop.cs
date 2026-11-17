@@ -13,6 +13,16 @@ namespace FrisoDock.Interop.Services;
 /// </summary>
 public sealed class DwmWindowBackdrop : IWindowBackdrop
 {
+    public void SetCloaked(nint windowHandle, bool cloaked)
+    {
+        if (windowHandle != 0)
+        {
+            SetAttribute(windowHandle, NativeConstants.DWMWA_CLOAK, cloaked ? 1 : 0);
+        }
+    }
+
+    public Task FlushAsync() => Task.Run(() => NativeMethods.DwmFlush());
+
     public void Apply(nint windowHandle, WindowBackdropMaterial material, bool darkMode)
     {
         if (windowHandle == 0)

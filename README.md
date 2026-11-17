@@ -81,7 +81,7 @@ your call to make:
 ## Requirements
 
 * Windows 11 22H2 or newer. Windows 10 is secondary and less tested.
-* .NET 8 SDK to build (8.0.424 is pinned in `global.json`).
+* .NET 10 SDK to build (10.0.404 is pinned in `global.json`).
 
 ## Build and run
 
@@ -95,6 +95,17 @@ dock exits, including on a crash.
 
 Everything above is toggled from the settings screen in the dock's right click menu, and applies
 immediately. It is kept in `%APPDATA%\FrisoDock`.
+
+### Publish for Windows x64
+
+```
+dotnet publish src/FrisoDock.App -c Release -p:PublishProfile=WinX64
+```
+
+The self-contained build is written to `artifacts/publish/win-x64` and includes the .NET runtime.
+The profile enables ReadyToRun, which precompiles eligible methods to reduce startup JIT work.
+This is partial ahead-of-time compilation: some methods still need JIT compilation at runtime.
+Native AOT and trimming are not supported by WPF, so this profile keeps trimming disabled.
 
 ### Diagnostic flags
 

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -849,12 +849,25 @@ public partial class DockWindow : Window
     }
 
     /// <summary>
-    /// Opens the flyout with the tray icons the dock is hosting.
+    /// Opens the flyout with the tray icons the dock is hosting, and closes it on the second
+    /// click, the way the tray button in the native taskbar behaves.
+    ///
+    /// The toggle is what keeps a second flyout from being born on top of the first. It only
+    /// started to show once the flyout stopped closing on focus loss: with an app menu open, the
+    /// click that should dismiss the flyout reaches the dock as an ordinary one, and the old
+    /// window went away by its own watch a moment later. On screen that reads as the tray
+    /// blinking and coming back.
     /// </summary>
     private void OnTrayButtonClick(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement anchor)
         {
+            return;
+        }
+
+        if (_trayFlyout is not null)
+        {
+            CloseTrayFlyout();
             return;
         }
 
@@ -866,8 +879,8 @@ public partial class DockWindow : Window
         {
             PixelRect anchorRect = FlyoutChrome.GetScreenRect(anchor);
 
-            // The point is resolved at click time, and not now, because the flyout closes before
-            // forwarding: the app menu must be born over the dock button, which stays put.
+            // The point is resolved at click time, and not now: the app menu must be born over
+            // the dock button, which stays put wherever the flyout happens to be.
             TrayFlyoutViewModel flyout = _trayFlyoutFactory.Create(
                 () => new PixelPoint(anchorRect.Left + (anchorRect.Width / 2), anchorRect.Top));
 

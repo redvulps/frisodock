@@ -30,6 +30,10 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool EnumWindows(NativeTypes.EnumWindowsProc callback, nint lParam);
 
+    [DllImport(User32, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool EnumChildWindows(nint parent, NativeTypes.EnumWindowsProc callback, nint lParam);
+
     [DllImport(User32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool IsWindow(nint windowHandle);
@@ -155,6 +159,9 @@ internal static class NativeMethods
     internal static extern bool CloseHandle(nint handle);
 
     // ------------------------------------------------------------------ DWM
+
+    [DllImport(Dwmapi)]
+    internal static extern int DwmFlush();
 
     [DllImport(Dwmapi)]
     internal static extern int DwmGetWindowAttribute(nint windowHandle, int attribute, out int value, int size);
@@ -309,6 +316,10 @@ internal static class NativeMethods
 
     [DllImport(User32)]
     internal static extern int GetMessage(out MSG message, nint windowHandle, uint filterMin, uint filterMax);
+
+    [DllImport(User32, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool PeekMessage(out MSG message, nint windowHandle, uint filterMin, uint filterMax, uint remove);
 
     [DllImport(User32)]
     [return: MarshalAs(UnmanagedType.Bool)]

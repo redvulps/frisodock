@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using Windows.Devices.Radios;
@@ -17,58 +18,66 @@ namespace FrisoDock.Interop.Services;
 public sealed class RadioController : IRadioController
 {
     private readonly Dictionary<RadioDeviceKind, Radio> _radios = [];
+    private readonly SemaphoreSlim _gate = new(1, 1);
 
     private bool _accessChecked;
     private bool _accessAllowed;
 
-    public RadioStatus GetStatus(RadioDeviceKind kind)
+    public async Task<RadioStatus> GetStatusAsync(RadioDeviceKind kind)
     {
-        Radio? radio = FindRadio(kind);
-
-        if (radio is null)
+        await _gate.WaitAsync();
+        try
         {
-            return RadioStatus.Unavailable(kind);
+            return ReadStatus(kind, await FindRadioAsync(kind));
         }
-
-        return new RadioStatus(kind, radio.State == RadioState.On, IsAvailable: true);
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     public async Task<RadioStatus> SetStateAsync(RadioDeviceKind kind, bool isOn)
     {
-        Radio? radio = FindRadio(kind);
-
-        if (radio is null)
-        {
-            return RadioStatus.Unavailable(kind);
-        }
-
+        await _gate.WaitAsync();
         try
         {
-            await radio.SetStateAsync(isOn ? RadioState.On : RadioState.Off);
-        }
-        catch (Exception exception) when (exception is UnauthorizedAccessException or InvalidOperationException)
-        {
-            // Windows may refuse the change — management policy, busy driver. The
-            // panel goes back to showing the real state instead of pretending it obeyed.
-        }
+            Radio? radio = await FindRadioAsync(kind);
+            if (radio is null)
+            {
+                return RadioStatus.Unavailable(kind);
+            }
 
-        return GetStatus(kind);
+            try
+            {
+                await radio.SetStateAsync(isOn ? RadioState.On : RadioState.Off);
+            }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or InvalidOperationException or COMException)
+            {
+                // Policy or a busy driver may reject the command. Report the actual state.
+            }
+
+            return ReadStatus(kind, radio);
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <summary>
     /// Radio of the requested kind, reread on every query because the state changes outside the dock —
     /// through the Windows panel itself, a function key, another app.
     /// </summary>
-    private Radio? FindRadio(RadioDeviceKind kind)
+    private async Task<Radio?> FindRadioAsync(RadioDeviceKind kind)
     {
-        if (!EnsureAccess())
+        if (!await EnsureAccessAsync())
         {
             return null;
         }
 
         try
         {
-            foreach (Radio radio in Radio.GetRadiosAsync().AsTask().GetAwaiter().GetResult())
+            foreach (Radio radio in await Radio.GetRadiosAsync())
             {
                 if (Matches(radio.Kind, kind))
                 {
@@ -77,7 +86,7 @@ public sealed class RadioController : IRadioController
                 }
             }
         }
-        catch (Exception exception) when (exception is InvalidOperationException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is InvalidOperationException or UnauthorizedAccessException or COMException)
         {
             return _radios.GetValueOrDefault(kind);
         }
@@ -85,7 +94,7 @@ public sealed class RadioController : IRadioController
         return null;
     }
 
-    private bool EnsureAccess()
+    private async Task<bool> EnsureAccessAsync()
     {
         if (_accessChecked)
         {
@@ -96,9 +105,10 @@ public sealed class RadioController : IRadioController
 
         try
         {
-            _accessAllowed = Radio.RequestAccessAsync().AsTask().GetAwaiter().GetResult() == RadioAccessStatus.Allowed;
+            // This request starts on the UI thread, as required by the WinRT permission API.
+            _accessAllowed = await Radio.RequestAccessAsync() == RadioAccessStatus.Allowed;
         }
-        catch (Exception exception) when (exception is InvalidOperationException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is InvalidOperationException or UnauthorizedAccessException or COMException)
         {
             _accessAllowed = false;
         }
@@ -115,4 +125,8 @@ public sealed class RadioController : IRadioController
             _ => false,
         };
     }
+
+    private static RadioStatus ReadStatus(RadioDeviceKind kind, Radio? radio) => radio is null
+        ? RadioStatus.Unavailable(kind)
+        : new RadioStatus(kind, radio.State == RadioState.On, IsAvailable: true);
 }

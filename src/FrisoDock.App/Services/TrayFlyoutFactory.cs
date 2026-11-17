@@ -1,4 +1,4 @@
-using System.Windows.Media;
+﻿using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FrisoDock.App.ViewModels;
 using FrisoDock.Core.Abstractions;
@@ -23,9 +23,8 @@ public sealed class TrayFlyoutFactory
     /// Creates the view model.
     /// </summary>
     /// <param name="resolveScreenPoint">
-    /// Where the app should open its menu. It is resolved at click time, and not now, because
-    /// the flyout closes before forwarding — the point has to be the anchor's in the dock, which
-    /// stays put.
+    /// Where the app should open its menu. It is resolved at click time, and not now: the point
+    /// has to be the anchor's in the dock, which stays put wherever the flyout is.
     /// </param>
     public TrayFlyoutViewModel Create(Func<PixelPoint> resolveScreenPoint)
     {

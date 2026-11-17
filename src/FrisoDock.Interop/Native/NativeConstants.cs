@@ -44,6 +44,7 @@ internal static class NativeConstants
     internal const uint GA_ROOTOWNER = 3;
 
     // --- DwmGetWindowAttribute / DwmSetWindowAttribute ---
+    internal const int DWMWA_CLOAK = 13;
     internal const int DWMWA_CLOAKED = 14;
     internal const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     internal const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
@@ -110,6 +111,10 @@ internal static class NativeConstants
     internal const int GCLP_HICONSM = -34;
 
     internal const uint SMTO_ABORTIFHUNG = 0x0002;
+    internal const uint PM_NOREMOVE = 0x0000;
+    internal const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
+    internal const uint EVENT_OBJECT_CLOAKED = 0x8017;
+    internal const uint EVENT_OBJECT_UNCLOAKED = 0x8018;
 
     // --- SHGetFileInfo ---
     internal const uint SHGFI_ICON = 0x000000100;
@@ -172,9 +177,10 @@ internal static class NativeConstants
     internal const uint WM_LBUTTONDBLCLK = 0x0203;
     internal const uint WM_RBUTTONDOWN = 0x0204;
     internal const uint WM_RBUTTONUP = 0x0205;
+    internal const uint WM_MBUTTONDOWN = 0x0207;
     internal const uint WM_MBUTTONUP = 0x0208;
 
-    /// <summary>Icon selection in version 4 of the protocol, in place of WM_LBUTTONUP.</summary>
+    /// <summary>Icon selection, sent after the button pair from version 3 of the protocol on.</summary>
     internal const uint NIN_SELECT = WM_USER + 0;
 
     internal static readonly nint HWND_BROADCAST = 0xFFFF;

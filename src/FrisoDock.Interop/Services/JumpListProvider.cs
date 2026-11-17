@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using System.Text;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Services;
 
 namespace FrisoDock.Interop.Services;
 
@@ -28,7 +28,7 @@ public sealed class JumpListProvider : IJumpListProvider, IDisposable
     private readonly AutomaticDestinationsParser _automaticParser;
     private readonly string _directory;
     private readonly string _automaticDirectory;
-    private readonly ConcurrentDictionary<string, JumpList> _cache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly BoundedCache<string, JumpList> _cache = new(128, StringComparer.OrdinalIgnoreCase);
     private readonly List<FileSystemWatcher> _watchers = [];
     private readonly object _watcherGate = new();
 
@@ -61,15 +61,7 @@ public sealed class JumpListProvider : IJumpListProvider, IDisposable
 
         EnsureWatching();
 
-        if (_cache.TryGetValue(executablePath, out JumpList? cached))
-        {
-            return cached;
-        }
-
-        JumpList jumpList = Load(executablePath);
-        _cache[executablePath] = jumpList;
-
-        return jumpList;
+        return _cache.GetOrAdd(executablePath, () => Load(executablePath));
     }
 
     public void Invalidate()

@@ -49,6 +49,15 @@ public partial class QuickSettingsWindow : Window
         _viewModel.Start();
     }
 
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        if (IsLoaded)
+        {
+            _chrome.PositionByAnchor();
+        }
+    }
+
     protected override void OnDeactivated(EventArgs e)
     {
         base.OnDeactivated(e);

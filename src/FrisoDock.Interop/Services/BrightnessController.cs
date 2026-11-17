@@ -20,12 +20,40 @@ public sealed class BrightnessController : IBrightnessController
 
     /// <summary>Without a timeout, a stuck WMI call would take the interface down with it.</summary>
     private static readonly TimeSpan MethodTimeout = TimeSpan.FromSeconds(2);
+    private readonly SemaphoreSlim _gate = new(1, 1);
 
-    public BrightnessStatus GetStatus()
+    public async Task<BrightnessStatus> GetStatusAsync()
+    {
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            return await Task.Run(ReadStatus).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task SetLevelAsync(int level)
+    {
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await Task.Run(() => WriteLevel(level)).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private static BrightnessStatus ReadStatus()
     {
         try
         {
             using var searcher = new ManagementObjectSearcher(Scope, BrightnessQuery);
+            searcher.Options.Timeout = MethodTimeout;
             using ManagementObjectCollection results = searcher.Get();
 
             foreach (ManagementBaseObject result in results)
@@ -44,11 +72,12 @@ public sealed class BrightnessController : IBrightnessController
         return BrightnessStatus.Unavailable;
     }
 
-    public void SetLevel(int level)
+    private static void WriteLevel(int level)
     {
         try
         {
             using var searcher = new ManagementObjectSearcher(Scope, MethodsQuery);
+            searcher.Options.Timeout = MethodTimeout;
             using ManagementObjectCollection results = searcher.Get();
 
             foreach (ManagementBaseObject result in results)
@@ -57,9 +86,11 @@ public sealed class BrightnessController : IBrightnessController
                 {
                     if (result is ManagementObject monitor)
                     {
-                        monitor.InvokeMethod(
-                            "WmiSetBrightness",
-                            [(uint)MethodTimeout.TotalSeconds, (byte)Math.Clamp(level, 0, 100)]);
+                        using ManagementBaseObject parameters = monitor.GetMethodParameters("WmiSetBrightness");
+                        parameters["Timeout"] = (uint)MethodTimeout.TotalSeconds;
+                        parameters["Brightness"] = (byte)Math.Clamp(level, 0, 100);
+                        using ManagementBaseObject response = monitor.InvokeMethod(
+                            "WmiSetBrightness", parameters, new InvokeMethodOptions { Timeout = MethodTimeout });
                     }
                 }
             }

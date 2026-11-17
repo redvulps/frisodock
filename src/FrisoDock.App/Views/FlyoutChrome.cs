@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 
@@ -68,6 +69,28 @@ public sealed class FlyoutChrome
         // A flyout is not an Alt+Tab destination. The settings screen, which uses only the static
         // overload above, stays in the switcher: it is a window worth coming back to.
         _switcherExclusion.Exclude(new WindowInteropHelper(_window).Handle);
+    }
+
+    public void PrepareFirstFrame()
+    {
+        _backdrop.SetCloaked(new WindowInteropHelper(_window).Handle, true);
+    }
+
+    public async Task RevealFirstFrameAsync()
+    {
+        // Moving from the offscreen staging position can change DPI and invalidate layout.
+        // Let that render pass reach DWM before exposing the native acrylic surface.
+        await _window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+        if (!_window.IsVisible)
+        {
+            return;
+        }
+
+        await _backdrop.FlushAsync();
+        if (_window.IsVisible)
+        {
+            _backdrop.SetCloaked(new WindowInteropHelper(_window).Handle, false);
+        }
     }
 
     /// <summary>
