@@ -44,6 +44,7 @@ internal static class NativeConstants
     internal const uint GA_ROOTOWNER = 3;
 
     // --- DwmGetWindowAttribute / DwmSetWindowAttribute ---
+    internal const int DWMWA_CLOAK = 13;
     internal const int DWMWA_CLOAKED = 14;
     internal const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     internal const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;

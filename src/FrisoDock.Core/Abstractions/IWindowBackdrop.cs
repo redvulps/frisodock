@@ -17,4 +17,10 @@ public interface IWindowBackdrop
     /// of the attributes: the window simply ends up opaque and square.
     /// </summary>
     void Apply(nint windowHandle, WindowBackdropMaterial material, bool darkMode);
+
+    /// <summary>Hides the composed surface while its first frame is being prepared.</summary>
+    void SetCloaked(nint windowHandle, bool cloaked);
+
+    /// <summary>Waits for pending composition updates without blocking the UI thread.</summary>
+    Task FlushAsync();
 }

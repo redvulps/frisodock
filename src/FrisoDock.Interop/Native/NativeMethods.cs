@@ -157,6 +157,9 @@ internal static class NativeMethods
     // ------------------------------------------------------------------ DWM
 
     [DllImport(Dwmapi)]
+    internal static extern int DwmFlush();
+
+    [DllImport(Dwmapi)]
     internal static extern int DwmGetWindowAttribute(nint windowHandle, int attribute, out int value, int size);
 
     [DllImport(Dwmapi)]
