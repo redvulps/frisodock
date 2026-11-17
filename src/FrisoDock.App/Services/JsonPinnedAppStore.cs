@@ -42,7 +42,7 @@ public sealed class JsonPinnedAppStore : IPinnedAppStore
             string json = File.ReadAllText(_filePath);
             List<PinnedApp>? apps = JsonSerializer.Deserialize<List<PinnedApp>>(json, SerializerOptions);
 
-            if (apps is null || apps.Count == 0)
+            if (apps is null)
             {
                 return CreateDefaults();
             }
@@ -68,7 +68,9 @@ public sealed class JsonPinnedAppStore : IPinnedAppStore
             }
 
             string json = JsonSerializer.Serialize(apps, SerializerOptions);
-            File.WriteAllText(_filePath, json);
+            string temporaryPath = _filePath + ".tmp";
+            File.WriteAllText(temporaryPath, json);
+            File.Move(temporaryPath, _filePath, overwrite: true);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

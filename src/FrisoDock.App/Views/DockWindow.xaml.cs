@@ -163,6 +163,7 @@ public partial class DockWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        EndDrag();
         CloseJumpList();
         CloseTrayFlyout();
         CloseQuickSettings();
@@ -211,7 +212,7 @@ public partial class DockWindow : Window
     /// </summary>
     private bool HasOpenFlyout()
     {
-        return _preview is not null || HasOpenPanel();
+        return _dragCandidate is not null || _preview is not null || HasOpenPanel();
     }
 
     /// <summary>
@@ -343,7 +344,11 @@ public partial class DockWindow : Window
         _dragOrigin = e.GetPosition(AppItems);
         _dragging = false;
 
-        AppItems.CaptureMouse();
+        CancelPreview();
+        if (!AppItems.CaptureMouse())
+        {
+            EndDrag();
+        }
         e.Handled = true;
     }
 
@@ -353,8 +358,14 @@ public partial class DockWindow : Window
     /// </summary>
     private void UpdateDrag(MouseEventArgs e)
     {
-        if (_dragCandidate is null || e.LeftButton != MouseButtonState.Pressed)
+        if (_dragCandidate is null)
         {
+            return;
+        }
+
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            EndDrag();
             return;
         }
 
@@ -362,20 +373,32 @@ public partial class DockWindow : Window
 
         if (!_dragging)
         {
-            if (Math.Abs(position.X - _dragOrigin.X) < SystemParameters.MinimumHorizontalDragDistance)
+            if (!DockDragGeometry.HasMoved(_dragOrigin, position,
+                SystemParameters.MinimumHorizontalDragDistance, SystemParameters.MinimumVerticalDragDistance))
             {
                 return;
             }
 
             _dragging = true;
+            _dragCandidate.IsDragging = true;
             CancelPreview();
+            ResetMagnification();
+            AppItems.Cursor = Cursors.SizeAll;
+            AppItems.ForceCursor = true;
         }
 
-        DockItemViewModel? target = FindItemAt(position);
-
-        if (target is not null)
+        // Use stable layout slots, including their gaps, rather than transformed icon hit tests.
+        var slots = new List<Rect>(_viewModel.Items.Count);
+        for (int index = 0; index < _viewModel.Items.Count; index++)
         {
-            _viewModel.MoveItem(_dragCandidate.Key, _viewModel.Items.IndexOf(target));
+            slots.Add(AppItems.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container
+                ? container.TransformToAncestor(AppItems).TransformBounds(new Rect(container.RenderSize)) : Rect.Empty);
+        }
+
+        int target = DockDragGeometry.FindTarget(e.GetPosition(AppItems), slots, _settings.Current.Edge.IsVertical());
+        if (target >= 0)
+        {
+            _viewModel.MoveItem(_dragCandidate.Key, target, deferSave: true);
         }
     }
 
@@ -402,7 +425,9 @@ public partial class DockWindow : Window
 
         e.Handled = true;
 
-        if (!wasDragging && candidate.ActivateCommand.CanExecute(null))
+        if (!wasDragging && _viewModel.Items.Contains(candidate)
+            && ReferenceEquals(FindItemAt(e.GetPosition(AppItems)), candidate)
+            && candidate.ActivateCommand.CanExecute(null))
         {
             candidate.ActivateCommand.Execute(null);
         }
@@ -415,8 +440,25 @@ public partial class DockWindow : Window
 
     private void EndDrag()
     {
+        if (_dragCandidate is not null)
+        {
+            _dragCandidate.IsDragging = false;
+        }
+
+        bool persist = _dragging;
         _dragCandidate = null;
         _dragging = false;
+        AppItems.ClearValue(CursorProperty);
+        AppItems.ForceCursor = false;
+        if (AppItems.IsMouseCaptured)
+        {
+            AppItems.ReleaseMouseCapture();
+        }
+
+        if (persist)
+        {
+            _viewModel.CommitReorder();
+        }
     }
 
     /// <summary>
@@ -455,6 +497,11 @@ public partial class DockWindow : Window
     {
         UpdateDrag(e);
 
+        if (_dragging)
+        {
+            return;
+        }
+
         double magnification = _settings.Current.EffectiveMagnification;
         if (magnification <= 1.0)
         {
@@ -471,6 +518,10 @@ public partial class DockWindow : Window
 
     private void OnPanelMouseLeave(object sender, MouseEventArgs e)
     {
+        if (_dragging)
+        {
+            return;
+        }
         // It retracts with animation, not at once: the abrupt cut is what made the icon drop to its
         // rest size the moment the cursor left.
         _magnifier.Release();
@@ -493,6 +544,11 @@ public partial class DockWindow : Window
     /// </summary>
     private void OnAppIconToolTipOpening(object sender, ToolTipEventArgs e)
     {
+        if (_dragging)
+        {
+            e.Handled = true;
+            return;
+        }
         if (sender is not FrameworkElement { DataContext: DockItemViewModel item } element)
         {
             return;

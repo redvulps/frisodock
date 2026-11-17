@@ -16,6 +16,7 @@ public sealed class PinnedAppsService : IPinnedAppsEditor
     private readonly PinnedAppsReorder _reorder;
 
     private IReadOnlyList<PinnedApp> _apps;
+    private bool _pendingReorder;
 
     public PinnedAppsService(IPinnedAppStore store, PinnedAppsReorder reorder)
     {
@@ -56,12 +57,13 @@ public sealed class PinnedAppsService : IPinnedAppsEditor
 
         _apps = updated;
         _store.Save(updated);
+        _pendingReorder = false;
 
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Moves a pinned app to another position and writes the new order.</summary>
-    public void Reorder(AppKey key, int targetIndex)
+    /// <summary>Moves a pinned app, optionally deferring the save until the drag finishes.</summary>
+    public void Reorder(AppKey key, int targetIndex, bool persist = true)
     {
         IReadOnlyList<PinnedApp> updated = _reorder.Move(_apps, key, targetIndex);
 
@@ -71,9 +73,22 @@ public sealed class PinnedAppsService : IPinnedAppsEditor
         }
 
         _apps = updated;
-        _store.Save(updated);
+        _pendingReorder = true;
+        if (persist)
+        {
+            CommitReorder();
+        }
 
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void CommitReorder()
+    {
+        if (_pendingReorder)
+        {
+            _store.Save(_apps);
+            _pendingReorder = false;
+        }
     }
 
     private static PinnedApp CreatePinnedApp(DockItem item)

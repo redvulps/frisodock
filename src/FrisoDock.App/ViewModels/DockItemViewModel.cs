@@ -32,6 +32,9 @@ public sealed partial class DockItemViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasMultipleWindows;
 
+    [ObservableProperty]
+    private bool _isDragging;
+
     public DockItemViewModel(DockItem item, ImageSource? icon, IWindowActivator activator, IAppLauncher launcher)
     {
         _activator = activator;
