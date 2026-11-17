@@ -15,8 +15,40 @@ namespace FrisoDock.Interop.Services;
 public sealed class VolumeController : IVolumeController
 {
     private const int SuccessHResult = 0;
+    private readonly SemaphoreSlim _gate = new(1, 1);
 
-    public VolumeStatus GetStatus()
+    public async Task<VolumeStatus> GetStatusAsync()
+    {
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            return await Task.Run(ReadStatus).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task SetStateAsync(int? level = null, bool? isMuted = null)
+    {
+        if (level is null && isMuted is null)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await Task.Run(() => WriteState(level, isMuted)).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private static VolumeStatus ReadStatus()
     {
         IAudioEndpointVolume? volume = OpenDefaultEndpoint();
 
@@ -41,7 +73,7 @@ public sealed class VolumeController : IVolumeController
         }
     }
 
-    public void SetLevel(int level)
+    private static void WriteState(int? level, bool? isMuted)
     {
         IAudioEndpointVolume? volume = OpenDefaultEndpoint();
 
@@ -52,26 +84,15 @@ public sealed class VolumeController : IVolumeController
 
         try
         {
-            volume.SetMasterVolumeLevelScalar(Math.Clamp(level, 0, 100) / 100f, 0);
-        }
-        finally
-        {
-            Marshal.ReleaseComObject(volume);
-        }
-    }
+            if (level is int value)
+            {
+                volume.SetMasterVolumeLevelScalar(Math.Clamp(value, 0, 100) / 100f, 0);
+            }
 
-    public void SetMuted(bool isMuted)
-    {
-        IAudioEndpointVolume? volume = OpenDefaultEndpoint();
-
-        if (volume is null)
-        {
-            return;
-        }
-
-        try
-        {
-            volume.SetMute(isMuted, 0);
+            if (isMuted is bool muted)
+            {
+                volume.SetMute(muted, 0);
+            }
         }
         finally
         {

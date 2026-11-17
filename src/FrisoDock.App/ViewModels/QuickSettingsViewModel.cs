@@ -1,6 +1,7 @@
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FrisoDock.App.Services;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using FrisoDock.Core.Resources;
@@ -45,12 +46,19 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
     // system — otherwise each update would rewrite the volume and brightness it just read.
     private bool _applying;
     private bool _disposed;
-    private bool _refreshing;
+    private readonly RefreshOperation<RadioStatus> _wifiRefresh = new("Wi-Fi");
+    private readonly RefreshOperation<RadioStatus> _bluetoothRefresh = new("Bluetooth");
+    private readonly RefreshOperation<BrightnessStatus> _brightnessRefresh = new("Brightness");
+    private readonly RefreshOperation<VolumeStatus> _volumeRefresh = new("Volume");
+    private readonly RefreshOperation<NetworkStatus> _networkRefresh = new("Network");
+    private readonly RefreshOperation<BatteryStatus> _batteryRefresh = new("Battery");
+    private NetworkStatus _networkStatus = NetworkStatus.Disconnected;
     private int _brightnessRevision;
     private int _volumeRevision;
     private int _wifiRevision;
     private int _bluetoothRevision;
     private Task _brightnessWriteTask = Task.CompletedTask;
+    private Task _volumeWriteTask = Task.CompletedTask;
 
     [ObservableProperty]
     private int _brightnessLevel;
@@ -115,6 +123,7 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
     public IReadOnlyList<QuickTileViewModel> Tiles { get; }
 
     internal Task BrightnessWriteTask => _brightnessWriteTask;
+    internal Task VolumeWriteTask => _volumeWriteTask;
 
     /// <summary>Starts tracking the changes. Only while the panel is open.</summary>
     public void Start()
@@ -147,27 +156,27 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
 
     partial void OnVolumeLevelChanged(int value)
     {
-        if (_applying)
+        if (_applying || _disposed)
         {
             return;
         }
 
-        _volume.SetLevel(value);
-        _volumeRevision++;
-
         // Touching the volume unmutes, as the Windows control does.
         if (IsMuted && value > 0)
         {
-            IsMuted = false;
+            ApplyRead(() => IsMuted = false);
         }
+
+        _volumeRevision++;
+        _volumeWriteTask = WriteVolumeAsync(value, IsMuted);
     }
 
     partial void OnIsMutedChanged(bool value)
     {
-        if (!_applying)
+        if (!_applying && !_disposed)
         {
             _volumeRevision++;
-            _volume.SetMuted(value);
+            _volumeWriteTask = WriteVolumeAsync(null, value);
         }
     }
 
@@ -202,6 +211,7 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
         if (!_disposed && revision == _wifiRevision)
         {
             ApplyRadio(_wifiTile, status);
+            UpdateWifiDetail();
         }
     }
 
@@ -220,69 +230,88 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
         _ = RefreshAsync();
     }
 
-    /// <summary>Reads hardware without blocking the dispatcher or overlapping another refresh.</summary>
-    public async Task RefreshAsync()
+    /// <summary>Refreshes sources independently, skipping only sources with an outstanding query or write.</summary>
+    public Task RefreshAsync()
     {
-        if (_disposed || _refreshing)
+        if (_disposed)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        _refreshing = true;
         int brightnessRevision = _brightnessRevision;
         int volumeRevision = _volumeRevision;
         int wifiRevision = _wifiRevision;
         int bluetoothRevision = _bluetoothRevision;
+        return Task.WhenAll(
+            _wifiRefresh.RunAsync(() => _radios.GetStatusAsync(RadioDeviceKind.WiFi), status =>
+            {
+                if (!_disposed && wifiRevision == _wifiRevision)
+                {
+                    ApplyRadio(_wifiTile, status);
+                    UpdateWifiDetail();
+                }
+            }),
+            _bluetoothRefresh.RunAsync(() => _radios.GetStatusAsync(RadioDeviceKind.Bluetooth), status =>
+            {
+                if (!_disposed && bluetoothRevision == _bluetoothRevision)
+                {
+                    ApplyRadio(_bluetoothTile, status);
+                }
+            }),
+            _brightnessWriteTask.IsCompleted
+                ? _brightnessRefresh.RunAsync(_brightness.GetStatusAsync, status => ApplyRead(() =>
+                {
+                    IsBrightnessAvailable = status.IsAvailable;
+                    if (brightnessRevision == _brightnessRevision && _brightnessWriteTask.IsCompleted)
+                    {
+                        BrightnessLevel = status.Level;
+                    }
+                })) : Task.CompletedTask,
+            _volumeWriteTask.IsCompleted
+                ? _volumeRefresh.RunAsync(_volume.GetStatusAsync, status => ApplyRead(() =>
+                {
+                    IsVolumeAvailable = status.IsAvailable;
+                    if (volumeRevision == _volumeRevision && _volumeWriteTask.IsCompleted)
+                    {
+                        VolumeLevel = status.Level;
+                        IsMuted = status.IsMuted;
+                    }
+                })) : Task.CompletedTask,
+            _networkRefresh.RunAsync(() => Task.Run(_network.GetStatus), status =>
+            {
+                if (!_disposed)
+                {
+                    _networkStatus = status;
+                    UpdateWifiDetail();
+                }
+            }),
+            _batteryRefresh.RunAsync(() => Task.Run(_battery.GetStatus), status =>
+            {
+                if (!_disposed)
+                {
+                    ApplyBattery(status);
+                }
+            }));
+    }
+
+    private void UpdateWifiDetail() => _wifiTile.Detail = _wifiTile.IsOn && _networkStatus.IsWireless ? _networkStatus.Name : null;
+
+    private void ApplyRead(Action apply)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        bool wasApplying = _applying;
+        _applying = true;
         try
         {
-            Task<RadioStatus> wifiTask = _radios.GetStatusAsync(RadioDeviceKind.WiFi);
-            Task<RadioStatus> bluetoothTask = _radios.GetStatusAsync(RadioDeviceKind.Bluetooth);
-            Task<BrightnessStatus> brightnessTask = _brightness.GetStatusAsync();
-            var systemTask = Task.Run(() => (_network.GetStatus(), _volume.GetStatus(), _battery.GetStatus()));
-            await Task.WhenAll(wifiTask, bluetoothTask, brightnessTask, systemTask);
-            if (_disposed)
-            {
-                return;
-            }
-
-            _applying = true;
-            if (wifiRevision == _wifiRevision)
-            {
-                ApplyRadio(_wifiTile, await wifiTask);
-            }
-
-            if (bluetoothRevision == _bluetoothRevision)
-            {
-                ApplyRadio(_bluetoothTile, await bluetoothTask);
-            }
-
-            (NetworkStatus network, VolumeStatus volume, BatteryStatus battery) = await systemTask;
-            _wifiTile.Detail = _wifiTile.IsOn && network.IsWireless ? network.Name : null;
-
-            BrightnessStatus brightness = await brightnessTask;
-            IsBrightnessAvailable = brightness.IsAvailable;
-            if (brightnessRevision == _brightnessRevision && _brightnessWriteTask.IsCompleted)
-            {
-                BrightnessLevel = brightness.Level;
-            }
-
-            IsVolumeAvailable = volume.IsAvailable;
-            if (volumeRevision == _volumeRevision)
-            {
-                VolumeLevel = volume.Level;
-                IsMuted = volume.IsMuted;
-            }
-
-            ApplyBattery(battery);
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            System.Diagnostics.Trace.TraceError("Quick settings refresh failed: {0}", exception);
+            apply();
         }
         finally
         {
-            _applying = false;
-            _refreshing = false;
+            _applying = wasApplying;
         }
     }
 
@@ -295,6 +324,18 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             System.Diagnostics.Trace.TraceError("Brightness write failed: {0}", exception);
+        }
+    }
+
+    private async Task WriteVolumeAsync(int? level, bool? isMuted)
+    {
+        try
+        {
+            await _volume.SetStateAsync(level, isMuted);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            System.Diagnostics.Trace.TraceError("Volume write failed: {0}", exception);
         }
     }
 

@@ -266,7 +266,8 @@ public partial class App : Application
         services.AddSingleton<IRadioController, RadioController>();
         services.AddSingleton<IBrightnessController>(_ =>
             new BufferedBrightnessController(new BrightnessController()));
-        services.AddSingleton<IVolumeController, VolumeController>();
+        services.AddSingleton<IVolumeController>(_ =>
+            new BufferedVolumeController(new VolumeController()));
         services.AddSingleton<IBatteryProvider, BatteryProvider>();
         services.AddSingleton<INetworkProvider, NetworkProvider>();
         services.AddSingleton<ISettingsPageLauncher, SettingsPageLauncher>();
