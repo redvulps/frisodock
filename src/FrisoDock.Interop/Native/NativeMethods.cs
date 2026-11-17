@@ -30,6 +30,10 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool EnumWindows(NativeTypes.EnumWindowsProc callback, nint lParam);
 
+    [DllImport(User32, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool EnumChildWindows(nint parent, NativeTypes.EnumWindowsProc callback, nint lParam);
+
     [DllImport(User32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool IsWindow(nint windowHandle);

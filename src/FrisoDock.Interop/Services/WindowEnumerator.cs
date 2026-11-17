@@ -25,6 +25,8 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
     private readonly NativeTypes.WinEventProc _winEventCallback;
     private readonly List<nint> _hooks = [];
     private readonly Dictionary<string, string?> _friendlyNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HostedWindowIdentityResolver _identities = new(
+        GetProcessId, GetExecutablePath, GetChildWindows, GetWindowClass);
 
     private bool _disposed;
 
@@ -215,18 +217,42 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
 
     private WindowInfo CreateWindowInfo(nint handle, nint foreground)
     {
-        NativeMethods.GetWindowThreadProcessId(handle, out uint processId);
-        string? executablePath = GetExecutablePath(processId);
+        string title = GetWindowTitle(handle);
+        WindowProcessIdentity identity = _identities.Resolve(handle, title);
 
         return new WindowInfo(
             handle,
-            GetWindowTitle(handle),
-            (int)processId,
-            executablePath,
+            title,
+            (int)identity.ProcessId,
+            identity.ExecutablePath,
             NativeMethods.IsIconic(handle),
             handle == foreground,
             GetBounds(handle),
-            GetFriendlyName(executablePath));
+            identity.DisplayName ?? GetFriendlyName(identity.ExecutablePath));
+    }
+
+    private static uint GetProcessId(nint handle)
+    {
+        NativeMethods.GetWindowThreadProcessId(handle, out uint processId);
+        return processId;
+    }
+
+    private static IReadOnlyList<nint> GetChildWindows(nint handle)
+    {
+        var children = new List<nint>();
+        NativeMethods.EnumChildWindows(handle, (child, _) =>
+        {
+            children.Add(child);
+            return true;
+        }, 0);
+        return children;
+    }
+
+    private static string GetWindowClass(nint handle)
+    {
+        var buffer = new StringBuilder(256);
+        NativeMethods.GetClassName(handle, buffer, buffer.Capacity);
+        return buffer.ToString();
     }
 
     /// <summary>
