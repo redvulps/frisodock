@@ -236,7 +236,9 @@ public partial class App : Application
         services.AddSingleton<ITaskbarStateStore, FileTaskbarStateStore>();
         services.AddSingleton<ITaskbarController, TaskbarController>();
         services.AddSingleton<ITaskbarRevealWatcher, TaskbarRevealWatcher>();
-        services.AddSingleton<IWindowEnumerator, WindowEnumerator>();
+        services.AddSingleton<WindowEnumerator>();
+        services.AddSingleton<IWindowEnumerator>(provider =>
+            new WindowSnapshotCache(provider.GetRequiredService<WindowEnumerator>()));
         services.AddSingleton<IWindowActivator, WindowActivator>();
         services.AddSingleton<IStartMenuInvoker, StartMenuInvoker>();
         services.AddSingleton<IIconExtractor, IconExtractor>();
@@ -262,7 +264,8 @@ public partial class App : Application
         services.AddSingleton<IShellTrayPriority>(provider => (IShellTrayPriority)provider.GetRequiredService<ITrayHost>());
         services.AddSingleton<IWindowThumbnailService, DwmThumbnailService>();
         services.AddSingleton<IRadioController, RadioController>();
-        services.AddSingleton<IBrightnessController, BrightnessController>();
+        services.AddSingleton<IBrightnessController>(_ =>
+            new BufferedBrightnessController(new BrightnessController()));
         services.AddSingleton<IVolumeController, VolumeController>();
         services.AddSingleton<IBatteryProvider, BatteryProvider>();
         services.AddSingleton<INetworkProvider, NetworkProvider>();

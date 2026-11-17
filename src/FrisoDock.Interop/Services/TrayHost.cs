@@ -26,6 +26,7 @@ public sealed class TrayHost : ITrayHost, IShellTrayPriority, IDisposable
 {
     /// <summary>Height of the host's hidden window. It only has to be plausible; nothing is drawn in it.</summary>
     private const int HostWindowHeight = 24;
+    private const uint ExplorerMessageTimeoutMilliseconds = 200;
 
     private readonly List<TrayIcon> _icons = [];
 
@@ -443,7 +444,17 @@ public sealed class TrayHost : ITrayHost, IShellTrayPriority, IDisposable
             return NativeMethods.DefWindowProc(windowHandle, message, wParam, lParam);
         }
 
-        return NativeMethods.SendMessage(explorer, message, wParam, lParam);
+        return SendToExplorer(explorer, message, wParam, lParam);
+    }
+
+    internal static nint SendToExplorer(nint explorer, uint message, nint wParam, nint lParam)
+    {
+        // WM_COPYDATA must stay synchronous so the sender's payload remains valid.
+        // A hung Explorer must still release our UI after the bounded wait.
+        nint sent = NativeMethods.SendMessageTimeout(
+            explorer, message, wParam, lParam,
+            NativeConstants.SMTO_ABORTIFHUNG, ExplorerMessageTimeoutMilliseconds, out nint result);
+        return sent != 0 ? result : 0;
     }
 
     // ------------------------------------------------------------------ icon list

@@ -1,10 +1,10 @@
-using System.Collections.Concurrent;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
+using FrisoDock.Core.Services;
 
 namespace FrisoDock.App.Services;
 
@@ -15,14 +15,14 @@ namespace FrisoDock.App.Services;
 /// The cache exists because the dock list is rebuilt on every window change; without it,
 /// every burst of events would trigger dozens of icon extractions.
 ///
-/// The dictionary is concurrent because the jump list is warmed off the UI thread. The images
+/// The cache is concurrent because the jump list is warmed off the UI thread. The images
 /// cross threads because they are frozen in <see cref="ToImageSource"/>.
 /// </summary>
 public sealed class IconImageProvider
 {
     private readonly IIconExtractor _extractor;
     private readonly DockSettingsService _settings;
-    private readonly ConcurrentDictionary<string, ImageSource?> _cache = new();
+    private readonly BoundedCache<string, ImageSource?> _cache = new(512, StringComparer.OrdinalIgnoreCase);
 
     public IconImageProvider(IIconExtractor extractor, DockSettingsService settings)
     {
@@ -40,15 +40,7 @@ public sealed class IconImageProvider
 
         string cacheKey = item.IconSource ?? $"hwnd:{item.IconWindowHandle}";
 
-        if (_cache.TryGetValue(cacheKey, out ImageSource? cached))
-        {
-            return cached;
-        }
-
-        ImageSource? image = Resolve(item);
-        _cache[cacheKey] = image;
-
-        return image;
+        return _cache.GetOrAdd(cacheKey, () => Resolve(item));
     }
 
     /// <summary>
@@ -70,16 +62,11 @@ public sealed class IconImageProvider
 
         string cacheKey = $"{path}|{iconIndex}|{size}";
 
-        if (_cache.TryGetValue(cacheKey, out ImageSource? cached))
+        return _cache.GetOrAdd(cacheKey, () =>
         {
-            return cached;
-        }
-
-        using IconHandle? handle = _extractor.FromFile(path, size, iconIndex);
-        ImageSource? image = ToImageSource(handle);
-        _cache[cacheKey] = image;
-
-        return image;
+            using IconHandle? handle = _extractor.FromFile(path, size, iconIndex);
+            return ToImageSource(handle);
+        });
     }
 
     /// <summary>Drops the cache. Used when the system theme changes and the icons have to be reread.</summary>

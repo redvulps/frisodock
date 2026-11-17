@@ -71,6 +71,8 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
         InstallHook(NativeConstants.EVENT_SYSTEM_FOREGROUND, NativeConstants.EVENT_SYSTEM_MINIMIZEEND);
         InstallHook(NativeConstants.EVENT_OBJECT_CREATE, NativeConstants.EVENT_OBJECT_HIDE);
         InstallHook(NativeConstants.EVENT_OBJECT_NAMECHANGE, NativeConstants.EVENT_OBJECT_NAMECHANGE);
+        InstallHook(NativeConstants.EVENT_OBJECT_LOCATIONCHANGE, NativeConstants.EVENT_OBJECT_LOCATIONCHANGE);
+        InstallHook(NativeConstants.EVENT_OBJECT_CLOAKED, NativeConstants.EVENT_OBJECT_UNCLOAKED);
     }
 
     public void Stop()

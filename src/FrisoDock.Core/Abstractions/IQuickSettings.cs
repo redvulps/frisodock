@@ -9,7 +9,7 @@ public interface IRadioController
     /// State of a radio. It returns unavailable when the machine has no such radio or Windows
     /// denies access — in that case the tile is disabled instead of lying.
     /// </summary>
-    RadioStatus GetStatus(RadioDeviceKind kind);
+    Task<RadioStatus> GetStatusAsync(RadioDeviceKind kind);
 
     /// <summary>Turns the radio on or off. Returns the state that ended up in force.</summary>
     Task<RadioStatus> SetStateAsync(RadioDeviceKind kind, bool isOn);
@@ -18,9 +18,9 @@ public interface IRadioController
 /// <summary>Screen brightness.</summary>
 public interface IBrightnessController
 {
-    BrightnessStatus GetStatus();
+    Task<BrightnessStatus> GetStatusAsync();
 
-    void SetLevel(int level);
+    Task SetLevelAsync(int level);
 }
 
 /// <summary>Volume of the default output device.</summary>

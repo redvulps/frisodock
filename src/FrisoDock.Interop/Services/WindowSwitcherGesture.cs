@@ -29,13 +29,9 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
     private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(2);
 
     private readonly object _sync = new();
-
-    // Win32 stores only the delegate's pointer. Without keeping the reference alive, the GC collects it
-    // and the process dies on the first key — the same trap as the enumerator's WinEventProc.
-    private NativeTypes.LowLevelKeyboardProc? _callback;
-
-    private Thread? _thread;
-    private uint _threadId;
+    private readonly IKeyboardHookPlatform _platform;
+    private readonly TimeSpan _waitTimeout;
+    private HookRun? _run;
     private nint _hook;
     private bool _altDown;
     private bool _sessionActive;
@@ -43,6 +39,27 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
     private volatile bool _recognizeByApp;
     private volatile bool _recognizeSameApp;
     private bool _disposed;
+
+    public WindowSwitcherGesture() : this(new KeyboardHookPlatform(), StopTimeout)
+    {
+    }
+
+    internal WindowSwitcherGesture(IKeyboardHookPlatform platform, TimeSpan waitTimeout)
+    {
+        _platform = platform;
+        _waitTimeout = waitTimeout;
+    }
+
+    internal Task Completion
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _run?.Stopped.Task ?? Task.CompletedTask;
+            }
+        }
+    }
 
     public event EventHandler<WindowSwitcherStepEventArgs>? Stepped;
 
@@ -52,10 +69,17 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
 
     public void SetModes(bool groupedByApp, bool sameApp)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        _recognizeByApp = groupedByApp;
-        _recognizeSameApp = sameApp;
+        HookRun? stopping = null;
+        lock (_sync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _recognizeByApp = groupedByApp;
+            _recognizeSameApp = sameApp;
+            if (!groupedByApp && !sameApp)
+            {
+                stopping = RequestStop();
+            }
+        }
 
         if (groupedByApp || sameApp)
         {
@@ -63,103 +87,159 @@ public sealed class WindowSwitcherGesture : IWindowSwitcherGesture, IDisposable
             return;
         }
 
-        Stop();
+        WaitForStop(stopping);
     }
 
     public void Stop()
     {
+        HookRun? run;
         lock (_sync)
         {
-            if (_thread is null)
-            {
-                return;
-            }
+            _recognizeByApp = false;
+            _recognizeSameApp = false;
+            run = RequestStop();
+        }
 
-            if (_threadId != 0)
-            {
-                NativeMethods.PostThreadMessage(_threadId, NativeConstants.WM_QUIT, 0, 0);
-            }
+        WaitForStop(run);
+    }
 
-            _thread.Join(StopTimeout);
-            _thread = null;
-            _threadId = 0;
-            _altDown = false;
-            _sessionActive = false;
+    private HookRun? RequestStop()
+    {
+        HookRun? run = _run;
+        if (run is not null)
+        {
+            run.StopRequested = true;
+            uint threadId = Volatile.Read(ref run.ThreadId);
+            if (threadId != 0)
+            {
+                _platform.PostQuit(threadId);
+            }
+        }
+
+        return run;
+    }
+
+    private void WaitForStop(HookRun? run)
+    {
+        // A timed-out worker still owns its hook and callback. Keep it tracked until its
+        // finally block unhooks it; a replacement must never share that native state.
+        if (run is not null && run.Thread != Thread.CurrentThread)
+        {
+            run.Thread.Join(_waitTimeout);
         }
     }
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        Stop();
-        _disposed = true;
-    }
-
-    private void Start()
-    {
         lock (_sync)
         {
-            if (_thread is not null)
+            if (_disposed)
             {
                 return;
             }
 
-            using var ready = new ManualResetEventSlim(false);
+            _disposed = true;
+        }
+
+        Stop();
+    }
+
+    private void Start()
+    {
+        HookRun run;
+        lock (_sync)
+        {
+            if (_disposed || _run is not null || (!_recognizeByApp && !_recognizeSameApp))
+            {
+                return;
+            }
 
             // A thread of its own, and not the UI one: this hook's return is in the path of every key
             // in the system, and Windows drops a hook that takes too long to answer. On the UI thread,
             // a dock animation in progress would be enough to slow everyone's typing down.
-            var thread = new Thread(() => Run(ready))
+            run = new HookRun();
+            run.Thread = new Thread(() => Run(run))
             {
                 Name = "FrisoDock.WindowSwitcherGesture",
                 IsBackground = true,
             };
 
-            thread.Start();
-            ready.Wait(StopTimeout);
-
-            _thread = thread;
+            _run = run;
+            run.Thread.Start();
         }
+
+        // Readiness has no disposable wait handle: late startup remains safe after this
+        // bounded wait, including when Stop was requested before the message queue existed.
+        run.Ready.Task.Wait(_waitTimeout);
     }
 
     /// <summary>Installs the hook and keeps the message pump that feeds it.</summary>
-    private void Run(ManualResetEventSlim ready)
+    private void Run(HookRun run)
     {
-        _threadId = NativeMethods.GetCurrentThreadId();
-        _callback = OnKey;
-        _hook = NativeMethods.SetWindowsHookEx(
-            NativeConstants.WH_KEYBOARD_LL,
-            _callback,
-            NativeMethods.GetModuleHandle(null),
-            0);
-
-        ready.Set();
-
-        if (_hook == 0)
-        {
-            return;
-        }
-
+        NativeTypes.LowLevelKeyboardProc callback = OnKey;
+        bool installed = false;
         try
         {
+            uint threadId = _platform.CreateMessageQueue();
+            Volatile.Write(ref run.ThreadId, threadId);
+            if (run.StopRequested)
+            {
+                return;
+            }
+
+            _hook = _platform.Install(callback);
+            installed = _hook != 0;
+            run.Ready.TrySetResult();
+            if (!installed || run.StopRequested)
+            {
+                return;
+            }
+
             // A low-level hook only receives calls on the thread that installed it, and only
             // while that thread is dispatching messages.
-            while (NativeMethods.GetMessage(out MSG message, 0, 0, 0) > 0)
+            while (!run.StopRequested && _platform.GetMessage(out MSG message) > 0)
             {
-                NativeMethods.TranslateMessage(ref message);
-                NativeMethods.DispatchMessage(ref message);
+                _platform.Dispatch(ref message);
             }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            System.Diagnostics.Trace.TraceError("Keyboard hook failed: {0}", exception);
         }
         finally
         {
-            NativeMethods.UnhookWindowsHookEx(_hook);
+            run.Ready.TrySetResult();
+            if (installed)
+            {
+                _platform.Uninstall(_hook);
+            }
+
             _hook = 0;
-            _callback = null;
+            GC.KeepAlive(callback);
+            bool restart;
+            lock (_sync)
+            {
+                _run = null;
+                _altDown = false;
+                _sessionActive = false;
+                restart = run.StopRequested && !_disposed && (_recognizeByApp || _recognizeSameApp);
+            }
+
+            run.Stopped.TrySetResult();
+            if (restart)
+            {
+                Start();
+            }
         }
+    }
+
+    private sealed class HookRun
+    {
+        public readonly TaskCompletionSource Ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource Stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Thread Thread = null!;
+        public uint ThreadId;
+        public volatile bool StopRequested;
     }
 
     /// <summary>

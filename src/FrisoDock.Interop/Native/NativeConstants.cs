@@ -110,6 +110,10 @@ internal static class NativeConstants
     internal const int GCLP_HICONSM = -34;
 
     internal const uint SMTO_ABORTIFHUNG = 0x0002;
+    internal const uint PM_NOREMOVE = 0x0000;
+    internal const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
+    internal const uint EVENT_OBJECT_CLOAKED = 0x8017;
+    internal const uint EVENT_OBJECT_UNCLOAKED = 0x8018;
 
     // --- SHGetFileInfo ---
     internal const uint SHGFI_ICON = 0x000000100;

@@ -45,6 +45,12 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
     // system — otherwise each update would rewrite the volume and brightness it just read.
     private bool _applying;
     private bool _disposed;
+    private bool _refreshing;
+    private int _brightnessRevision;
+    private int _volumeRevision;
+    private int _wifiRevision;
+    private int _bluetoothRevision;
+    private Task _brightnessWriteTask = Task.CompletedTask;
 
     [ObservableProperty]
     private int _brightnessLevel;
@@ -104,16 +110,18 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
             Interval = TimeSpan.FromSeconds(1),
         };
         _refreshTimer.Tick += OnRefreshTick;
-
-        Refresh();
     }
 
     public IReadOnlyList<QuickTileViewModel> Tiles { get; }
 
+    internal Task BrightnessWriteTask => _brightnessWriteTask;
+
     /// <summary>Starts tracking the changes. Only while the panel is open.</summary>
     public void Start()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _refreshTimer.Start();
+        _ = RefreshAsync();
     }
 
     public void Dispose()
@@ -130,9 +138,10 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
 
     partial void OnBrightnessLevelChanged(int value)
     {
-        if (!_applying)
+        if (!_applying && !_disposed)
         {
-            _brightness.SetLevel(value);
+            _brightnessRevision++;
+            _brightnessWriteTask = WriteBrightnessAsync(value);
         }
     }
 
@@ -144,6 +153,7 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
         }
 
         _volume.SetLevel(value);
+        _volumeRevision++;
 
         // Touching the volume unmutes, as the Windows control does.
         if (IsMuted && value > 0)
@@ -156,6 +166,7 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
     {
         if (!_applying)
         {
+            _volumeRevision++;
             _volume.SetMuted(value);
         }
     }
@@ -186,47 +197,104 @@ public sealed partial class QuickSettingsViewModel : ObservableObject, IDisposab
 
     private async Task ToggleWifiAsync()
     {
+        int revision = ++_wifiRevision;
         RadioStatus status = await _radios.SetStateAsync(RadioDeviceKind.WiFi, !_wifiTile.IsOn);
-        ApplyRadio(_wifiTile, status);
+        if (!_disposed && revision == _wifiRevision)
+        {
+            ApplyRadio(_wifiTile, status);
+        }
     }
 
     private async Task ToggleBluetoothAsync()
     {
+        int revision = ++_bluetoothRevision;
         RadioStatus status = await _radios.SetStateAsync(RadioDeviceKind.Bluetooth, !_bluetoothTile.IsOn);
-        ApplyRadio(_bluetoothTile, status);
+        if (!_disposed && revision == _bluetoothRevision)
+        {
+            ApplyRadio(_bluetoothTile, status);
+        }
     }
 
     private void OnRefreshTick(object? sender, EventArgs e)
     {
-        Refresh();
+        _ = RefreshAsync();
     }
 
-    private void Refresh()
+    /// <summary>Reads hardware without blocking the dispatcher or overlapping another refresh.</summary>
+    public async Task RefreshAsync()
     {
-        _applying = true;
+        if (_disposed || _refreshing)
+        {
+            return;
+        }
 
+        _refreshing = true;
+        int brightnessRevision = _brightnessRevision;
+        int volumeRevision = _volumeRevision;
+        int wifiRevision = _wifiRevision;
+        int bluetoothRevision = _bluetoothRevision;
         try
         {
-            ApplyRadio(_wifiTile, _radios.GetStatus(RadioDeviceKind.WiFi));
-            ApplyRadio(_bluetoothTile, _radios.GetStatus(RadioDeviceKind.Bluetooth));
+            Task<RadioStatus> wifiTask = _radios.GetStatusAsync(RadioDeviceKind.WiFi);
+            Task<RadioStatus> bluetoothTask = _radios.GetStatusAsync(RadioDeviceKind.Bluetooth);
+            Task<BrightnessStatus> brightnessTask = _brightness.GetStatusAsync();
+            var systemTask = Task.Run(() => (_network.GetStatus(), _volume.GetStatus(), _battery.GetStatus()));
+            await Task.WhenAll(wifiTask, bluetoothTask, brightnessTask, systemTask);
+            if (_disposed)
+            {
+                return;
+            }
 
-            NetworkStatus network = _network.GetStatus();
+            _applying = true;
+            if (wifiRevision == _wifiRevision)
+            {
+                ApplyRadio(_wifiTile, await wifiTask);
+            }
+
+            if (bluetoothRevision == _bluetoothRevision)
+            {
+                ApplyRadio(_bluetoothTile, await bluetoothTask);
+            }
+
+            (NetworkStatus network, VolumeStatus volume, BatteryStatus battery) = await systemTask;
             _wifiTile.Detail = _wifiTile.IsOn && network.IsWireless ? network.Name : null;
 
-            BrightnessStatus brightness = _brightness.GetStatus();
+            BrightnessStatus brightness = await brightnessTask;
             IsBrightnessAvailable = brightness.IsAvailable;
-            BrightnessLevel = brightness.Level;
+            if (brightnessRevision == _brightnessRevision && _brightnessWriteTask.IsCompleted)
+            {
+                BrightnessLevel = brightness.Level;
+            }
 
-            VolumeStatus volume = _volume.GetStatus();
             IsVolumeAvailable = volume.IsAvailable;
-            VolumeLevel = volume.Level;
-            IsMuted = volume.IsMuted;
+            if (volumeRevision == _volumeRevision)
+            {
+                VolumeLevel = volume.Level;
+                IsMuted = volume.IsMuted;
+            }
 
-            ApplyBattery(_battery.GetStatus());
+            ApplyBattery(battery);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            System.Diagnostics.Trace.TraceError("Quick settings refresh failed: {0}", exception);
         }
         finally
         {
             _applying = false;
+            _refreshing = false;
+        }
+    }
+
+    private async Task WriteBrightnessAsync(int level)
+    {
+        try
+        {
+            await _brightness.SetLevelAsync(level);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            System.Diagnostics.Trace.TraceError("Brightness write failed: {0}", exception);
         }
     }
 

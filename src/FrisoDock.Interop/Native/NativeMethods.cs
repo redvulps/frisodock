@@ -310,6 +310,10 @@ internal static class NativeMethods
     [DllImport(User32)]
     internal static extern int GetMessage(out MSG message, nint windowHandle, uint filterMin, uint filterMax);
 
+    [DllImport(User32, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool PeekMessage(out MSG message, nint windowHandle, uint filterMin, uint filterMax, uint remove);
+
     [DllImport(User32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool TranslateMessage(ref MSG message);

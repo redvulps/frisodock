@@ -102,8 +102,8 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
     /// <summary>Reads the current state and starts observing changes.</summary>
     public void Start()
     {
-        Refresh();
         _windowEnumerator.Start();
+        Refresh();
         Clock.Start();
         QuickStatus.Start();
     }
@@ -222,10 +222,11 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
 
     private void OnWindowsChanged(object? sender, EventArgs e)
     {
-        // Restarting the timer on every event extends the coalescing window: we only recompute
-        // once the burst has really stopped.
-        _refreshTimer.Stop();
-        _refreshTimer.Start();
+        // Keep the first deadline: continuous title or move events must not starve updates.
+        if (!_disposed && !_refreshTimer.IsEnabled)
+        {
+            _refreshTimer.Start();
+        }
     }
 
     private void OnRefreshTick(object? sender, EventArgs e)
