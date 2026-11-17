@@ -6,11 +6,11 @@
 
   <ItemGroup>
     <!-- WMI: é por onde o Windows deixa mudar o brilho do painel interno sem administrador. -->
-    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="10.0.15" />
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
