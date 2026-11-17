@@ -118,6 +118,8 @@ internal struct PROPERTYKEY
 
     /// <summary>System.Title — where the jump list entry's visible label is written.</summary>
     internal static PROPERTYKEY Title => new("F29F85E0-4FF9-1068-AB91-08002B27B3D9", 2);
+
+    internal static PROPERTYKEY AppUserModelId => new("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3", 5);
 }
 
 /// <summary>

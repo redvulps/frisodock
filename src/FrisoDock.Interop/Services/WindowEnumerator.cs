@@ -42,6 +42,13 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
         var windows = new List<WindowInfo>();
         nint shellWindow = NativeMethods.GetShellWindow();
         nint foreground = NativeMethods.GetForegroundWindow();
+        var handles = new List<nint>();
+        NativeMethods.EnumWindows((handle, _) =>
+        {
+            handles.Add(handle);
+            return true;
+        }, 0);
+
         var processes = new Dictionary<uint, ProcessDetails>();
         ProcessDetails GetProcess(uint id)
         {
@@ -56,20 +63,18 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
 
         // Keep PID reuse safe by sharing process queries only within this enumeration.
         var identities = new HostedWindowIdentityResolver(
-            GetProcessId, id => GetProcess(id).ExecutablePath, GetChildWindows, GetWindowClass);
+            GetProcessId, id => GetProcess(id).ExecutablePath, GetChildWindows, GetWindowClass,
+            ShellAppResources.GetWindowApplicationId, id => GetProcess(id).ApplicationUserModelId, () => handles);
 
-        NativeMethods.EnumWindows(
-            (handle, _) =>
+        foreach (nint handle in handles)
+        {
+            if (!IsDockableWindow(handle, shellWindow))
             {
-                if (!IsDockableWindow(handle, shellWindow))
-                {
-                    return true;
-                }
+                continue;
+            }
 
-                windows.Add(CreateWindowInfo(handle, foreground, identities, GetProcess));
-                return true;
-            },
-            0);
+            windows.Add(CreateWindowInfo(handle, foreground, identities, GetProcess));
+        }
 
         return windows;
     }
@@ -236,7 +241,7 @@ public sealed class WindowEnumerator : IWindowEnumerator, IDisposable
         string title = GetWindowTitle(handle);
         WindowProcessIdentity identity = identities.Resolve(handle, title);
 
-        string? applicationId = getProcess(identity.ProcessId).ApplicationUserModelId;
+        string? applicationId = identity.ApplicationUserModelId ?? getProcess(identity.ProcessId).ApplicationUserModelId;
         string? friendlyName = identity.DisplayName;
         if (ApplicationShellPath.FromApplicationId(applicationId) is string shellPath)
         {
