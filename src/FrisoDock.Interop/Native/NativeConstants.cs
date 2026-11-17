@@ -6,6 +6,11 @@
 /// </summary>
 internal static class NativeConstants
 {
+    internal const int ERROR_INSUFFICIENT_BUFFER = 122;
+    internal const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
+    internal const uint COINIT_MULTITHREADED = 0;
+    internal const uint SIIGBF_ICONONLY = 0x00000004;
+    internal const uint SIIGBF_BIGGERSIZEOK = 0x00000001;
     // --- Shell window classes ---
     internal const string TaskbarPrimaryClass = "Shell_TrayWnd";
     internal const string TaskbarSecondaryClass = "Shell_SecondaryTrayWnd";

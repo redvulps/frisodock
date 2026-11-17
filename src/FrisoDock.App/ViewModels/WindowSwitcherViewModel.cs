@@ -11,12 +11,15 @@ namespace FrisoDock.App.ViewModels;
 public sealed partial class WindowSwitcherEntryViewModel : ObservableObject
 {
     [ObservableProperty]
+    private ImageSource? _image;
+
+    [ObservableProperty]
     private bool _isSelected;
 
     private WindowSwitcherEntryViewModel(WindowInfo target, ImageSource? image, string caption)
     {
         Target = target;
-        Image = image;
+        _image = image;
         Caption = caption;
     }
 
@@ -48,8 +51,6 @@ public sealed partial class WindowSwitcherEntryViewModel : ObservableObject
 
         return new WindowSwitcherEntryViewModel(window, image, caption);
     }
-
-    public ImageSource? Image { get; }
 
     /// <summary>Window the switcher activates if this item is the chosen one.</summary>
     public WindowInfo Target { get; }

@@ -10,7 +10,7 @@ namespace FrisoDock.Core.Abstractions;
 public interface IIconExtractor
 {
     /// <summary>
-    /// Extracts the icon of a file (exe, .lnk, .ico) at the requested size.
+    /// Extracts the icon of a file or a registered shell:AppsFolder application at the requested size.
     /// </summary>
     /// <param name="iconIndex">Index of the icon within the file; zero for the main one.</param>
     IconHandle? FromFile(string path, int preferredSize, int iconIndex = 0);

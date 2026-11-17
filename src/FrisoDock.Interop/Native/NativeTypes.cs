@@ -3,6 +3,29 @@ using FrisoDock.Core.Models;
 
 namespace FrisoDock.Interop.Native;
 
+[StructLayout(LayoutKind.Sequential)]
+internal struct BITMAP
+{
+    public int Type;
+    public int Width;
+    public int Height;
+    public int WidthBytes;
+    public ushort Planes;
+    public ushort BitsPixel;
+    public nint Bits;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct ICONINFO
+{
+    [MarshalAs(UnmanagedType.Bool)]
+    public bool IsIcon;
+    public uint HotspotX;
+    public uint HotspotY;
+    public nint Mask;
+    public nint Color;
+}
+
 /// <summary>Win32 structures and delegates. Declared a single time (DRY).</summary>
 internal static class NativeTypes
 {

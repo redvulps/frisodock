@@ -59,7 +59,7 @@ public sealed class WindowSwitchList
 
             // No Pinned: the switcher only lists what is open, and a pinned app that is not
             // running is not a switching destination.
-            items.Add(new DockItem(key, first.DisplayName, first.ExecutablePath, null, appWindows));
+            items.Add(new DockItem(key, first.DisplayName, first.IconSource, null, appWindows));
         }
 
         return items;

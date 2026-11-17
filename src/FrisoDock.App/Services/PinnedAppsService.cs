@@ -78,11 +78,13 @@ public sealed class PinnedAppsService : IPinnedAppsEditor
 
     private static PinnedApp CreatePinnedApp(DockItem item)
     {
-        string? executable = item.Windows.FirstOrDefault()?.ExecutablePath ?? item.IconSource;
+        WindowInfo? window = item.Windows.FirstOrDefault();
+        string? executable = window?.ExecutablePath ?? item.IconSource;
 
         return new PinnedApp(
             item.DisplayName,
-            executable ?? item.Key.Value,
+            window?.ShellLaunchTarget ?? executable ?? item.Key.Value,
+            IconPath: window?.ShellLaunchTarget,
             MatchExecutablePath: executable);
     }
 }

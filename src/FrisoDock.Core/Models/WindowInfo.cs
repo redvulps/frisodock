@@ -25,10 +25,15 @@ public sealed record WindowInfo(
     bool IsMinimized,
     bool IsForeground,
     PixelRect Bounds = default,
-    string? FriendlyName = null)
+    string? FriendlyName = null,
+    string? ApplicationUserModelId = null)
 {
     /// <summary>Key of the app this window belongs to.</summary>
     public AppKey Key { get; } = AppKey.FromExecutable(ExecutablePath);
+
+    public string? ShellLaunchTarget => ApplicationShellPath.FromApplicationId(ApplicationUserModelId);
+
+    public string? IconSource => ShellLaunchTarget ?? ExecutablePath;
 
     /// <summary>App label, used when there is no pinned item with a name of its own.</summary>
     public string DisplayName

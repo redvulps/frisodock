@@ -26,6 +26,11 @@ public sealed class IconExtractor : IIconExtractor
             return null;
         }
 
+        if (ApplicationShellPath.IsApplication(path))
+        {
+            return ShellAppResources.GetIcon(path, preferredSize);
+        }
+
         IconHandle? extracted = ExtractPrivate(path, preferredSize, iconIndex);
         if (extracted is not null)
         {
