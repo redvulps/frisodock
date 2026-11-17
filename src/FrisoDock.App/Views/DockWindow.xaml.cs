@@ -749,7 +749,7 @@ public partial class DockWindow : Window
         }
 
         // The dock icon group reflects whatever was just changed in the panel.
-        _viewModel.QuickStatus.Refresh();
+        _ = _viewModel.QuickStatus.RefreshAsync();
     }
 
     private void CloseQuickSettings()

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using FrisoDock.App.Services;
 using FrisoDock.Core.Abstractions;
 using FrisoDock.Core.Models;
 using FrisoDock.Core.Resources;
@@ -29,6 +30,12 @@ public sealed partial class QuickStatusViewModel : ObservableObject, IDisposable
     private readonly IBatteryProvider _battery;
     private readonly INetworkProvider _network;
     private readonly DispatcherTimer _timer;
+    private readonly RefreshOperation<NetworkStatus> _networkRefresh = new("Dock network");
+    private readonly RefreshOperation<VolumeStatus> _volumeRefresh = new("Dock volume");
+    private readonly RefreshOperation<BatteryStatus> _batteryRefresh = new("Dock battery");
+    private NetworkStatus _networkStatus = NetworkStatus.Disconnected;
+    private VolumeStatus _volumeStatus = VolumeStatus.Unavailable;
+    private BatteryStatus _batteryStatus = BatteryStatus.None;
 
     private bool _disposed;
 
@@ -59,38 +66,60 @@ public sealed partial class QuickStatusViewModel : ObservableObject, IDisposable
         };
         _timer.Tick += OnTick;
 
-        Refresh();
     }
 
     public void Start()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _timer.Start();
+        _ = RefreshAsync();
     }
 
     /// <summary>Rereads now. Used when the panel closes, so the group reflects what was changed.</summary>
-    public void Refresh()
+    public Task RefreshAsync()
     {
-        NetworkStatus network = _network.GetStatus();
-        NetworkGlyph = network switch
+        if (_disposed)
         {
-            { Name: null } => NetworkOffline,
-            { IsWireless: true } => NetworkConnected,
-            _ => NetworkWired,
-        };
-
-        VolumeStatus volume = _volume.GetStatus();
-        VolumeGlyph = volume.IsMuted ? VolumeMuted : VolumeAudible;
-
-        BatteryStatus battery = _battery.GetStatus();
-        HasBattery = battery.HasBattery;
-
-        if (battery.HasBattery)
-        {
-            BatteryGlyph = BatteryGlyphs.For(battery);
+            return Task.CompletedTask;
         }
 
-        Tooltip = BuildTooltip(network, volume, battery);
+        return Task.WhenAll(
+            _networkRefresh.RunAsync(() => Task.Run(_network.GetStatus), network =>
+            {
+                if (!_disposed)
+                {
+                    _networkStatus = network;
+                    NetworkGlyph = network switch
+                    {
+                        { Name: null } => NetworkOffline,
+                        { IsWireless: true } => NetworkConnected,
+                        _ => NetworkWired,
+                    };
+                    UpdateTooltip();
+                }
+            }),
+            _volumeRefresh.RunAsync(_volume.GetStatusAsync, volume =>
+            {
+                if (!_disposed)
+                {
+                    _volumeStatus = volume;
+                    VolumeGlyph = volume.IsMuted ? VolumeMuted : VolumeAudible;
+                    UpdateTooltip();
+                }
+            }),
+            _batteryRefresh.RunAsync(() => Task.Run(_battery.GetStatus), battery =>
+            {
+                if (!_disposed)
+                {
+                    _batteryStatus = battery;
+                    HasBattery = battery.HasBattery;
+                    BatteryGlyph = battery.HasBattery ? BatteryGlyphs.For(battery) : string.Empty;
+                    UpdateTooltip();
+                }
+            }));
     }
+
+    private void UpdateTooltip() => Tooltip = BuildTooltip(_networkStatus, _volumeStatus, _batteryStatus);
 
     public void Dispose()
     {
@@ -125,6 +154,6 @@ public sealed partial class QuickStatusViewModel : ObservableObject, IDisposable
 
     private void OnTick(object? sender, EventArgs e)
     {
-        Refresh();
+        _ = RefreshAsync();
     }
 }

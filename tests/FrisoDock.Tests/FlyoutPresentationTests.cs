@@ -209,11 +209,10 @@ public sealed class FlyoutPresentationTests
         }
 
         public Task SetLevelAsync(int level) => throw new InvalidOperationException("Unexpected hardware write");
-        VolumeStatus IVolumeController.GetStatus() => VolumeStatus.Unavailable;
+        Task<VolumeStatus> IVolumeController.GetStatusAsync() => Task.FromResult(VolumeStatus.Unavailable);
         BatteryStatus IBatteryProvider.GetStatus() => BatteryStatus.None;
         NetworkStatus INetworkProvider.GetStatus() => NetworkStatus.Disconnected;
-        public void SetLevel(int level) => throw new InvalidOperationException("Unexpected hardware write");
-        public void SetMuted(bool isMuted) => throw new InvalidOperationException("Unexpected hardware write");
+        public Task SetStateAsync(int? level = null, bool? isMuted = null) => throw new InvalidOperationException("Unexpected hardware write");
         public void Open(string page) => throw new InvalidOperationException("Unexpected settings launch");
     }
 

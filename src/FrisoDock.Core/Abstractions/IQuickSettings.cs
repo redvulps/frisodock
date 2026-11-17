@@ -26,11 +26,10 @@ public interface IBrightnessController
 /// <summary>Volume of the default output device.</summary>
 public interface IVolumeController
 {
-    VolumeStatus GetStatus();
+    Task<VolumeStatus> GetStatusAsync();
 
-    void SetLevel(int level);
-
-    void SetMuted(bool isMuted);
+    /// <summary>Updates the supplied fields together, leaving omitted fields unchanged.</summary>
+    Task SetStateAsync(int? level = null, bool? isMuted = null);
 }
 
 /// <summary>Battery state.</summary>

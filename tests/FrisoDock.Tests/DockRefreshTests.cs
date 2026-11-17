@@ -100,10 +100,9 @@ public sealed class DockRefreshTests
 
         public IconHandle? FromWindow(nint windowHandle) => null;
         public void Shutdown() { }
-        VolumeStatus IVolumeController.GetStatus() => VolumeStatus.Unavailable;
+        Task<VolumeStatus> IVolumeController.GetStatusAsync() => Task.FromResult(VolumeStatus.Unavailable);
         BatteryStatus IBatteryProvider.GetStatus() => BatteryStatus.None;
         NetworkStatus INetworkProvider.GetStatus() => NetworkStatus.Disconnected;
-        public void SetLevel(int level) { }
-        public void SetMuted(bool isMuted) { }
+        public Task SetStateAsync(int? level = null, bool? isMuted = null) => Task.CompletedTask;
     }
 }
