@@ -139,7 +139,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
     /// One side never invades the other: the pinned ones take the dock's first positions, and dragging
     /// past the boundary stops there instead of mixing the two blocks.
     /// </summary>
-    public void MoveItem(AppKey key, int targetIndex)
+    public void MoveItem(AppKey key, int targetIndex, bool deferSave = false)
     {
         int from = FindExistingIndex(key, 0);
 
@@ -150,7 +150,7 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
 
         if (Items[from].Model.IsPinned)
         {
-            _pinnedApps.Reorder(key, targetIndex);
+            _pinnedApps.Reorder(key, targetIndex, persist: !deferSave);
             return;
         }
 
@@ -162,6 +162,8 @@ public sealed partial class DockViewModel : ObservableObject, IDisposable
             Items.Move(from, to);
         }
     }
+
+    public void CommitReorder() => _pinnedApps.CommitReorder();
 
     /// <summary>Edge the dock is on now, so the context menu can check the current one.</summary>
     public bool IsEdgeBottom => _settings.Current.Edge == DockEdge.Bottom;

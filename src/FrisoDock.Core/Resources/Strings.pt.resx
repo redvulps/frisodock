@@ -152,10 +152,10 @@
     <value>Recentes</value>
   </data>
   <data name="JumpListPin" xml:space="preserve">
-    <value>Fixar na barra de tarefas</value>
+    <value>Fixar no dock</value>
   </data>
   <data name="JumpListUnpin" xml:space="preserve">
-    <value>Desafixar da barra de tarefas</value>
+    <value>Desafixar do dock</value>
   </data>
   <data name="JumpListCloseWindow" xml:space="preserve">
     <value>Fechar janela</value>

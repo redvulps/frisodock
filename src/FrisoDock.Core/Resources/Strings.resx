@@ -152,10 +152,10 @@
     <value>Recent</value>
   </data>
   <data name="JumpListPin" xml:space="preserve">
-    <value>Pin to taskbar</value>
+    <value>Pin to dock</value>
   </data>
   <data name="JumpListUnpin" xml:space="preserve">
-    <value>Unpin from taskbar</value>
+    <value>Unpin from dock</value>
   </data>
   <data name="JumpListCloseWindow" xml:space="preserve">
     <value>Close window</value>

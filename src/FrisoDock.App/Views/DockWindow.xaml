@@ -349,7 +349,9 @@
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:DockItemViewModel}">
-                        <Button Style="{StaticResource DockButtonStyle}"
+                        <Button x:Name="AppButton"
+                                Style="{StaticResource DockButtonStyle}"
+                                AutomationProperties.Name="{Binding DisplayName}"
                                 ToolTipOpening="OnAppIconToolTipOpening"
                                 ContextMenuOpening="OnAppIconContextMenuOpening"
                                 MouseEnter="OnAppIconMouseEnter"
@@ -385,6 +387,9 @@
                         </Button>
 
                         <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsDragging}" Value="True">
+                                <Setter TargetName="AppButton" Property="Opacity" Value="0.65" />
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsRunning}" Value="True">
                                 <Setter TargetName="RunningIndicator"
                                         Property="Visibility"

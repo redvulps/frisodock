@@ -114,10 +114,10 @@ public static class Strings
     /// <summary>Recent</summary>
     public static string JumpListRecent => Get(nameof(JumpListRecent));
 
-    /// <summary>Pin to taskbar</summary>
+    /// <summary>Pin to dock</summary>
     public static string JumpListPin => Get(nameof(JumpListPin));
 
-    /// <summary>Unpin from taskbar</summary>
+    /// <summary>Unpin from dock</summary>
     public static string JumpListUnpin => Get(nameof(JumpListUnpin));
 
     /// <summary>Close window</summary>
